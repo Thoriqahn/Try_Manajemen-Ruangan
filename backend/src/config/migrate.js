@@ -1,0 +1,315 @@
+const { dbRun, dbAll } = require('./database');
+const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
+
+async function initSchema() {
+  console.log('📦 Running database migrations...');
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT,
+    role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user','admin','superadmin','api')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','active','inactive')),
+    otp TEXT,
+    otp_expires INTEGER,
+    otp_type TEXT,
+    refresh_token TEXT,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  )`);
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS buildings (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    address TEXT,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  )`);
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS floors (
+    id TEXT PRIMARY KEY,
+    building_id TEXT NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    level INTEGER,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  )`);
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS rooms (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    building_id TEXT REFERENCES buildings(id),
+    floor_id TEXT REFERENCES floors(id),
+    admin_id TEXT REFERENCES users(id),
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','inactive')),
+    approval_type TEXT NOT NULL DEFAULT 'instant' CHECK(approval_type IN ('instant','manual')),
+    restrict_hours INTEGER NOT NULL DEFAULT 0,
+    hours_start TEXT,
+    hours_end TEXT,
+    image_url TEXT,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  )`);
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS room_layouts (
+    id TEXT PRIMARY KEY,
+    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    layout_type TEXT NOT NULL,
+    capacity INTEGER NOT NULL DEFAULT 0,
+    photo_url TEXT
+  )`);
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS room_facilities (
+    id TEXT PRIMARY KEY,
+    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    facility_type TEXT NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 0
+  )`);
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS room_assignments (
+    id TEXT PRIMARY KEY,
+    admin_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    UNIQUE(admin_id, room_id)
+  )`);
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS bookings (
+    id TEXT PRIMARY KEY,
+    room_id TEXT NOT NULL REFERENCES rooms(id),
+    user_id TEXT NOT NULL REFERENCES users(id),
+    date TEXT NOT NULL,
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    agenda TEXT NOT NULL,
+    participants INTEGER DEFAULT 1,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','confirmed','ongoing','completed','cancelled','rejected')),
+    rejection_reason TEXT,
+    cancel_reason TEXT,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  )`);
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS global_policy (
+    id INTEGER PRIMARY KEY DEFAULT 1,
+    max_duration_hours INTEGER DEFAULT 4,
+    max_days_ahead INTEGER DEFAULT 30,
+    updated_at INTEGER DEFAULT (strftime('%s','now'))
+  )`);
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS blackout_dates (
+    id TEXT PRIMARY KEY,
+    date TEXT NOT NULL UNIQUE,
+    reason TEXT,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  )`);
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS api_tokens (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    client_id TEXT NOT NULL UNIQUE,
+    secret_hash TEXT NOT NULL,
+    access_level TEXT NOT NULL DEFAULT 'read' CHECK(access_level IN ('read','read-write')),
+    status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','revoked')),
+    last_used INTEGER,
+    request_count INTEGER DEFAULT 0,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  )`);
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS api_logs (
+    id TEXT PRIMARY KEY,
+    token_id TEXT REFERENCES api_tokens(id),
+    endpoint TEXT,
+    method TEXT,
+    status_code INTEGER,
+    ip TEXT,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  )`);
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS audit_logs (
+    id TEXT PRIMARY KEY,
+    actor_id TEXT,
+    actor_name TEXT,
+    action TEXT NOT NULL,
+    resource TEXT,
+    ip TEXT,
+    payload_before TEXT,
+    payload_after TEXT,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  )`);
+
+  console.log('✅ Schema created/verified.');
+}
+
+async function seedData() {
+  // Check if already seeded
+  const existing = await dbAll('SELECT id FROM users LIMIT 1');
+  if (existing.length > 0) {
+    console.log('ℹ️  Database already seeded. Skipping.');
+    return;
+  }
+
+  console.log('🌱 Seeding demo data...');
+  const hash = await bcrypt.hash('password123!', 10);
+
+  // Seed default policy
+  await dbRun(`INSERT OR IGNORE INTO global_policy (id, max_duration_hours, max_days_ahead) VALUES (1, 4, 30)`);
+
+  // Users
+  const users = [
+    { id: 'u-super', name: 'Super Admin', email: 'superadmin@oikn.go.id', role: 'superadmin', status: 'active' },
+    { id: 'u-admin1', name: 'Ahmad Fauzi', email: 'admin@oikn.go.id', role: 'admin', status: 'active' },
+    { id: 'u-admin2', name: 'Sari Dewi', email: 'sari.dewi@oikn.go.id', role: 'admin', status: 'active' },
+    { id: 'u-admin3', name: 'Bima Pradana', email: 'bima.pradana@oikn.go.id', role: 'admin', status: 'active' },
+    { id: 'u-admin4', name: 'Rina Kusuma', email: 'rina.kusuma@oikn.go.id', role: 'admin', status: 'active' },
+    { id: 'u-user1', name: 'Budi Santoso', email: 'user@oikn.go.id', role: 'user', status: 'active' },
+    { id: 'u-user2', name: 'Dewi Rahayu', email: 'dewi.rahayu@oikn.go.id', role: 'user', status: 'active' },
+    { id: 'u-api1', name: 'Admin Sistem IKNOW', email: 'api-iknow@system.oikn.go.id', role: 'api', status: 'active' },
+  ];
+  for (const u of users) {
+    await dbRun(
+      `INSERT INTO users (id, name, email, password_hash, role, status) VALUES (?,?,?,?,?,?)`,
+      [u.id, u.name, u.email, hash, u.role, u.status]
+    );
+  }
+
+  // Buildings
+  const buildings = [
+    { id: 'b1', name: 'Gedung IKN Tower', address: 'Kawasan Inti IKN, Kalimantan Timur' },
+    { id: 'b2', name: 'Gedung Serba Guna', address: 'Kawasan IKN, Kalimantan Timur' },
+    { id: 'b3', name: 'Gedung Teknologi', address: 'Kawasan IKN, Kalimantan Timur' },
+  ];
+  for (const b of buildings) {
+    await dbRun(`INSERT INTO buildings (id, name, address) VALUES (?,?,?)`, [b.id, b.name, b.address]);
+  }
+
+  // Floors
+  const floors = [
+    { id: 'f1', building_id: 'b1', name: 'Lantai 2', level: 2 },
+    { id: 'f2', building_id: 'b1', name: 'Lantai 5', level: 5 },
+    { id: 'f3', building_id: 'b1', name: 'Lantai 8', level: 8 },
+    { id: 'f4', building_id: 'b2', name: 'Lantai 1', level: 1 },
+    { id: 'f5', building_id: 'b3', name: 'Lantai 2', level: 2 },
+    { id: 'f6', building_id: 'b3', name: 'Lantai 3', level: 3 },
+  ];
+  for (const f of floors) {
+    await dbRun(`INSERT INTO floors (id, building_id, name, level) VALUES (?,?,?,?)`, [f.id, f.building_id, f.name, f.level]);
+  }
+
+  // Rooms
+  const rooms = [
+    { id: 'r1', name: 'Ruang Rapat Eksekutif A', building_id: 'b1', floor_id: 'f3', admin_id: 'u-admin1', description: 'Ruang rapat premium untuk rapat eksekutif dan tamu VVIP.', status: 'active', approval_type: 'manual', restrict_hours: 1, hours_start: '07:00', hours_end: '18:00', image_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80' },
+    { id: 'r2', name: 'Ruang Diskusi Inovasi', building_id: 'b1', floor_id: 'f2', admin_id: 'u-admin2', description: 'Ruang kolaborasi untuk sesi brainstorming dan workshop tim.', status: 'active', approval_type: 'instant', restrict_hours: 1, hours_start: '08:00', hours_end: '17:00', image_url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400&q=80' },
+    { id: 'r3', name: 'Aula Serbaguna Nusantara', building_id: 'b2', floor_id: 'f4', admin_id: 'u-admin3', description: 'Aula besar untuk acara skala besar, seminar, dan pelantikan.', status: 'active', approval_type: 'manual', restrict_hours: 0, hours_start: null, hours_end: null, image_url: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=400&q=80' },
+    { id: 'r4', name: 'Ruang Focus Work 01', building_id: 'b3', floor_id: 'f6', admin_id: 'u-admin4', description: 'Ruang kecil untuk meeting tim kecil dan sesi focus work.', status: 'active', approval_type: 'instant', restrict_hours: 1, hours_start: '07:00', hours_end: '20:00', image_url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&q=80' },
+    { id: 'r5', name: 'Ruang Pelatihan Digital', building_id: 'b3', floor_id: 'f5', admin_id: 'u-admin4', description: 'Ruang pelatihan lengkap dengan perangkat teknologi terkini.', status: 'active', approval_type: 'instant', restrict_hours: 1, hours_start: '08:00', hours_end: '16:00', image_url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=400&q=80' },
+    { id: 'r6', name: 'Lounge Kreatif B2', building_id: 'b1', floor_id: 'f1', admin_id: 'u-admin1', description: 'Ruang santai kreatif. Saat ini dalam renovasi.', status: 'inactive', approval_type: 'instant', restrict_hours: 1, hours_start: '09:00', hours_end: '17:00', image_url: 'https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?w=400&q=80' },
+  ];
+  for (const r of rooms) {
+    await dbRun(
+      `INSERT INTO rooms (id, name, building_id, floor_id, admin_id, description, status, approval_type, restrict_hours, hours_start, hours_end, image_url) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [r.id, r.name, r.building_id, r.floor_id, r.admin_id, r.description, r.status, r.approval_type, r.restrict_hours, r.hours_start, r.hours_end, r.image_url]
+    );
+  }
+
+  // Room layouts
+  const layouts = [
+    { room_id: 'r1', layout_type: 'Boardroom', capacity: 16 },
+    { room_id: 'r1', layout_type: 'U-Shape', capacity: 12 },
+    { room_id: 'r2', layout_type: 'Classroom', capacity: 30 },
+    { room_id: 'r2', layout_type: 'U-Shape', capacity: 20 },
+    { room_id: 'r2', layout_type: 'Theater', capacity: 40 },
+    { room_id: 'r3', layout_type: 'Theater', capacity: 200 },
+    { room_id: 'r3', layout_type: 'Standing Setup', capacity: 300 },
+    { room_id: 'r3', layout_type: 'Classroom', capacity: 120 },
+    { room_id: 'r4', layout_type: 'Boardroom', capacity: 8 },
+    { room_id: 'r5', layout_type: 'Classroom', capacity: 40 },
+    { room_id: 'r6', layout_type: 'Standing Setup', capacity: 50 },
+    { room_id: 'r6', layout_type: 'Boardroom', capacity: 10 },
+  ];
+  for (const l of layouts) {
+    await dbRun(`INSERT INTO room_layouts (id, room_id, layout_type, capacity) VALUES (?,?,?,?)`,
+      [uuidv4(), l.room_id, l.layout_type, l.capacity]);
+  }
+
+  // Room facilities
+  const facilities = [
+    { room_id: 'r1', items: [['tv_monitor',2],['projector',1],['video_conference',1],['sound_system',1],['whiteboard',2],['outlet',12]] },
+    { room_id: 'r2', items: [['tv_monitor',1],['projector',2],['video_conference',1],['sound_system',1],['whiteboard',3],['outlet',20]] },
+    { room_id: 'r3', items: [['tv_monitor',4],['projector',3],['video_conference',2],['sound_system',4],['whiteboard',1],['outlet',40]] },
+    { room_id: 'r4', items: [['tv_monitor',1],['projector',0],['video_conference',0],['sound_system',0],['whiteboard',1],['outlet',8]] },
+    { room_id: 'r5', items: [['tv_monitor',2],['projector',2],['video_conference',1],['sound_system',2],['whiteboard',2],['outlet',40]] },
+    { room_id: 'r6', items: [['tv_monitor',1],['projector',0],['video_conference',0],['sound_system',1],['whiteboard',2],['outlet',16]] },
+  ];
+  for (const f of facilities) {
+    for (const [type, qty] of f.items) {
+      await dbRun(`INSERT INTO room_facilities (id, room_id, facility_type, quantity) VALUES (?,?,?,?)`,
+        [uuidv4(), f.room_id, type, qty]);
+    }
+  }
+
+  // Room assignments
+  const assignments = [
+    { admin_id: 'u-admin1', room_id: 'r1' },
+    { admin_id: 'u-admin1', room_id: 'r6' },
+    { admin_id: 'u-admin2', room_id: 'r2' },
+    { admin_id: 'u-admin3', room_id: 'r3' },
+    { admin_id: 'u-admin4', room_id: 'r4' },
+    { admin_id: 'u-admin4', room_id: 'r5' },
+  ];
+  for (const a of assignments) {
+    await dbRun(`INSERT OR IGNORE INTO room_assignments (id, admin_id, room_id) VALUES (?,?,?)`,
+      [uuidv4(), a.admin_id, a.room_id]);
+  }
+
+  // Sample bookings (using today-relative dates)
+  const today = new Date();
+  const fmtDate = (d) => d.toISOString().split('T')[0];
+  const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate()+n); return r; };
+
+  const bookings = [
+    { id: 'bk1', room_id: 'r1', user_id: 'u-user1', date: fmtDate(addDays(today,1)), start_time: '09:00', end_time: '11:00', agenda: 'Rapat Koordinasi Anggaran Q2', participants: 12, status: 'confirmed' },
+    { id: 'bk2', room_id: 'r2', user_id: 'u-user1', date: fmtDate(addDays(today,1)), start_time: '13:00', end_time: '15:00', agenda: 'Workshop Digital Transformation', participants: 25, status: 'confirmed' },
+    { id: 'bk3', room_id: 'r1', user_id: 'u-user2', date: fmtDate(addDays(today,2)), start_time: '10:00', end_time: '12:00', agenda: 'Presentasi Laporan Tahunan', participants: 14, status: 'pending' },
+    { id: 'bk4', room_id: 'r3', user_id: 'u-admin3', date: fmtDate(addDays(today,3)), start_time: '08:00', end_time: '17:00', agenda: 'Seminar Nasional SPBE', participants: 180, status: 'pending' },
+    { id: 'bk5', room_id: 'r4', user_id: 'u-user1', date: fmtDate(today), start_time: '14:00', end_time: '16:00', agenda: 'Review Kode Aplikasi', participants: 5, status: 'ongoing' },
+    { id: 'bk6', room_id: 'r2', user_id: 'u-user1', date: fmtDate(addDays(today,-8)), start_time: '09:00', end_time: '11:00', agenda: 'Sprint Planning', participants: 8, status: 'completed' },
+    { id: 'bk7', room_id: 'r1', user_id: 'u-user2', date: fmtDate(addDays(today,-6)), start_time: '13:00', end_time: '15:00', agenda: 'Rapat Direksi Bulanan', participants: 10, status: 'cancelled' },
+    { id: 'bk8', room_id: 'r2', user_id: 'u-user2', date: fmtDate(addDays(today,4)), start_time: '09:00', end_time: '11:00', agenda: 'Onboarding Karyawan Baru', participants: 15, status: 'confirmed' },
+    { id: 'bk9', room_id: 'r5', user_id: 'u-admin4', date: fmtDate(addDays(today,2)), start_time: '09:00', end_time: '12:00', agenda: 'Pelatihan Digital Transformasi', participants: 35, status: 'confirmed' },
+  ];
+  for (const bk of bookings) {
+    await dbRun(`INSERT INTO bookings (id, room_id, user_id, date, start_time, end_time, agenda, participants, status) VALUES (?,?,?,?,?,?,?,?,?)`,
+      [bk.id, bk.room_id, bk.user_id, bk.date, bk.start_time, bk.end_time, bk.agenda, bk.participants, bk.status]);
+  }
+
+  // API Tokens
+  const tokenSecret = await bcrypt.hash('secret-iknow-2025', 10);
+  await dbRun(`INSERT INTO api_tokens (id, name, client_id, secret_hash, access_level, status, request_count) VALUES (?,?,?,?,?,?,?)`,
+    ['t1', 'IKNOW Application', 'client_iknow_prod', tokenSecret, 'read-write', 'active', 1248]);
+  await dbRun(`INSERT INTO api_tokens (id, name, client_id, secret_hash, access_level, status, request_count) VALUES (?,?,?,?,?,?,?)`,
+    ['t2', 'Dashboard Monitoring', 'client_dashboard_01', tokenSecret, 'read', 'active', 5621]);
+  await dbRun(`INSERT INTO api_tokens (id, name, client_id, secret_hash, access_level, status, request_count) VALUES (?,?,?,?,?,?,?)`,
+    ['t3', 'Test Integration', 'client_test_123', tokenSecret, 'read', 'revoked', 42]);
+
+  // Audit logs
+  const now = Math.floor(Date.now() / 1000);
+  const auditLogs = [
+    { id: 'al1', actor_id: 'u-admin1', actor_name: 'Ahmad Fauzi (Admin)', action: 'FORCE_CANCEL', resource: 'Booking #bk1 - Ruang Rapat Eksekutif A', ip: '10.0.1.45', payload_before: null, payload_after: JSON.stringify({ reason: 'Persiapan kunjungan tamu negara mendadak' }), created_at: now - 3600 },
+    { id: 'al2', actor_id: 'u-super', actor_name: 'Super Admin', action: 'UPDATE_POLICY', resource: 'Kebijakan Global - Batas durasi booking', ip: '10.0.0.1', payload_before: JSON.stringify({ max_duration_hours: 4 }), payload_after: JSON.stringify({ max_duration_hours: 6 }), created_at: now - 7200 },
+    { id: 'al3', actor_id: 'u-admin2', actor_name: 'Sari Dewi (Admin)', action: 'APPROVE_BOOKING', resource: 'Booking #bk3 - Ruang Diskusi Inovasi', ip: '10.0.2.33', payload_before: JSON.stringify({ status: 'pending' }), payload_after: JSON.stringify({ status: 'confirmed' }), created_at: now - 10800 },
+    { id: 'al4', actor_id: 'u-super', actor_name: 'Super Admin', action: 'CREATE_ROOM', resource: 'Ruang Focus Work 01', ip: '10.0.0.1', payload_before: null, payload_after: JSON.stringify({ id: 'r4', name: 'Ruang Focus Work 01' }), created_at: now - 14400 },
+    { id: 'al5', actor_id: 'u-api1', actor_name: 'API: IKNOW System', action: 'CREATE_BOOKING', resource: 'Booking via API - Ruang Diskusi Inovasi', ip: '172.16.5.20', payload_before: null, payload_after: JSON.stringify({ room: 'r2', date: fmtDate(today) }), created_at: now - 86400 },
+    { id: 'al6', actor_id: 'u-super', actor_name: 'Super Admin', action: 'REVOKE_TOKEN', resource: 'API Token: client_test_123 (Read-Only)', ip: '10.0.0.1', payload_before: JSON.stringify({ status: 'active' }), payload_after: JSON.stringify({ status: 'revoked' }), created_at: now - 90000 },
+    { id: 'al7', actor_id: 'u-admin3', actor_name: 'Bima Pradana (Admin)', action: 'UPDATE_ROOM', resource: 'Aula Serbaguna Nusantara', ip: '10.0.3.55', payload_before: JSON.stringify({ capacity: 150 }), payload_after: JSON.stringify({ capacity: 200 }), created_at: now - 172800 },
+  ];
+  for (const al of auditLogs) {
+    await dbRun(`INSERT INTO audit_logs (id, actor_id, actor_name, action, resource, ip, payload_before, payload_after, created_at) VALUES (?,?,?,?,?,?,?,?,?)`,
+      [al.id, al.actor_id, al.actor_name, al.action, al.resource, al.ip, al.payload_before, al.payload_after, al.created_at]);
+  }
+
+  console.log('✅ Seed data inserted successfully.');
+  console.log('\n📋 Demo Credentials:');
+  console.log('  👤 User:        user@oikn.go.id / password123!');
+  console.log('  🔑 Admin:       admin@oikn.go.id / password123!');
+  console.log('  👑 SuperAdmin:  superadmin@oikn.go.id / password123!');
+}
+
+module.exports = { initSchema, seedData };
