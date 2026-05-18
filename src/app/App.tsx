@@ -12,6 +12,7 @@ import { ApprovalQueue } from "./components/admin/ApprovalQueue";
 import { ScheduleControl } from "./components/admin/ScheduleControl";
 import { RoomManagement } from "./components/admin/RoomManagement";
 import { UserManagement } from "./components/superadmin/UserManagement";
+import { BuildingManagement } from "./components/superadmin/BuildingManagement";
 import { GlobalPolicy } from "./components/superadmin/GlobalPolicy";
 import { ApiMonitoring } from "./components/superadmin/ApiMonitoring";
 import { AuditTrail } from "./components/superadmin/AuditTrail";
@@ -22,7 +23,7 @@ type Page =
   | "login" | "register" | "forgot-password"
   | "calendar" | "rooms" | "room-detail" | "my-bookings"
   | "admin-dashboard" | "admin-approval" | "admin-schedule" | "admin-rooms"
-  | "sa-rooms" | "sa-users" | "sa-policy" | "sa-api" | "sa-audit";
+  | "sa-buildings" | "sa-rooms" | "sa-users" | "sa-policy" | "sa-api" | "sa-audit";
 
 type Role = "user" | "admin" | "superadmin";
 
@@ -47,6 +48,7 @@ const pageTitles: Record<string, { title: string; subtitle?: string }> = {
   "admin-approval": { title: "Persetujuan Booking", subtitle: "Kelola antrean permohonan booking" },
   "admin-schedule": { title: "Jadwal Aktif", subtitle: "Pantau dan kelola jadwal yang sedang berjalan" },
   "admin-rooms": { title: "Kelola Ruangan", subtitle: "Manajemen ruangan yang menjadi tanggung jawab Anda" },
+  "sa-buildings": { title: "Manajemen Gedung", subtitle: "Kelola daftar gedung, kantor, dan lokasi peta" },
   "sa-rooms": { title: "Ruangan Global", subtitle: "Kelola seluruh ruangan di semua gedung" },
   "sa-users": { title: "Manajemen Pengguna", subtitle: "Kelola akun dan delegasi wilayah tugas" },
   "sa-policy": { title: "Kebijakan Global", subtitle: "Atur batasan dan blackout dates sistem" },
@@ -147,6 +149,8 @@ export default function App() {
         return <RoomManagement isSuperAdmin={false} onNavigate={handleNavigate} />;
 
       // Super Admin
+      case "sa-buildings":
+        return <BuildingManagement />;
       case "sa-rooms":
         return <RoomManagement isSuperAdmin={true} onNavigate={handleNavigate} />;
       case "sa-users":

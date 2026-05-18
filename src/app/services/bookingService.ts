@@ -34,6 +34,7 @@ export interface BookingFilter {
   date_from?: string;
   date_to?: string;
   user_id?: string;
+  limit?: number;
 }
 
 export const bookingService = {

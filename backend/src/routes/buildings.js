@@ -4,6 +4,8 @@ const { authGuard, roleGuard } = require('../middleware/auth');
 
 router.get('/', ctrl.listBuildings);
 router.post('/', authGuard, roleGuard('superadmin'), ctrl.createBuilding);
+router.put('/:id', authGuard, roleGuard('superadmin'), ctrl.updateBuilding);
+router.delete('/:id', authGuard, roleGuard('superadmin'), ctrl.deleteBuilding);
 router.get('/:id/floors', ctrl.listFloors);
 router.post('/:id/floors', authGuard, roleGuard('superadmin'), ctrl.createFloor);
 

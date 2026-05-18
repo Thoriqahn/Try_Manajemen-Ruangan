@@ -50,6 +50,7 @@ export function Sidebar({ role, currentPage, onNavigate, onLogout, collapsed = f
   const superAdminNav: NavGroup = {
     title: "Super Admin",
     items: [
+      { icon: <Building2 size={18} />, label: "Manajemen Gedung", page: "sa-buildings" },
       { icon: <Globe size={18} />, label: "Ruangan Global", page: "sa-rooms" },
       { icon: <Users size={18} />, label: "Manajemen Pengguna", page: "sa-users" },
       { icon: <ShieldCheck size={18} />, label: "Kebijakan Global", page: "sa-policy" },

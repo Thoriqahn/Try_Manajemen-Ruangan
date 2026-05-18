@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, MapPin, Users, Monitor, Wifi, ChevronRight } from "lucide-react";
+import { Search, Filter, MapPin, Users, Monitor, Wifi, ChevronRight, X } from "lucide-react";
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 import { roomService } from "../../services/roomService";
 import { buildingService } from "../../services/index";
 
@@ -19,6 +22,17 @@ export function RoomList({ onNavigate }: RoomListProps) {
   const [filterBuildingId, setFilterBuildingId] = useState("all");
   const [filterCapacity, setFilterCapacity] = useState("all");
   const [showFilter, setShowFilter] = useState(false);
+  const [showMapModal, setShowMapModal] = useState<any>(null); // holds building data
+
+  // Fix Leaflet default icon issue
+  useEffect(() => {
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+      iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+      shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    });
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -94,10 +108,21 @@ export function RoomList({ onNavigate }: RoomListProps) {
         <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap gap-4">
           <div className="flex-1 min-w-[140px]">
             <label className="block text-xs text-gray-500 mb-1" style={{ fontWeight: 500 }}>Gedung</label>
-            <select value={filterBuildingId} onChange={(e) => setFilterBuildingId(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-400 bg-gray-50">
-              <option value="all">Semua Gedung</option>
-              {buildings.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
+            <div className="flex items-center gap-2">
+              <select value={filterBuildingId} onChange={(e) => setFilterBuildingId(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-400 bg-gray-50">
+                <option value="all">Semua Gedung</option>
+                {buildings.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+              {filterBuildingId !== "all" && buildings.find(b => b.id === filterBuildingId)?.lat && (
+                <button 
+                  onClick={() => setShowMapModal(buildings.find(b => b.id === filterBuildingId))} 
+                  className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 shrink-0 transition-colors" 
+                  title="Lihat Lokasi Peta Gedung"
+                >
+                  <MapPin size={18} />
+                </button>
+              )}
+            </div>
           </div>
           <div className="flex-1 min-w-[140px]">
             <label className="block text-xs text-gray-500 mb-1" style={{ fontWeight: 500 }}>Kapasitas</label>
@@ -198,11 +223,38 @@ export function RoomList({ onNavigate }: RoomListProps) {
 
       {!loading && filtered.length === 0 && (
         <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Search size={24} className="text-gray-400" />
           </div>
-          <p className="text-gray-500" style={{ fontWeight: 500 }}>Tidak ada ruangan ditemukan</p>
-          <p className="text-sm text-gray-400 mt-1">Coba ubah kata kunci atau filter pencarian</p>
+          <h3 className="text-gray-800 font-medium mb-1">Ruangan tidak ditemukan</h3>
+          <p className="text-sm text-gray-500">Coba ubah filter atau kata kunci pencarian Anda</p>
+        </div>
+      )}
+
+      {showMapModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-gray-800">Lokasi {showMapModal.name}</h3>
+                <p className="text-xs text-gray-500">{showMapModal.address || "Area IKN"}</p>
+              </div>
+              <button onClick={() => setShowMapModal(null)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><X size={20} /></button>
+            </div>
+            <div className="h-[60vh] w-full">
+              <MapContainer 
+                center={[parseFloat(showMapModal.lat), parseFloat(showMapModal.lng)]} 
+                zoom={15} 
+                style={{ height: "100%", width: "100%", zIndex: 0 }}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Marker position={[parseFloat(showMapModal.lat), parseFloat(showMapModal.lng)]}></Marker>
+              </MapContainer>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -9,15 +9,18 @@ export interface Room {
   description?: string;
   status: 'active' | 'inactive';
   approval_type: 'instant' | 'manual';
-  restrict_hours: number;
+  restrict_hours?: number;
+  operational_start?: string;
+  operational_end?: string;
   hours_start?: string;
   hours_end?: string;
   image_url?: string;
   building_name?: string;
   floor_name?: string;
   admin_name?: string;
-  layouts?: { id: string; layout_type: string; capacity: number; photo_url?: string }[];
-  facilities?: { id: string; facility_type: string; quantity: number }[];
+  photos?: { id: string; url: string; is_primary: boolean }[];
+  layouts?: { id: string; name: string; capacity: number; photo_url?: string }[];
+  facilities?: Record<string, number>;
 }
 
 export interface RoomFilter {
@@ -56,6 +59,15 @@ export const roomService = {
   async getAvailability(id: string, week?: string) {
     const params = week ? `?week=${week}` : '';
     return api.get(`/rooms/${id}/availability${params}`);
+  },
+
+  // Alias with date range support used by RoomDetail
+  async availability(id: string, dateFrom?: string, dateTo?: string) {
+    const params = new URLSearchParams();
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+    const qs = params.toString();
+    return api.get(`/rooms/${id}/availability${qs ? '?' + qs : ''}`);
   },
 
   async uploadPhoto(id: string, file: File) {

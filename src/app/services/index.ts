@@ -4,8 +4,14 @@ export const buildingService = {
   async list() {
     return api.get('/buildings');
   },
-  async create(data: { name: string; address?: string }) {
+  async create(data: { name: string; address?: string; lat?: string; lng?: string; image_url?: string; total_floors?: number }) {
     return api.post('/buildings', data);
+  },
+  async update(id: string, data: { name: string; address?: string; lat?: string; lng?: string; image_url?: string; total_floors?: number }) {
+    return api.put(`/buildings/${id}`, data);
+  },
+  async delete(id: string) {
+    return api.delete(`/buildings/${id}`);
   },
   async listFloors(buildingId: string) {
     return api.get(`/buildings/${buildingId}/floors`);
