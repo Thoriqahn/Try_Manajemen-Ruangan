@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Check, X, Clock, RefreshCw } from "lucide-react";
+import { Check, X, Clock, RefreshCw, Video, FileText } from "lucide-react";
 import { bookingService } from "../../services/bookingService";
 
 import { userService } from "../../services/index";
@@ -93,6 +93,12 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
     return <span className="px-2.5 py-1 bg-red-100 text-red-600 text-xs rounded-full" style={{ fontWeight: 500 }}>✗ Ditolak</span>;
   };
 
+  const meetingTypeBadge = (type?: string) => {
+    if (!type || type === 'offline') return null;
+    if (type === 'online') return <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] rounded-full flex items-center gap-1" style={{ fontWeight: 500 }}>💻 Online</span>;
+    return <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] rounded-full flex items-center gap-1" style={{ fontWeight: 500 }}>🔄 Hybrid</span>;
+  };
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -157,6 +163,7 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
                 <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider" style={{ fontWeight: 600 }}>Ruangan</th>
                 <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider" style={{ fontWeight: 600 }}>Waktu</th>
                 <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider" style={{ fontWeight: 600 }}>Agenda</th>
+                <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider" style={{ fontWeight: 600 }}>Tipe</th>
                 {isSuperAdmin && <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider" style={{ fontWeight: 600 }}>Admin Ruangan</th>}
                 <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider" style={{ fontWeight: 600 }}>Status</th>
                 <th className="text-right px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider" style={{ fontWeight: 600 }}>Aksi</th>
@@ -193,7 +200,21 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
                     <div className="text-xs text-gray-400">{booking.start_time} – {booking.end_time}</div>
                   </td>
                   <td className="px-5 py-4">
-                    <div className="text-sm text-gray-600 max-w-[160px] truncate">{booking.agenda}</div>
+                    <div className="text-sm text-gray-600 max-w-[200px]">
+                      <div className="truncate">{booking.agenda}</div>
+                      {booking.surat_terkait && (
+                        <div className="mt-1 flex items-start gap-1 text-[10px] text-gray-400 bg-gray-50 rounded px-1.5 py-1 border border-gray-100">
+                          <FileText size={10} className="text-gray-400 flex-shrink-0 mt-0.5" />
+                          <span className="line-clamp-2">{booking.surat_terkait}</span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-5 py-4">
+                    {meetingTypeBadge(booking.meeting_type)}
+                    {(!booking.meeting_type || booking.meeting_type === 'offline') && (
+                      <span className="text-xs text-gray-400">🏢 Offline</span>
+                    )}
                   </td>
                   {isSuperAdmin && (
                     <td className="px-5 py-4">

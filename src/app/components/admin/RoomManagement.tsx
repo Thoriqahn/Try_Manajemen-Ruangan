@@ -128,20 +128,40 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                            {room.image_url ? <img src={getImageUrl(room.image_url)} alt={room.name} className="w-full h-full object-cover" /> : <MapPin size={18} className="text-gray-400" />}
+                            {room.image_url ? (
+                              <img src={getImageUrl(room.image_url)} alt={room.name} className="w-full h-full object-cover" />
+                            ) : room.room_type === 'digital' ? (
+                              <div className="w-full h-full bg-purple-50 flex items-center justify-center text-purple-600 font-semibold text-sm">Zoom</div>
+                            ) : (
+                              <MapPin size={18} className="text-gray-400" />
+                            )}
                           </div>
                           <div>
                             <div className="text-sm text-gray-800" style={{ fontWeight: 500 }}>{room.name}</div>
-                            <div className="text-xs text-gray-400">{layouts.map(l => l.name).join(", ")}</div>
+                            {room.room_type !== 'digital' && (
+                              <div className="text-xs text-gray-400">{layouts.map(l => l.layout_type || l.name).join(", ")}</div>
+                            )}
                           </div>
                         </div>
                       </td>
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-1 text-sm text-gray-600"><MapPin size={13} className="text-gray-400" /><span>{room.floor_name}</span></div>
-                        <div className="text-xs text-gray-400 mt-0.5">{room.building_name}</div>
+                        {room.room_type === 'digital' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" />
+                            Digital (Zoom)
+                          </span>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-1 text-sm text-gray-600"><MapPin size={13} className="text-gray-400" /><span>{room.floor_name}</span></div>
+                            <div className="text-xs text-gray-400 mt-0.5">{room.building_name}</div>
+                          </>
+                        )}
                       </td>
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-1 text-sm text-gray-600"><Users size={13} className="text-gray-400" /><span>s.d. {maxCap || "–"} orang</span></div>
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <Users size={13} className="text-gray-400" />
+                          <span>{room.room_type === 'digital' ? "100 (Zoom)" : `s.d. ${maxCap || "–"} orang`}</span>
+                        </div>
                       </td>
                       <td className="px-5 py-4">
                         <span className={`px-2 py-0.5 text-xs rounded-full ${room.approval_type === "instant" ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"}`} style={{ fontWeight: 500 }}>
@@ -211,6 +231,7 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
     operational_start: room?.hours_start || "08:00",
     operational_end: room?.hours_end || "17:00",
     admin_id: room?.admin_id || "",
+    room_type: room?.room_type || "physical",
   });
   const [buildings, setBuildings] = useState<any[]>([]);
   const [floors, setFloors] = useState<any[]>([]);
@@ -238,7 +259,7 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!room && photos.length < 3) {
+    if (!room && form.room_type === 'physical' && photos.length < 3) {
       setError("Pilih minimal 3 foto untuk ruangan baru");
       return;
     }
@@ -247,7 +268,12 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
       const payload: any = { ...form };
       if (!form.operational_enabled) { delete payload.operational_start; delete payload.operational_end; }
       delete payload.operational_enabled;
-      payload.layouts = layouts;
+      payload.layouts = form.room_type === 'digital' ? [] : layouts;
+      
+      if (form.room_type === 'digital') {
+        payload.building_id = null;
+        payload.floor_id = null;
+      }
       
       let roomId = room?.id;
       if (roomId) { 
@@ -292,26 +318,54 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-xs text-red-700">{error}</div>}
           <div className="space-y-3">
             <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>1. Informasi Dasar</h4>
+            
+            <div>
+              <label className="block text-sm text-gray-700 mb-2" style={{ fontWeight: 500 }}>Tipe Ruangan <span className="text-red-500">*</span></label>
+              <div className="grid grid-cols-2 gap-2">
+                {[{ value: "physical", label: "Ruangan Fisik", desc: "Ruangan rapat di kantor/gedung" }, { value: "digital", label: "Ruangan Digital (Zoom)", desc: "Ruangan virtual berbasis Zoom" }].map(opt => (
+                  <label key={opt.value} className={`p-3 rounded-lg border cursor-pointer transition-all ${form.room_type === opt.value ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
+                    <input type="radio" value={opt.value} checked={form.room_type === opt.value} onChange={e => setForm({ ...form, room_type: e.target.value })} className="sr-only" />
+                    <div className="text-sm text-gray-700 font-semibold">{opt.label}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Nama Ruangan <span className="text-red-500">*</span></label>
               <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} maxLength={100} required className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Gedung <span className="text-red-500">*</span></label>
-                <select value={form.building_id} onChange={e => setForm({ ...form, building_id: e.target.value, floor_id: "" })} required className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50">
-                  <option value="">Pilih gedung</option>
-                  {buildings.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
+
+            {form.room_type === 'physical' ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Gedung <span className="text-red-500">*</span></label>
+                  <select value={form.building_id} onChange={e => setForm({ ...form, building_id: e.target.value, floor_id: "" })} required className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50">
+                    <option value="">Pilih gedung</option>
+                    {buildings.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Lantai <span className="text-red-500">*</span></label>
+                  <select value={form.floor_id} onChange={e => setForm({ ...form, floor_id: e.target.value })} required disabled={!form.building_id} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 disabled:opacity-50">
+                    <option value="">Pilih lantai</option>
+                    {floors.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Lantai <span className="text-red-500">*</span></label>
-                <select value={form.floor_id} onChange={e => setForm({ ...form, floor_id: e.target.value })} required disabled={!form.building_id} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 disabled:opacity-50">
-                  <option value="">Pilih lantai</option>
-                  {floors.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
-                </select>
+            ) : (
+              <div className="p-4 bg-purple-50 rounded-xl border border-purple-100 flex items-start gap-3">
+                <div className="p-2 bg-purple-100 text-purple-600 rounded-lg font-bold text-xs uppercase flex-shrink-0">Zoom</div>
+                <div>
+                  <h5 className="text-sm font-semibold text-purple-950">Integrasi Virtual Otomatis</h5>
+                  <p className="text-xs text-purple-700 mt-0.5">
+                    Pemesanan untuk ruangan digital ini otomatis dibuatkan link rapat Zoom Premium yang unik dengan kapasitas hingga 100 partisipan dan tanpa batas durasi.
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
+
             {isSuperAdmin && (
               <div>
                 <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Admin Ruangan</label>
@@ -328,35 +382,37 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>2. Tata Letak & Kapasitas</h4>
-            {layouts.map((l, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="flex-1">
-                  <select value={l.type} onChange={e => {
-                    const newL = [...layouts]; newL[i].type = e.target.value; setLayouts(newL);
-                  }} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50">
-                    <option value="Boardroom">Boardroom</option>
-                    <option value="U-Shape">U-Shape</option>
-                    <option value="Classroom">Classroom</option>
-                    <option value="Theater">Theater</option>
-                    <option value="Banquet">Banquet</option>
-                  </select>
+          {form.room_type === 'physical' && (
+            <div className="space-y-3">
+              <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>2. Tata Letak & Kapasitas</h4>
+              {layouts.map((l, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <select value={l.type} onChange={e => {
+                      const newL = [...layouts]; newL[i].type = e.target.value; setLayouts(newL);
+                    }} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50">
+                      <option value="Boardroom">Boardroom</option>
+                      <option value="U-Shape">U-Shape</option>
+                      <option value="Classroom">Classroom</option>
+                      <option value="Theater">Theater</option>
+                      <option value="Banquet">Banquet</option>
+                    </select>
+                  </div>
+                  <div className="w-32">
+                    <input type="number" min={1} value={l.capacity} onChange={e => {
+                      const newL = [...layouts]; newL[i].capacity = parseInt(e.target.value) || 0; setLayouts(newL);
+                    }} placeholder="Kapasitas" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" />
+                  </div>
+                  <button type="button" onClick={() => setLayouts(layouts.filter((_, idx) => idx !== i))} disabled={layouts.length === 1} className="p-2 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-50">
+                    <Trash2 size={16} />
+                  </button>
                 </div>
-                <div className="w-32">
-                  <input type="number" min={1} value={l.capacity} onChange={e => {
-                    const newL = [...layouts]; newL[i].capacity = parseInt(e.target.value) || 0; setLayouts(newL);
-                  }} placeholder="Kapasitas" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" />
-                </div>
-                <button type="button" onClick={() => setLayouts(layouts.filter((_, idx) => idx !== i))} disabled={layouts.length === 1} className="p-2 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-50">
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-            <button type="button" onClick={() => setLayouts([...layouts, { type: "U-Shape", capacity: 10 }])} className="text-sm text-blue-600 font-medium hover:underline flex items-center gap-1 mt-2">
-              <Plus size={14} /> Tambah Layout
-            </button>
-          </div>
+              ))}
+              <button type="button" onClick={() => setLayouts([...layouts, { type: "U-Shape", capacity: 10 }])} className="text-sm text-blue-600 font-medium hover:underline flex items-center gap-1 mt-2">
+                <Plus size={14} /> Tambah Layout
+              </button>
+            </div>
+          )}
 
           <div className="space-y-3">
             <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>3. Kebijakan & Jam Operasional</h4>
@@ -382,7 +438,7 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
                 {[{ value: "instant", label: "Instant Booking", desc: "Langsung terkonfirmasi" }, { value: "manual", label: "Butuh Approval", desc: "Perlu validasi Admin" }].map(opt => (
                   <label key={opt.value} className={`p-3 rounded-lg border cursor-pointer transition-all ${form.approval_type === opt.value ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
                     <input type="radio" value={opt.value} checked={form.approval_type === opt.value} onChange={e => setForm({ ...form, approval_type: e.target.value })} className="sr-only" />
-                    <div className="text-sm text-gray-700" style={{ fontWeight: 500 }}>{opt.label}</div>
+                    <div className="text-sm text-gray-700 font-semibold">{opt.label}</div>
                     <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
                   </label>
                 ))}
@@ -394,7 +450,7 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
                 {[{ value: "active", label: "Aktif", desc: "Langsung tayang di kalender" }, { value: "inactive", label: "Draft", desc: "Disembunyikan dari booking" }].map(opt => (
                   <label key={opt.value} className={`p-3 rounded-lg border cursor-pointer transition-all ${form.status === opt.value ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
                     <input type="radio" value={opt.value} checked={form.status === opt.value} onChange={e => setForm({ ...form, status: e.target.value })} className="sr-only" />
-                    <div className="text-sm text-gray-700" style={{ fontWeight: 500 }}>{opt.label}</div>
+                    <div className="text-sm text-gray-700 font-semibold">{opt.label}</div>
                     <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
                   </label>
                 ))}
@@ -405,7 +461,9 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
           <div className="space-y-3">
             <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>4. Foto Ruangan</h4>
             <div>
-              <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Upload Foto (Min. 3, Maks. 10) {(!room) && <span className="text-red-500">*</span>}</label>
+              <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>
+                Upload Foto {form.room_type === 'physical' ? "(Min. 3, Maks. 10)" : "(Opsional, Maks. 10)"} {!room && form.room_type === 'physical' && <span className="text-red-500">*</span>}
+              </label>
               <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
                 <input type="file" multiple accept="image/*" onChange={(e) => {
                   const files = Array.from(e.target.files || []);
@@ -433,13 +491,13 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
                   ))}
                 </div>
               )}
-              {!room && photos.length > 0 && photos.length < 3 && <p className="text-xs text-red-500 mt-2">Pilih minimal {3 - photos.length} foto lagi</p>}
+              {!room && form.room_type === 'physical' && photos.length > 0 && photos.length < 3 && <p className="text-xs text-red-500 mt-2">Pilih minimal {3 - photos.length} foto lagi</p>}
             </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="px-6 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Batal</button>
-            <button type="submit" disabled={!form.name || !form.building_id || !form.floor_id || loading}
+            <button type="submit" disabled={!form.name || (form.room_type === 'physical' && (!form.building_id || !form.floor_id)) || loading}
               className="px-6 py-2.5 bg-[#1E3A5F] text-white rounded-lg text-sm hover:bg-[#0F2144] disabled:opacity-50 flex items-center gap-2">
               {loading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Menyimpan...</> : "Simpan Ruangan"}
             </button>

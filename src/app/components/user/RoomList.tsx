@@ -168,6 +168,11 @@ export function RoomList({ onNavigate }: RoomListProps) {
               <div className="relative h-44 bg-gray-100 overflow-hidden">
                 {room.image_url ? (
                   <img src={getImageUrl(room.image_url)} alt={room.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                ) : room.room_type === 'digital' ? (
+                  <div className="w-full h-full bg-gradient-to-br from-purple-500 to-indigo-600 flex flex-col items-center justify-center gap-2">
+                    <span className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">Zoom</span>
+                    <div className="text-white text-xs font-bold tracking-widest opacity-80 uppercase">Zoom Digital Room</div>
+                  </div>
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
                     <Monitor size={40} className="text-blue-300" />
@@ -186,32 +191,60 @@ export function RoomList({ onNavigate }: RoomListProps) {
               <div className="p-4">
                 <h3 className="text-gray-800 truncate mb-1" style={{ fontWeight: 600, fontSize: "0.9rem" }}>{room.name}</h3>
                 <div className="flex items-center gap-1 text-gray-400 text-xs mb-3">
-                  <MapPin size={12} />
-                  <span className="truncate">{room.floor_name} · {room.building_name}</span>
-                </div>
-
-                <div className="flex gap-3 text-xs text-gray-500 mb-3">
-                  <div className="flex items-center gap-1">
-                    <Users size={12} className="text-blue-400" />
-                    <span>s.d. {getMaxCapacity(room)} org</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Monitor size={12} className="text-purple-400" />
-                    <span>{room.layouts?.length || 0} layout</span>
-                  </div>
-                  {hasVc(room) && (
-                    <div className="flex items-center gap-1">
-                      <Wifi size={12} className="text-green-400" />
-                      <span>VC Ready</span>
-                    </div>
+                  {room.room_type === 'digital' ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-600 font-semibold border border-purple-100 text-[10px]">
+                      Virtual Meeting
+                    </span>
+                  ) : (
+                    <>
+                      <MapPin size={12} />
+                      <span className="truncate">{room.floor_name} · {room.building_name}</span>
+                    </>
                   )}
                 </div>
 
-                <div className="flex flex-wrap gap-1">
-                  {room.layouts?.slice(0, 3).map((l: any) => (
-                    <span key={l.id} className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">{l.layout_type}</span>
-                  ))}
-                </div>
+                {room.room_type === 'digital' ? (
+                  <div className="flex gap-3 text-xs text-gray-500 mb-3">
+                    <div className="flex items-center gap-1">
+                      <Users size={12} className="text-purple-400" />
+                      <span>s.d. 100 partisipan</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Monitor size={12} className="text-indigo-400" />
+                      <span>Sesi Virtual</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-3 text-xs text-gray-500 mb-3">
+                    <div className="flex items-center gap-1">
+                      <Users size={12} className="text-blue-400" />
+                      <span>s.d. {getMaxCapacity(room)} org</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Monitor size={12} className="text-purple-400" />
+                      <span>{room.layouts?.length || 0} layout</span>
+                    </div>
+                    {hasVc(room) && (
+                      <div className="flex items-center gap-1">
+                        <Wifi size={12} className="text-green-400" />
+                        <span>VC Ready</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {room.room_type === 'digital' ? (
+                  <div className="flex flex-wrap gap-1">
+                    <span className="px-2 py-0.5 bg-purple-50 text-purple-600 text-[10px] rounded-full border border-purple-100">Zoom Premium</span>
+                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] rounded-full border border-indigo-100">Auto Meeting Link</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {room.layouts?.slice(0, 3).map((l: any) => (
+                      <span key={l.id} className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">{l.layout_type}</span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">

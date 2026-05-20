@@ -16,6 +16,7 @@ import { BuildingManagement } from "./components/superadmin/BuildingManagement";
 import { GlobalPolicy } from "./components/superadmin/GlobalPolicy";
 import { ApiMonitoring } from "./components/superadmin/ApiMonitoring";
 import { AuditTrail } from "./components/superadmin/AuditTrail";
+import { ZoomManagement } from "./components/superadmin/ZoomManagement";
 import { authService } from "./services/authService";
 import { TokenStore, UserStore } from "./services/apiClient";
 import { Toaster } from "./components/ui/sonner";
@@ -24,7 +25,7 @@ type Page =
   | "login" | "register" | "forgot-password"
   | "calendar" | "rooms" | "room-detail" | "my-bookings"
   | "admin-dashboard" | "admin-approval" | "admin-schedule" | "admin-rooms"
-  | "sa-buildings" | "sa-rooms" | "sa-users" | "sa-policy" | "sa-api" | "sa-audit";
+  | "sa-buildings" | "sa-rooms" | "sa-users" | "sa-policy" | "sa-api" | "sa-audit" | "sa-zoom";
 
 type Role = "user" | "admin" | "superadmin";
 
@@ -55,6 +56,7 @@ const pageTitles: Record<string, { title: string; subtitle?: string }> = {
   "sa-policy": { title: "Kebijakan Global", subtitle: "Atur batasan dan blackout dates sistem" },
   "sa-api": { title: "Integrasi & API", subtitle: "Pantau trafik dan kelola token akses" },
   "sa-audit": { title: "Riwayat Aktivitas", subtitle: "Audit trail yang immutable" },
+  "sa-zoom": { title: "Integrasi Zoom", subtitle: "Konfigurasi OAuth dan kelola pool akun Zoom" },
 };
 
 const defaultPage: Record<Role, Page> = {
@@ -162,6 +164,8 @@ export default function App() {
         return <ApiMonitoring />;
       case "sa-audit":
         return <AuditTrail />;
+      case "sa-zoom":
+        return <ZoomManagement />;
 
       default:
         return <CalendarView onNavigate={handleNavigate} userRole={role} />;

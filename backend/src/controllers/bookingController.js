@@ -148,17 +148,18 @@ const createBooking = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Data booking tidak lengkap' });
     if (start_time >= end_time)
       return res.status(400).json({ success: false, message: 'Jam mulai harus sebelum jam selesai' });
-    if (!['offline', 'online', 'hybrid'].includes(meeting_type))
-      return res.status(400).json({ success: false, message: 'Tipe meeting tidak valid (offline/online/hybrid)' });
 
-    // For offline and hybrid, room is required
-    if (meeting_type !== 'online' && !room_id)
-      return res.status(400).json({ success: false, message: 'Ruangan wajib dipilih untuk tipe offline/hybrid' });
-
+    let activeMeetingType = meeting_type;
     let room = null;
     if (room_id) {
       room = await dbGet('SELECT * FROM rooms WHERE id=$1 AND status=$2 AND deleted_at IS NULL', [room_id, 'active']);
       if (!room) return res.status(404).json({ success: false, message: 'Ruangan tidak ditemukan atau tidak aktif' });
+
+      if (room.room_type === 'digital') {
+        activeMeetingType = 'online';
+      } else if (room.room_type === 'hybrid') {
+        activeMeetingType = 'hybrid';
+      }
 
       // Operational hours check
       if (room.restrict_hours) {
@@ -166,6 +167,13 @@ const createBooking = async (req, res, next) => {
           return res.status(400).json({ success: false, message: `Jam pemesanan di luar jam operasional ruangan (${room.hours_start} - ${room.hours_end})` });
       }
     }
+
+    if (!['offline', 'online', 'hybrid'].includes(activeMeetingType))
+      return res.status(400).json({ success: false, message: 'Tipe meeting tidak valid (offline/online/hybrid)' });
+
+    // For offline and hybrid, room is required
+    if (activeMeetingType !== 'online' && !room_id)
+      return res.status(400).json({ success: false, message: 'Ruangan wajib dipilih untuk tipe offline/hybrid' });
 
     // Policy check
     const policyError = await checkPolicy(date, start_time, end_time, req.user.role);
@@ -185,7 +193,7 @@ const createBooking = async (req, res, next) => {
 
     // Zoom meeting creation for online/hybrid
     let zoomData = { zoom_meeting_id: null, zoom_join_url: null, zoom_passcode: null, zoom_host_email: null };
-    if (meeting_type === 'online' || meeting_type === 'hybrid') {
+    if (activeMeetingType === 'online' || activeMeetingType === 'hybrid') {
       const zoomAccount = await findAvailableZoomAccount(date, start_time, end_time, client);
       if (!zoomAccount) {
         await client.query('ROLLBACK');
@@ -225,7 +233,7 @@ const createBooking = async (req, res, next) => {
       `INSERT INTO bookings (id, room_id, user_id, date, start_time, end_time, agenda, participants, status, surat_terkait, meeting_type, zoom_meeting_id, zoom_join_url, zoom_passcode, zoom_host_email)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
       [bookingId, room_id || null, req.user.id, date, start_time, end_time, agenda, participants || 1, bookingStatus,
-       surat_terkait || null, meeting_type, zoomData.zoom_meeting_id, zoomData.zoom_join_url, zoomData.zoom_passcode, zoomData.zoom_host_email]
+       surat_terkait || null, activeMeetingType, zoomData.zoom_meeting_id, zoomData.zoom_join_url, zoomData.zoom_passcode, zoomData.zoom_host_email]
     );
 
     // Log zoom meeting creation in zoom_meeting_logs
@@ -244,7 +252,7 @@ const createBooking = async (req, res, next) => {
     await audit({
       actorId: req.user.id, actorName: `${req.user.name} (${req.user.role})`,
       action: 'CREATE_BOOKING', resource: `${room ? room.name : 'Online Meeting'} @ ${date} ${start_time}-${end_time}`, ip: req.ip,
-      after: { bookingId, status: bookingStatus, agenda, meeting_type, surat_terkait }
+      after: { bookingId, status: bookingStatus, agenda, meeting_type: activeMeetingType, surat_terkait }
     });
 
     const booking = await dbGet('SELECT * FROM bookings WHERE id=$1', [bookingId]);

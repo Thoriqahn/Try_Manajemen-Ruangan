@@ -1,5 +1,7 @@
 import { api } from './apiClient';
 
+export type MeetingType = 'offline' | 'online' | 'hybrid';
+
 export interface Booking {
   id: string;
   room_id: string;
@@ -18,15 +20,24 @@ export interface Booking {
   cancel_reason?: string;
   created_at?: number;
   admin_names?: string;
+  // New fields
+  surat_terkait?: string;
+  meeting_type?: MeetingType;
+  zoom_meeting_id?: string;
+  zoom_join_url?: string;
+  zoom_passcode?: string;
+  zoom_host_email?: string;
 }
 
 export interface CreateBookingPayload {
-  room_id: string;
+  room_id?: string;
   date: string;
   start_time: string;
   end_time: string;
   agenda: string;
   participants?: number;
+  surat_terkait?: string;
+  meeting_type?: MeetingType;
 }
 
 export interface BookingFilter {
@@ -43,7 +54,7 @@ export const bookingService = {
   async list(filters?: BookingFilter) {
     const params = new URLSearchParams();
     if (filters) {
-      Object.entries(filters).forEach(([k, v]) => { if (v) params.append(k, v); });
+      Object.entries(filters).forEach(([k, v]) => { if (v) params.append(k, String(v)); });
     }
     return api.get<Booking[]>(`/bookings?${params}`);
   },
@@ -52,7 +63,7 @@ export const bookingService = {
     return api.get<Booking>(`/bookings/${id}`);
   },
 
-  async create(data: CreateBookingPayload) {
+  async create(data: CreateBookingPayload & Record<string, any>) {
     return api.post<Booking>('/bookings', data);
   },
 

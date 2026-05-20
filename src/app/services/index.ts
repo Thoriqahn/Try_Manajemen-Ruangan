@@ -1,4 +1,5 @@
 import { api } from './apiClient';
+export { zoomService } from './zoomService';
 
 export const buildingService = {
   async list() {

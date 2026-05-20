@@ -88,34 +88,49 @@ const getRoom = async (req, res, next) => {
 const createRoom = async (req, res, next) => {
   try {
     const { name, building_id, floor_id, admin_id, description, status = 'active', approval_type = 'instant',
-      restrict_hours = false, hours_start, hours_end, layouts = [], facilities = [] } = req.body;
+      restrict_hours = false, hours_start, hours_end, layouts = [], facilities = [], room_type = 'physical' } = req.body;
 
-    if (!name || !building_id || !floor_id) {
-      return res.status(400).json({ success: false, message: 'Nama ruangan, gedung, dan lantai wajib diisi' });
-    }
-    if (layouts.length === 0) {
-      return res.status(400).json({ success: false, message: 'Minimal 1 layout harus dipilih' });
+    if (room_type === 'physical' || room_type === 'hybrid') {
+      if (!name || !building_id || !floor_id) {
+        return res.status(400).json({ success: false, message: 'Nama ruangan, gedung, dan lantai wajib diisi' });
+      }
+      if (layouts.length === 0) {
+        return res.status(400).json({ success: false, message: 'Minimal 1 layout harus dipilih' });
+      }
+    } else {
+      if (!name) {
+        return res.status(400).json({ success: false, message: 'Nama ruangan digital wajib diisi' });
+      }
     }
 
     // Duplicate check
-    const dup = await dbGet('SELECT id FROM rooms WHERE name=$1 AND building_id=$2 AND floor_id=$3 AND deleted_at IS NULL', [name, building_id, floor_id]);
-    if (dup) return res.status(409).json({ success: false, message: 'Nama ruangan sudah ada di lantai/gedung ini' });
+    let dup = null;
+    if (room_type === 'physical' || room_type === 'hybrid') {
+      dup = await dbGet('SELECT id FROM rooms WHERE name=$1 AND building_id=$2 AND floor_id=$3 AND deleted_at IS NULL', [name, building_id, floor_id]);
+    } else {
+      dup = await dbGet('SELECT id FROM rooms WHERE name=$1 AND room_type=$2 AND deleted_at IS NULL', [name, 'digital']);
+    }
+    if (dup) return res.status(409).json({ success: false, message: 'Nama ruangan sudah ada' });
 
     const roomId = uuidv4();
     const effectiveAdminId = req.user.role === 'superadmin' ? (admin_id || null) : req.user.id;
 
     await dbRun(
-      `INSERT INTO rooms (id, name, building_id, floor_id, admin_id, description, status, approval_type, restrict_hours, hours_start, hours_end, image_url)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-      [roomId, name, building_id, floor_id, effectiveAdminId, description || null, status, approval_type,
+      `INSERT INTO rooms (id, name, building_id, floor_id, admin_id, description, status, approval_type, restrict_hours, hours_start, hours_end, image_url, room_type)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+      [roomId, name, room_type === 'digital' ? null : building_id, room_type === 'digital' ? null : floor_id, effectiveAdminId, description || null, status, approval_type,
        restrict_hours ? true : false, restrict_hours ? hours_start : null, restrict_hours ? hours_end : null,
-       req.body.image_url || null]
+       req.body.image_url || null, room_type]
     );
 
     // Insert layouts
-    for (const layout of layouts) {
+    const finalLayouts = room_type === 'digital' && layouts.length === 0 
+      ? [{ type: 'Virtual (Zoom)', capacity: 100 }]
+      : layouts;
+
+    for (const layout of finalLayouts) {
       await dbRun(`INSERT INTO room_layouts (id, room_id, layout_type, capacity) VALUES ($1,$2,$3,$4)`,
-        [uuidv4(), roomId, layout.type, layout.capacity]);
+        [uuidv4(), roomId, layout.type || layout.layout_type, layout.capacity]);
     }
 
     // Insert facilities
@@ -153,21 +168,27 @@ const updateRoom = async (req, res, next) => {
     }
 
     const { name, building_id, floor_id, admin_id, description, status, approval_type,
-      restrict_hours, hours_start, hours_end, layouts, facilities, image_url } = req.body;
+      restrict_hours, hours_start, hours_end, layouts, facilities, image_url, room_type } = req.body;
 
     const before = { ...room };
+    const isDigital = (room_type || room.room_type) === 'digital';
 
     if (name && name !== room.name) {
-      const bId = building_id || room.building_id;
-      const fId = floor_id || room.floor_id;
-      const dup = await dbGet('SELECT id FROM rooms WHERE name=$1 AND building_id=$2 AND floor_id=$3 AND id!=$4 AND deleted_at IS NULL', [name, bId, fId, id]);
-      if (dup) return res.status(409).json({ success: false, message: 'Nama ruangan sudah ada di lantai/gedung ini' });
+      let dup = null;
+      if (isDigital) {
+        dup = await dbGet('SELECT id FROM rooms WHERE name=$1 AND room_type=$2 AND id!=$3 AND deleted_at IS NULL', [name, 'digital', id]);
+      } else {
+        const bId = building_id || room.building_id;
+        const fId = floor_id || room.floor_id;
+        dup = await dbGet('SELECT id FROM rooms WHERE name=$1 AND building_id=$2 AND floor_id=$3 AND id!=$4 AND deleted_at IS NULL', [name, bId, fId, id]);
+      }
+      if (dup) return res.status(409).json({ success: false, message: 'Nama ruangan sudah digunakan' });
     }
 
     await dbRun(`UPDATE rooms SET
       name = COALESCE($1, name),
-      building_id = COALESCE($2, building_id),
-      floor_id = COALESCE($3, floor_id),
+      building_id = $2,
+      floor_id = $3,
       admin_id = COALESCE($4, admin_id),
       description = COALESCE($5, description),
       status = COALESCE($6, status),
@@ -175,16 +196,17 @@ const updateRoom = async (req, res, next) => {
       restrict_hours = COALESCE($8, restrict_hours),
       hours_start = $9,
       hours_end = $10,
-      image_url = COALESCE($11, image_url)
-      WHERE id = $12`,
-      [name||null, building_id||null, floor_id||null,
+      image_url = COALESCE($11, image_url),
+      room_type = COALESCE($12, room_type)
+      WHERE id = $13`,
+      [name||null, isDigital ? null : (building_id || room.building_id), isDigital ? null : (floor_id || room.floor_id),
        req.user.role==='superadmin' ? (admin_id||null) : null,
        description!==undefined ? description : null,
        status||null, approval_type||null,
        restrict_hours!==undefined ? (restrict_hours?true:false) : null,
        restrict_hours ? (hours_start||null) : null,
        restrict_hours ? (hours_end||null) : null,
-       image_url||null, id]
+       image_url||null, room_type||null, id]
     );
 
     if (req.user.role === 'superadmin' && admin_id) {
@@ -197,7 +219,7 @@ const updateRoom = async (req, res, next) => {
       await dbRun('UPDATE room_layouts SET deleted_at=NOW() WHERE room_id=$1 AND deleted_at IS NULL', [id]);
       for (const l of layouts) {
         await dbRun(`INSERT INTO room_layouts (id, room_id, layout_type, capacity) VALUES ($1,$2,$3,$4)`,
-          [uuidv4(), id, l.type, l.capacity]);
+          [uuidv4(), id, l.type || l.layout_type, l.capacity]);
       }
     }
 

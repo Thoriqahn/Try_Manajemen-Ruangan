@@ -3,6 +3,7 @@ import { api } from './apiClient';
 export interface Room {
   id: string;
   name: string;
+  room_type?: 'physical' | 'digital' | 'hybrid';
   building_id: string;
   floor_id: string;
   admin_id?: string;

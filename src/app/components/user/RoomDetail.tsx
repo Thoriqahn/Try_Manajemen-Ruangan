@@ -259,7 +259,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
           <h1 className="text-white" style={{ fontWeight: 700, fontSize: "1.4rem" }}>{room.name}</h1>
           <div className="flex items-center gap-2 mt-1.5">
             <MapPin size={14} className="text-white/80" />
-            <span className="text-white/90 text-sm">{room.floor_name} · {room.building_name}</span>
+            <span className="text-white/90 text-sm">{room.room_type === 'digital' ? "Virtual Rapat · Zoom" : `${room.floor_name} · ${room.building_name}`}</span>
             <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${room.status === "active" ? "bg-green-500/90 text-white" : "bg-gray-500/90 text-white"}`} style={{ fontWeight: 500 }}>
               {room.status === "active" ? "Aktif" : "Nonaktif"}
             </span>
@@ -270,10 +270,10 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
       {/* Quick stats */}
       <div className="bg-white border-b border-gray-200 px-6 py-1 grid grid-cols-2 sm:grid-cols-4 gap-4 flex-shrink-0 items-center">
         {[
-          { icon: <Users size={18} className="text-blue-500" />, label: "Kapasitas", value: layouts.length > 0 ? `s.d. ${Math.max(...layouts.map((l: any) => l.capacity || 0))} orang` : "–" },
+          { icon: <Users size={18} className="text-blue-500" />, label: "Kapasitas", value: room.room_type === 'digital' ? "s.d. 100 orang" : layouts.length > 0 ? `s.d. ${Math.max(...layouts.map((l: any) => l.capacity || 0))} orang` : "–" },
           { icon: <Clock size={18} className="text-purple-500" />, label: "Operasional", value: room.operational_start ? `${room.operational_start} – ${room.operational_end}` : "24 Jam" },
           { icon: <Calendar size={18} className="text-green-500" />, label: "Sistem Booking", value: room.approval_type === "instant" ? "Instan" : "Perlu Approval" },
-          { icon: <Monitor size={18} className="text-orange-500" />, label: "Layout", value: `${layouts.length} tipe` },
+          { icon: <Monitor size={18} className="text-orange-500" />, label: room.room_type === 'digital' ? "Platform" : "Layout", value: room.room_type === 'digital' ? "Zoom Premium" : `${layouts.length} tipe` },
         ].map((s, i) => (
           <div key={i} className="flex items-center gap-3 py-1">
             <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100">{s.icon}</div>
@@ -317,6 +317,18 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                     </div>
                   ))}
                 </div>
+              ) : room.room_type === 'digital' ? (
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-4 text-left">
+                  <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center flex-shrink-0 text-purple-600 font-bold text-sm border border-purple-100">
+                    Zoom
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-purple-950">Ruangan Rapat Digital Premium</h4>
+                    <p className="text-xs text-purple-700 mt-1 leading-relaxed">
+                      Ruangan rapat virtual didukung oleh lisensi Zoom Premium. Seluruh tautan rapat dibuat secara unik, aman dengan passcode, dan mendukung kualitas audio-video definisi tinggi (HD).
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <div className="bg-gray-50 border border-gray-100 rounded-lg p-6 flex flex-col items-center justify-center text-center">
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
@@ -335,21 +347,40 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                   <p className="text-sm text-gray-500 leading-relaxed">{room.description}</p>
                 </div>
               )}
-              {layouts.length > 0 && (
+              {room.room_type === 'digital' ? (
                 <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1">
-                  <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Layout & Kapasitas</h3>
+                  <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Spesifikasi Virtual</h3>
                   <div className="space-y-2">
-                    {layouts.map((l: any) => (
-                      <div key={l.id || l.layout_type} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                        <span className="text-sm text-gray-600">{l.layout_type}</span>
-                        <span className="text-sm" style={{ fontWeight: 500 }}>{l.capacity} orang</span>
+                    {[
+                      { label: "Kapasitas Rapat", val: "Maksimal 100 Partisipan" },
+                      { label: "Batas Durasi", val: "Tanpa Batas (Unlimited)" },
+                      { label: "Metode Enkripsi", val: "AES-256 GCM" },
+                      { label: "Fitur Rapat", val: "Breakout Rooms, Screen Share, Cloud Recording" }
+                    ].map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                        <span className="text-sm text-gray-600">{item.label}</span>
+                        <span className="text-sm text-[#1E3A5F]" style={{ fontWeight: 600 }}>{item.val}</span>
                       </div>
                     ))}
                   </div>
                 </div>
+              ) : (
+                layouts.length > 0 && (
+                  <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1">
+                    <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Layout & Kapasitas</h3>
+                    <div className="space-y-2">
+                      {layouts.map((l: any) => (
+                        <div key={l.id || l.layout_type} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                          <span className="text-sm text-gray-600">{l.layout_type}</span>
+                          <span className="text-sm" style={{ fontWeight: 500 }}>{l.capacity} orang</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
               )}
             </div>
-            {Object.keys(facilities).length > 0 && (
+            {room.room_type !== 'digital' && Object.keys(facilities).length > 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Fasilitas</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -579,6 +610,8 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
     participants: "",
     layout: "",
     notes: "",
+    meetingType: (room.room_type === "digital" ? "online" : "offline") as "offline" | "online" | "hybrid",
+    suratTerkait: "",
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -592,10 +625,13 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
     setLoading(true); setError("");
     try {
       await bookingService.create({
-        room_id: room.id, date: form.date,
+        room_id: (form.meetingType === "online" && room.room_type !== "digital") ? undefined : room.id,
+        date: form.date,
         start_time: form.startTime, end_time: form.endTime,
         agenda: form.agenda, participants: Number(form.participants) || 1,
         layout: form.layout, notes: form.notes,
+        meeting_type: form.meetingType,
+        surat_terkait: form.suratTerkait || undefined,
       });
       setSuccess(true);
     } catch (e: any) {
@@ -616,24 +652,83 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
           <h3 className="text-gray-800 mb-2" style={{ fontWeight: 700 }}>
             {room.approval_type === "instant" ? "Booking Berhasil!" : "Permohonan Terkirim!"}
           </h3>
-          <p className="text-sm text-gray-500 mb-6">
+          <p className="text-sm text-gray-500 mb-2">
             {room.approval_type === "instant" ? "Booking Anda telah dikonfirmasi." : "Menunggu persetujuan Admin."}
           </p>
+          {(form.meetingType === "online" || form.meetingType === "hybrid") && (
+            <p className="text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2 mb-4">
+              🔗 Link Zoom akan tersedia setelah booking disetujui. Cek halaman "Booking Saya".
+            </p>
+          )}
           <button onClick={onConfirm} className="w-full py-3 bg-[#1E3A5F] text-white rounded-xl text-sm">Tutup</button>
         </div>
       </div>
     );
   }
 
+  const meetingTypeOptions = [
+    { value: "offline", label: "Offline (Tatap Muka)", icon: "🏢", desc: "Rapat di ruangan fisik" },
+    { value: "online", label: "Online (Virtual)", icon: "💻", desc: "Rapat via Zoom" },
+    { value: "hybrid", label: "Hybrid", icon: "🔄", desc: "Ruangan fisik + Link Zoom" },
+  ];
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
-        <div className="p-6 border-b border-gray-100">
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="p-6 border-b border-gray-100 flex-shrink-0">
           <h3 className="text-gray-800" style={{ fontWeight: 600 }}>Booking Ruangan</h3>
           <p className="text-sm text-gray-500 mt-0.5">{room.name}</p>
         </div>
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 overflow-y-auto flex-1">
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-xs text-red-700">{error}</div>}
+
+          {/* Meeting Type Selector */}
+          {room.room_type === "digital" ? (
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-start gap-3">
+              <span className="text-2xl mt-0.5">💻</span>
+              <div>
+                <div className="text-sm font-semibold text-purple-900">Ruangan Rapat Digital (Zoom)</div>
+                <p className="text-xs text-purple-700 mt-0.5">
+                  Tipe rapat otomatis dikonfigurasi secara <strong>Online</strong>. Link Zoom Premium yang unik akan dibuat secara otomatis setelah pemesanan disetujui.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-sm text-gray-700 mb-2" style={{ fontWeight: 500 }}>Tipe Rapat <span className="text-red-500">*</span></label>
+                <div className="grid grid-cols-3 gap-2">
+                  {meetingTypeOptions.map(opt => (
+                    <button key={opt.value} type="button"
+                      onClick={() => setForm({ ...form, meetingType: opt.value as any })}
+                      className={`p-3 rounded-xl border-2 text-center transition-all ${
+                        form.meetingType === opt.value
+                          ? "border-[#1E3A5F] bg-[#1E3A5F]/5 shadow-sm"
+                          : "border-gray-200 hover:border-gray-300 bg-white"
+                      }`}
+                    >
+                      <div className="text-xl mb-1">{opt.icon}</div>
+                      <div className="text-xs text-gray-700" style={{ fontWeight: form.meetingType === opt.value ? 600 : 400 }}>{opt.label}</div>
+                      <div className="text-[10px] text-gray-400 mt-0.5">{opt.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {form.meetingType === "online" && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-xs text-blue-700">
+                  💻 Rapat online tidak memerlukan ruangan fisik. Link Zoom akan dibuat otomatis setelah booking disetujui.
+                </div>
+              )}
+
+              {form.meetingType === "hybrid" && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2.5 text-xs text-purple-700">
+                  🔄 Rapat hybrid menggunakan ruangan <strong>{room.name}</strong> + Link Zoom otomatis.
+                </div>
+              )}
+            </>
+          )}
+
           <div>
             <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Tanggal <span className="text-red-500">*</span></label>
             <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
@@ -669,13 +764,29 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
               placeholder="Jumlah peserta" min={1}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" />
           </div>
+
+          {/* Surat Terkait (optional) */}
+          <div>
+            <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>
+              Surat Terkait <span className="text-gray-400 text-xs font-normal">(opsional)</span>
+            </label>
+            <textarea
+              value={form.suratTerkait}
+              onChange={e => setForm({ ...form, suratTerkait: e.target.value })}
+              placeholder="Contoh: SE-001/OTK/2025 — Rapat Koordinasi Antar Divisi. Cantumkan nomor surat atau keterangan urgensi jika diperlukan."
+              rows={2}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 resize-none"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">Cantumkan nomor surat edaran, memo, atau referensi terkait untuk mendukung urgensi peminjaman.</p>
+          </div>
+
           {room.approval_type === "manual" && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-700">
               ⚠️ Ruangan ini memerlukan persetujuan manual dari Admin Ruangan.
             </div>
           )}
         </div>
-        <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
+        <div className="p-6 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
           <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Batal</button>
           <button onClick={handleSubmit} disabled={!form.agenda || !form.startTime || !form.endTime || loading}
             className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${form.agenda && form.startTime && form.endTime && !loading ? "bg-[#1E3A5F] text-white hover:bg-[#0F2144]" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}>
@@ -686,3 +797,4 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
     </div>
   );
 }
+

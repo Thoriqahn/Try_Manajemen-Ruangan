@@ -57,9 +57,19 @@ async function initSchema() {
     hours_start TEXT,
     hours_end TEXT,
     image_url TEXT,
+    room_type TEXT NOT NULL DEFAULT 'physical' CHECK(room_type IN ('physical','digital','hybrid')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     deleted_at TIMESTAMPTZ DEFAULT NULL
   )`);
+
+  // Migrate existing rooms table if room_type is not present, and update check constraint
+  try {
+    await dbRun(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS room_type TEXT NOT NULL DEFAULT 'physical'`);
+    await dbRun(`ALTER TABLE rooms DROP CONSTRAINT IF EXISTS rooms_room_type_check`);
+    await dbRun(`ALTER TABLE rooms ADD CONSTRAINT rooms_room_type_check CHECK (room_type IN ('physical','digital','hybrid'))`);
+  } catch (err) {
+    console.log('Migration info (rooms.room_type):', err.message);
+  }
 
   await dbRun(`CREATE TABLE IF NOT EXISTS room_photos (
     id TEXT PRIMARY KEY,

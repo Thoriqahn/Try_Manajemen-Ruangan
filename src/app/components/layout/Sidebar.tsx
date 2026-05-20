@@ -1,4 +1,4 @@
-import { Building2, Calendar, LayoutGrid, BookOpen, CheckSquare, Clock, Settings, Users, Globe, ShieldCheck, Activity, BarChart2, LogOut, ChevronDown, ChevronRight } from "lucide-react";
+import { Building2, Calendar, LayoutGrid, BookOpen, CheckSquare, Clock, Settings, Users, Globe, ShieldCheck, Activity, BarChart2, LogOut, ChevronDown, ChevronRight, Video } from "lucide-react";
 import { useState } from "react";
 
 interface SidebarProps {
@@ -55,6 +55,7 @@ export function Sidebar({ role, currentPage, onNavigate, onLogout, collapsed = f
       { icon: <Users size={18} />, label: "Manajemen Pengguna", page: "sa-users" },
       { icon: <ShieldCheck size={18} />, label: "Kebijakan Global", page: "sa-policy" },
       { icon: <Activity size={18} />, label: "Integrasi & API", page: "sa-api" },
+      { icon: <Video size={18} />, label: "Integrasi Zoom", page: "sa-zoom" },
       { icon: <Clock size={18} />, label: "Riwayat Aktivitas", page: "sa-audit" },
     ],
   };
