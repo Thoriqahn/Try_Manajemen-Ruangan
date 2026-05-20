@@ -90,6 +90,7 @@ app.use('/api/policy', require('./routes/policy'));
 app.use('/api/tokens', require('./routes/tokens'));
 app.use('/api/audit', require('./routes/audit'));
 app.use('/api/stats', require('./routes/stats'));
+app.use('/api/zoom', require('./routes/zoom'));
 
 // ─── Health Check ────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

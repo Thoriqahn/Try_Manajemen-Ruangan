@@ -1,50 +1,68 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 require('dotenv').config();
 
-const DB_PATH = process.env.DB_PATH || './menara.db';
-const dbDir = path.dirname(path.resolve(DB_PATH));
-if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
-
-const db = new sqlite3.Database(path.resolve(DB_PATH), (err) => {
-  if (err) {
-    console.error('❌ Database connection failed:', err.message);
-    process.exit(1);
-  }
-  console.log('✅ Connected to SQLite database:', path.resolve(DB_PATH));
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME || 'menara_db',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
 });
 
-// Enable WAL mode and foreign keys, and set busy timeout for concurrency
-db.serialize(() => {
-  db.run('PRAGMA journal_mode = WAL');
-  db.run('PRAGMA foreign_keys = ON');
-  db.run('PRAGMA busy_timeout = 5000');
+pool.on('connect', () => {
+  console.log('✅ Connected to PostgreSQL database');
 });
 
-// Promisified helpers
-const dbRun = (sql, params = []) =>
-  new Promise((resolve, reject) => {
-    db.run(sql, params, function (err) {
-      if (err) reject(err);
-      else resolve({ lastID: this.lastID, changes: this.changes });
-    });
-  });
+pool.on('error', (err) => {
+  console.error('❌ PostgreSQL pool error:', err.message);
+});
 
-const dbGet = (sql, params = []) =>
-  new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
+// Promisified helpers matching the old sqlite interface
+// NOTE: SQL must use $1, $2, ... parameter placeholders (not ?)
 
-const dbAll = (sql, params = []) =>
-  new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
+/**
+ * Execute a query that modifies data (INSERT, UPDATE, DELETE).
+ * Returns { rows, rowCount }.
+ */
+const dbRun = async (sql, params = []) => {
+  const result = await pool.query(sql, params);
+  return { rows: result.rows, rowCount: result.rowCount };
+};
 
-module.exports = { db, dbRun, dbGet, dbAll };
+/**
+ * Execute a query and return the first row, or undefined.
+ */
+const dbGet = async (sql, params = []) => {
+  const result = await pool.query(sql, params);
+  return result.rows[0] || null;
+};
+
+/**
+ * Execute a query and return all rows.
+ */
+const dbAll = async (sql, params = []) => {
+  const result = await pool.query(sql, params);
+  return result.rows;
+};
+
+/**
+ * Get a client from the pool for transaction support.
+ * Usage:
+ *   const client = await getClient();
+ *   try {
+ *     await client.query('BEGIN');
+ *     await client.query('INSERT ...', [...]);
+ *     await client.query('COMMIT');
+ *   } catch (e) {
+ *     await client.query('ROLLBACK');
+ *     throw e;
+ *   } finally {
+ *     client.release();
+ *   }
+ */
+const getClient = () => pool.connect();
+
+module.exports = { pool, dbRun, dbGet, dbAll, getClient };

@@ -8,7 +8,7 @@ const crypto = require('crypto');
 const listTokens = async (req, res, next) => {
   try {
     const tokens = await dbAll(
-      'SELECT id, name, client_id, access_level, status, last_used, request_count, created_at FROM api_tokens ORDER BY created_at DESC'
+      'SELECT id, name, client_id, access_level, status, last_used, request_count, created_at FROM api_tokens WHERE deleted_at IS NULL ORDER BY created_at DESC'
     );
     res.json({ success: true, data: tokens });
   } catch (err) { next(err); }
@@ -26,7 +26,7 @@ const generateToken = async (req, res, next) => {
     const secretHash = await bcrypt.hash(secret, 10);
     const id = uuidv4();
 
-    await dbRun('INSERT INTO api_tokens (id, name, client_id, secret_hash, access_level) VALUES (?,?,?,?,?)',
+    await dbRun('INSERT INTO api_tokens (id, name, client_id, secret_hash, access_level) VALUES ($1,$2,$3,$4,$5)',
       [id, name, clientId, secretHash, access_level]);
 
     await audit({ actorId: req.user.id, actorName: req.user.name, action: 'GENERATE_TOKEN', resource: name, ip: req.ip, after: { clientId, access_level } });
@@ -39,12 +39,12 @@ const generateToken = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// DELETE /api/tokens/:id (revoke)
+// DELETE /api/tokens/:id (revoke — not hard delete)
 const revokeToken = async (req, res, next) => {
   try {
-    const token = await dbGet('SELECT * FROM api_tokens WHERE id=?', [req.params.id]);
+    const token = await dbGet('SELECT * FROM api_tokens WHERE id=$1 AND deleted_at IS NULL', [req.params.id]);
     if (!token) return res.status(404).json({ success: false, message: 'Token tidak ditemukan' });
-    await dbRun('UPDATE api_tokens SET status="revoked" WHERE id=?', [req.params.id]);
+    await dbRun('UPDATE api_tokens SET status=$1 WHERE id=$2', ['revoked', req.params.id]);
     await audit({ actorId: req.user.id, actorName: req.user.name, action: 'REVOKE_TOKEN', resource: token.name, ip: req.ip, before: { status: 'active' }, after: { status: 'revoked' } });
     res.json({ success: true, message: 'Token berhasil dicabut' });
   } catch (err) { next(err); }
@@ -53,22 +53,20 @@ const revokeToken = async (req, res, next) => {
 // GET /api/tokens/logs
 const getApiLogs = async (req, res, next) => {
   try {
-    // Aggregate: requests per minute (last 60 mins) and status code distribution
-    const now = Math.floor(Date.now() / 1000);
-    const since = now - 3600; // 1 hour
+    const now = new Date();
+    const since = new Date(now.getTime() - 3600 * 1000);
 
     const statusDist = await dbAll(
-      `SELECT status_code, COUNT(*) as count FROM api_logs WHERE created_at > ? GROUP BY status_code`,
-      [since]
+      `SELECT status_code, COUNT(*)::int as count FROM api_logs WHERE created_at > $1 GROUP BY status_code`,
+      [since.toISOString()]
     );
 
-    // Generate mock RPM data for demo (last 30 minutes)
     const rpmData = Array.from({ length: 30 }, (_, i) => ({
-      minute: new Date((now - (29 - i) * 60) * 1000).toISOString().slice(11, 16),
+      minute: new Date(now.getTime() - (29 - i) * 60 * 1000).toISOString().slice(11, 16),
       requests: Math.floor(Math.random() * 50) + 5,
     }));
 
-    const totalRequests = await dbGet('SELECT COUNT(*) as count FROM api_logs WHERE created_at > ?', [since]);
+    const totalRequests = await dbGet('SELECT COUNT(*)::int as count FROM api_logs WHERE created_at > $1', [since.toISOString()]);
 
     res.json({
       success: true,

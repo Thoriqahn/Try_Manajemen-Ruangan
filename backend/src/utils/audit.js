@@ -5,7 +5,7 @@ const audit = async ({ actorId, actorName, action, resource, ip, before, after }
   try {
     await dbRun(
       `INSERT INTO audit_logs (id, actor_id, actor_name, action, resource, ip, payload_before, payload_after)
-       VALUES (?,?,?,?,?,?,?,?)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
       [
         uuidv4(),
         actorId || null,

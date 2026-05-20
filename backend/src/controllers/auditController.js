@@ -1,4 +1,4 @@
-const { dbAll } = require('../config/database');
+const { dbAll, dbGet } = require('../config/database');
 
 // GET /api/audit
 const listAuditLogs = async (req, res, next) => {
@@ -6,20 +6,24 @@ const listAuditLogs = async (req, res, next) => {
     const { action, actor, search, limit = 50, offset = 0 } = req.query;
     let sql = `SELECT * FROM audit_logs WHERE 1=1`;
     const params = [];
+    let paramIdx = 1;
 
-    if (action) { sql += ' AND action = ?'; params.push(action); }
-    if (actor) { sql += ' AND actor_name LIKE ?'; params.push(`%${actor}%`); }
-    if (search) { sql += ' AND (actor_name LIKE ? OR action LIKE ? OR resource LIKE ?)'; params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
+    if (action) { sql += ` AND action = $${paramIdx++}`; params.push(action); }
+    if (actor) { sql += ` AND actor_name ILIKE $${paramIdx++}`; params.push(`%${actor}%`); }
+    if (search) {
+      sql += ` AND (actor_name ILIKE $${paramIdx} OR action ILIKE $${paramIdx} OR resource ILIKE $${paramIdx})`;
+      params.push(`%${search}%`);
+      paramIdx++;
+    }
 
-    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    // Count total (without LIMIT/OFFSET)
+    const countSql = sql.replace('SELECT *', 'SELECT COUNT(*)::int as total');
+    const total = await dbGet(countSql, [...params]);
+
+    sql += ` ORDER BY created_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`;
     params.push(parseInt(limit), parseInt(offset));
 
     const logs = await dbAll(sql, params);
-
-    // Count total
-    let countSql = `SELECT COUNT(*) as total FROM audit_logs WHERE 1=1`;
-    const countParams = params.slice(0, -2);
-    const total = await require('../config/database').dbGet(countSql.replace('ORDER BY created_at DESC LIMIT ? OFFSET ?', ''), countParams);
 
     res.json({
       success: true,

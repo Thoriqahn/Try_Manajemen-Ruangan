@@ -10,8 +10,8 @@ const authGuard = async (req, res, next) => {
     }
     const token = authHeader.split(' ')[1];
     const decoded = verifyAccessToken(token);
-    // Verify user still exists & active
-    const user = await dbGet('SELECT id, name, email, role, status FROM users WHERE id = ?', [decoded.id]);
+    // Verify user still exists & active & not soft-deleted
+    const user = await dbGet('SELECT id, name, email, role, status FROM users WHERE id = $1 AND deleted_at IS NULL', [decoded.id]);
     if (!user || user.status === 'inactive') {
       return res.status(401).json({ success: false, message: 'Akun tidak ditemukan atau tidak aktif' });
     }
@@ -41,7 +41,7 @@ const optionalAuth = async (req, res, next) => {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
       const decoded = verifyAccessToken(token);
-      const user = await dbGet('SELECT id, name, email, role, status FROM users WHERE id = ?', [decoded.id]);
+      const user = await dbGet('SELECT id, name, email, role, status FROM users WHERE id = $1 AND deleted_at IS NULL', [decoded.id]);
       if (user && user.status === 'active') req.user = user;
     }
   } catch {}

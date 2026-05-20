@@ -17,7 +17,7 @@ const register = async (req, res, next) => {
     if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/\d/.test(password) || !/[^a-zA-Z0-9]/.test(password))
       return res.status(400).json({ success: false, message: 'Password minimal 8 karakter, mengandung huruf, angka, dan karakter khusus' });
 
-    const existing = await dbGet('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+    const existing = await dbGet('SELECT id FROM users WHERE email = $1 AND deleted_at IS NULL', [email.toLowerCase()]);
     if (existing) return res.status(409).json({ success: false, message: 'Email sudah terdaftar' });
 
     const hash = await bcrypt.hash(password, 10);
@@ -26,7 +26,7 @@ const register = async (req, res, next) => {
     const userId = uuidv4();
 
     await dbRun(
-      `INSERT INTO users (id, name, email, password_hash, role, status, otp, otp_expires, otp_type) VALUES (?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO users (id, name, email, password_hash, role, status, otp, otp_expires, otp_type) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
       [userId, name, email.toLowerCase(), hash, 'user', 'pending', otp, otpExpires, 'verify']
     );
 
@@ -39,7 +39,7 @@ const register = async (req, res, next) => {
 const verifyOtp = async (req, res, next) => {
   try {
     const { userId, otp } = req.body;
-    const user = await dbGet('SELECT * FROM users WHERE id = ?', [userId]);
+    const user = await dbGet('SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL', [userId]);
     if (!user) return res.status(404).json({ success: false, message: 'Pengguna tidak ditemukan' });
     if (user.status === 'active') return res.status(400).json({ success: false, message: 'Akun sudah terverifikasi' });
     if (!user.otp || user.otp !== otp) return res.status(400).json({ success: false, message: 'Kode OTP tidak valid' });
@@ -47,10 +47,10 @@ const verifyOtp = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Kode OTP sudah kadaluarsa. Silakan lakukan registrasi ulang.', code: 'OTP_EXPIRED' });
     }
 
-    await dbRun(`UPDATE users SET status='active', otp=NULL, otp_expires=NULL, otp_type=NULL WHERE id=?`, [userId]);
-    const updatedUser = await dbGet('SELECT id, name, email, role FROM users WHERE id=?', [userId]);
+    await dbRun(`UPDATE users SET status='active', otp=NULL, otp_expires=NULL, otp_type=NULL WHERE id=$1`, [userId]);
+    const updatedUser = await dbGet('SELECT id, name, email, role FROM users WHERE id=$1', [userId]);
     const { accessToken, refreshToken } = generateTokens(updatedUser);
-    await dbRun('UPDATE users SET refresh_token=? WHERE id=?', [refreshToken, userId]);
+    await dbRun('UPDATE users SET refresh_token=$1 WHERE id=$2', [refreshToken, userId]);
 
     res.json({ success: true, message: 'Akun berhasil diverifikasi', accessToken, refreshToken, user: updatedUser });
   } catch (err) { next(err); }
@@ -60,7 +60,7 @@ const verifyOtp = async (req, res, next) => {
 const resendOtp = async (req, res, next) => {
   try {
     const { userId } = req.body;
-    const user = await dbGet('SELECT * FROM users WHERE id=?', [userId]);
+    const user = await dbGet('SELECT * FROM users WHERE id=$1 AND deleted_at IS NULL', [userId]);
     if (!user) return res.status(404).json({ success: false, message: 'Pengguna tidak ditemukan' });
     if (user.status === 'active') return res.status(400).json({ success: false, message: 'Akun sudah aktif' });
 
@@ -73,7 +73,7 @@ const resendOtp = async (req, res, next) => {
 
     const otp = generateOtp();
     const otpExpires = Date.now() + 30 * 60 * 1000;
-    await dbRun('UPDATE users SET otp=?, otp_expires=? WHERE id=?', [otp, otpExpires, userId]);
+    await dbRun('UPDATE users SET otp=$1, otp_expires=$2 WHERE id=$3', [otp, otpExpires, userId]);
     await sendOtpEmail(user.email, otp, user.otp_type || 'verify');
     res.json({ success: true, message: 'Kode OTP baru telah dikirim' });
   } catch (err) { next(err); }
@@ -85,7 +85,7 @@ const login = async (req, res, next) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ success: false, message: 'Email dan password diperlukan' });
 
-    const user = await dbGet('SELECT * FROM users WHERE email=?', [email.toLowerCase()]);
+    const user = await dbGet('SELECT * FROM users WHERE email=$1 AND deleted_at IS NULL', [email.toLowerCase()]);
     if (!user) return res.status(401).json({ success: false, message: 'Email atau password salah' });
     if (user.status === 'pending') return res.status(403).json({ success: false, message: 'Akun belum diverifikasi. Silakan cek email Anda.' });
     if (user.status === 'inactive') return res.status(403).json({ success: false, message: 'Akun Anda telah dinonaktifkan. Hubungi administrator.' });
@@ -94,7 +94,7 @@ const login = async (req, res, next) => {
     if (!valid) return res.status(401).json({ success: false, message: 'Email atau password salah' });
 
     const { accessToken, refreshToken } = generateTokens(user);
-    await dbRun('UPDATE users SET refresh_token=? WHERE id=?', [refreshToken, user.id]);
+    await dbRun('UPDATE users SET refresh_token=$1 WHERE id=$2', [refreshToken, user.id]);
 
     res.json({
       success: true,
@@ -111,7 +111,7 @@ const logout = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
     if (refreshToken) {
-      await dbRun('UPDATE users SET refresh_token=NULL WHERE refresh_token=?', [refreshToken]);
+      await dbRun('UPDATE users SET refresh_token=NULL WHERE refresh_token=$1', [refreshToken]);
     }
     res.json({ success: true, message: 'Logout berhasil' });
   } catch (err) { next(err); }
@@ -124,11 +124,11 @@ const refresh = async (req, res, next) => {
     if (!refreshToken) return res.status(400).json({ success: false, message: 'Refresh token diperlukan' });
 
     const decoded = verifyRefreshToken(refreshToken);
-    const user = await dbGet('SELECT * FROM users WHERE id=? AND refresh_token=?', [decoded.id, refreshToken]);
+    const user = await dbGet('SELECT * FROM users WHERE id=$1 AND refresh_token=$2 AND deleted_at IS NULL', [decoded.id, refreshToken]);
     if (!user) return res.status(401).json({ success: false, message: 'Refresh token tidak valid atau sudah kadaluarsa' });
 
     const tokens = generateTokens(user);
-    await dbRun('UPDATE users SET refresh_token=? WHERE id=?', [tokens.refreshToken, user.id]);
+    await dbRun('UPDATE users SET refresh_token=$1 WHERE id=$2', [tokens.refreshToken, user.id]);
 
     res.json({ success: true, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken });
   } catch (err) {
@@ -142,7 +142,7 @@ const refresh = async (req, res, next) => {
 // GET /api/auth/me
 const me = async (req, res, next) => {
   try {
-    const user = await dbGet('SELECT id, name, email, role, status, created_at FROM users WHERE id=?', [req.user.id]);
+    const user = await dbGet('SELECT id, name, email, role, status, created_at FROM users WHERE id=$1 AND deleted_at IS NULL', [req.user.id]);
     res.json({ success: true, user });
   } catch (err) { next(err); }
 };
@@ -152,14 +152,14 @@ const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ success: false, message: 'Email diperlukan' });
-    const user = await dbGet('SELECT * FROM users WHERE email=?', [email.toLowerCase()]);
+    const user = await dbGet('SELECT * FROM users WHERE email=$1 AND deleted_at IS NULL', [email.toLowerCase()]);
     // Always respond success to prevent email enumeration
     if (!user || user.status !== 'active') {
       return res.json({ success: true, message: 'Jika email terdaftar, kode OTP akan dikirim.' });
     }
     const otp = generateOtp();
     const otpExpires = Date.now() + 30 * 60 * 1000;
-    await dbRun('UPDATE users SET otp=?, otp_expires=?, otp_type=? WHERE id=?', [otp, otpExpires, 'reset', user.id]);
+    await dbRun('UPDATE users SET otp=$1, otp_expires=$2, otp_type=$3 WHERE id=$4', [otp, otpExpires, 'reset', user.id]);
     await sendOtpEmail(email, otp, 'reset');
     res.json({ success: true, message: 'Jika email terdaftar, kode OTP akan dikirim.', userId: user.id });
   } catch (err) { next(err); }
@@ -172,14 +172,14 @@ const resetPassword = async (req, res, next) => {
     if (!userId || !otp || !newPassword) return res.status(400).json({ success: false, message: 'Data tidak lengkap' });
     if (newPassword.length < 8) return res.status(400).json({ success: false, message: 'Password minimal 8 karakter' });
 
-    const user = await dbGet('SELECT * FROM users WHERE id=?', [userId]);
+    const user = await dbGet('SELECT * FROM users WHERE id=$1 AND deleted_at IS NULL', [userId]);
     if (!user || user.otp !== otp || user.otp_type !== 'reset')
       return res.status(400).json({ success: false, message: 'Kode OTP tidak valid' });
     if (Date.now() > parseInt(user.otp_expires))
       return res.status(400).json({ success: false, message: 'Kode OTP sudah kadaluarsa' });
 
     const hash = await bcrypt.hash(newPassword, 10);
-    await dbRun('UPDATE users SET password_hash=?, otp=NULL, otp_expires=NULL, otp_type=NULL WHERE id=?', [hash, userId]);
+    await dbRun('UPDATE users SET password_hash=$1, otp=NULL, otp_expires=NULL, otp_type=NULL WHERE id=$2', [hash, userId]);
     res.json({ success: true, message: 'Password berhasil diubah. Silakan login.' });
   } catch (err) { next(err); }
 };
