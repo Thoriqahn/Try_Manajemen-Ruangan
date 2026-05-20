@@ -2,27 +2,35 @@ import { useState, useEffect } from "react";
 import { Check, X, Clock, RefreshCw } from "lucide-react";
 import { bookingService } from "../../services/bookingService";
 
+import { userService } from "../../services/index";
+
 interface ApprovalQueueProps {
   onNavigate: (page: string, data?: any) => void;
+  isSuperAdmin?: boolean;
 }
 
 const Shimmer = ({ className }: { className?: string }) => (
   <div className={`animate-pulse bg-gray-200 rounded ${className}`} />
 );
 
-export function ApprovalQueue({ onNavigate }: ApprovalQueueProps) {
+export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueueProps) {
   const [filter, setFilter] = useState<"all" | "pending" | "confirmed" | "rejected">("pending");
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [rejectModal, setRejectModal] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedAdminFilter, setSelectedAdminFilter] = useState("");
+  const [adminList, setAdminList] = useState<any[]>([]);
 
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      // Fetch pending + all for different tabs
-      const res = await bookingService.list({ status: filter === "all" ? undefined : filter });
+      // Fetch bookings with admin_id filter
+      const res = await bookingService.list({ 
+        status: filter === "all" ? undefined : filter,
+        admin_id: selectedAdminFilter || undefined
+      });
       if (res.success) setBookings(res.data || []);
     } catch (err) {
       console.error("Failed to fetch bookings:", err);
@@ -31,7 +39,15 @@ export function ApprovalQueue({ onNavigate }: ApprovalQueueProps) {
     }
   };
 
-  useEffect(() => { fetchBookings(); }, [filter]);
+  useEffect(() => {
+    if (isSuperAdmin) {
+      userService.list({ role: "admin" })
+        .then(res => setAdminList(res.data || []))
+        .catch(err => console.error("Failed to load admin list:", err));
+    }
+  }, [isSuperAdmin]);
+
+  useEffect(() => { fetchBookings(); }, [filter, selectedAdminFilter]);
 
   const handleApprove = async (id: string) => {
     setActionLoading(id);
@@ -89,26 +105,46 @@ export function ApprovalQueue({ onNavigate }: ApprovalQueueProps) {
         </button>
       </div>
 
-      {/* Status filter tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
-        {(["all", "pending", "confirmed", "rejected"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setFilter(tab)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-all ${filter === tab ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-            style={{ fontWeight: filter === tab ? 600 : 400 }}
-          >
-            {tab === "all" ? "Semua" : tab === "pending" ? "Menunggu" : tab === "confirmed" ? "Disetujui" : "Ditolak"}
-            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-              tab === "pending" ? "bg-yellow-100 text-yellow-700" :
-              tab === "confirmed" ? "bg-green-100 text-green-700" :
-              tab === "rejected" ? "bg-red-100 text-red-600" :
-              "bg-gray-200 text-gray-600"
-            }`}>
-              {counts[tab]}
-            </span>
-          </button>
-        ))}
+      {/* Status & Admin Filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {/* Status filter tabs */}
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit flex-shrink-0">
+          {(["all", "pending", "confirmed", "rejected"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setFilter(tab)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-all ${filter === tab ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              style={{ fontWeight: filter === tab ? 600 : 400 }}
+            >
+              {tab === "all" ? "Semua" : tab === "pending" ? "Menunggu" : tab === "confirmed" ? "Disetujui" : "Ditolak"}
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                tab === "pending" ? "bg-yellow-100 text-yellow-700" :
+                tab === "confirmed" ? "bg-green-100 text-green-700" :
+                tab === "rejected" ? "bg-red-100 text-red-600" :
+                "bg-gray-200 text-gray-600"
+              }`}>
+                {counts[tab]}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* SuperAdmin Admin Filter dropdown */}
+        {isSuperAdmin && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 font-medium">Filter Admin:</span>
+            <select
+              value={selectedAdminFilter}
+              onChange={(e) => setSelectedAdminFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 outline-none focus:border-blue-400 min-w-[200px]"
+            >
+              <option value="">Semua Admin Ruangan</option>
+              {adminList.map((admin) => (
+                <option key={admin.id} value={admin.id}>{admin.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -121,6 +157,7 @@ export function ApprovalQueue({ onNavigate }: ApprovalQueueProps) {
                 <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider" style={{ fontWeight: 600 }}>Ruangan</th>
                 <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider" style={{ fontWeight: 600 }}>Waktu</th>
                 <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider" style={{ fontWeight: 600 }}>Agenda</th>
+                {isSuperAdmin && <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider" style={{ fontWeight: 600 }}>Admin Ruangan</th>}
                 <th className="text-left px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider" style={{ fontWeight: 600 }}>Status</th>
                 <th className="text-right px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider" style={{ fontWeight: 600 }}>Aksi</th>
               </tr>
@@ -129,7 +166,7 @@ export function ApprovalQueue({ onNavigate }: ApprovalQueueProps) {
               {loading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <tr key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: isSuperAdmin ? 7 : 6 }).map((_, j) => (
                       <td key={j} className="px-5 py-4"><Shimmer className="h-4 w-full" /></td>
                     ))}
                   </tr>
@@ -158,6 +195,11 @@ export function ApprovalQueue({ onNavigate }: ApprovalQueueProps) {
                   <td className="px-5 py-4">
                     <div className="text-sm text-gray-600 max-w-[160px] truncate">{booking.agenda}</div>
                   </td>
+                  {isSuperAdmin && (
+                    <td className="px-5 py-4">
+                      <div className="text-sm text-gray-700" style={{ fontWeight: 500 }}>{booking.admin_names || "Tidak ada admin"}</div>
+                    </td>
+                  )}
                   <td className="px-5 py-4">{statusBadge(booking.status)}</td>
                   <td className="px-5 py-4">
                     {booking.status === "pending" && (

@@ -6,29 +6,37 @@ const path = require('path');
 // Helper to get full room with layouts and facilities
 const getRoomFull = async (roomId) => {
   const room = await dbGet(`
-    SELECT r.*, b.name as building_name, f.name as floor_name, u.name as admin_name
+    SELECT r.*, b.name as building_name, f.name as floor_name,
+      (SELECT GROUP_CONCAT(u2.name, ', ') FROM room_assignments ra JOIN users u2 ON ra.admin_id = u2.id WHERE ra.room_id = r.id) as admin_name
     FROM rooms r
     LEFT JOIN buildings b ON r.building_id = b.id
     LEFT JOIN floors f ON r.floor_id = f.id
-    LEFT JOIN users u ON r.admin_id = u.id
     WHERE r.id = ?
   `, [roomId]);
   if (!room) return null;
   room.layouts = await dbAll('SELECT * FROM room_layouts WHERE room_id = ?', [roomId]);
-  room.facilities = await dbAll('SELECT * FROM room_facilities WHERE room_id = ?', [roomId]);
+  
+  const facs = await dbAll('SELECT * FROM room_facilities WHERE room_id = ?', [roomId]);
+  room.facilities = facs.reduce((acc, curr) => {
+    acc[curr.facility_type] = curr.quantity;
+    return acc;
+  }, {});
+
+  room.photos = await dbAll('SELECT * FROM room_photos WHERE room_id = ? ORDER BY is_primary DESC, created_at ASC', [roomId]);
+  
   return room;
 };
 
 // GET /api/rooms
 const listRooms = async (req, res, next) => {
   try {
-    const { building_id, floor_id, status, search, approval_type } = req.query;
+    const { building_id, floor_id, status, search, approval_type, admin_id } = req.query;
     let sql = `
-      SELECT r.*, b.name as building_name, f.name as floor_name, u.name as admin_name
+      SELECT r.*, b.name as building_name, f.name as floor_name,
+        (SELECT GROUP_CONCAT(u2.name, ', ') FROM room_assignments ra JOIN users u2 ON ra.admin_id = u2.id WHERE ra.room_id = r.id) as admin_name
       FROM rooms r
       LEFT JOIN buildings b ON r.building_id = b.id
       LEFT JOIN floors f ON r.floor_id = f.id
-      LEFT JOIN users u ON r.admin_id = u.id
       WHERE 1=1
     `;
     const params = [];
@@ -48,6 +56,10 @@ const listRooms = async (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
       sql += ` AND r.id IN (SELECT room_id FROM room_assignments WHERE admin_id = ?)`;
       params.push(req.user.id);
+    } else if (req.user && req.user.role === 'superadmin' && admin_id) {
+      // Superadmin can filter by specific admin
+      sql += ` AND r.id IN (SELECT room_id FROM room_assignments WHERE admin_id = ?)`;
+      params.push(admin_id);
     }
 
     sql += ' ORDER BY b.name, f.level, r.name';
@@ -176,6 +188,12 @@ const updateRoom = async (req, res, next) => {
        restrict_hours ? (hours_end||null) : null,
        image_url||null, id]
     );
+
+    // Auto-assign to admin if superadmin set admin_id
+    if (req.user.role === 'superadmin' && admin_id) {
+      await dbRun(`INSERT OR IGNORE INTO room_assignments (id, admin_id, room_id) VALUES (?,?,?)`,
+        [uuidv4(), admin_id, id]);
+    }
 
     // Update layouts if provided
     if (layouts && layouts.length > 0) {
@@ -311,7 +329,20 @@ const getAvailability = async (req, res, next) => {
 const uploadPhoto = async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'File tidak ditemukan' });
+    const roomId = req.params.id;
     const fileUrl = `/uploads/${req.file.filename}`;
+    
+    // Check if there are any existing photos
+    const existing = await dbGet('SELECT COUNT(*) as count FROM room_photos WHERE room_id=?', [roomId]);
+    const isPrimary = existing.count === 0 ? 1 : 0;
+    
+    await dbRun('INSERT INTO room_photos (id, room_id, url, is_primary) VALUES (?,?,?,?)', 
+      [uuidv4(), roomId, fileUrl, isPrimary]);
+    
+    if (isPrimary) {
+      await dbRun('UPDATE rooms SET image_url=? WHERE id=?', [fileUrl, roomId]);
+    }
+    
     res.json({ success: true, url: fileUrl });
   } catch (err) { next(err); }
 };

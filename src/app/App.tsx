@@ -18,6 +18,7 @@ import { ApiMonitoring } from "./components/superadmin/ApiMonitoring";
 import { AuditTrail } from "./components/superadmin/AuditTrail";
 import { authService } from "./services/authService";
 import { TokenStore, UserStore } from "./services/apiClient";
+import { Toaster } from "./components/ui/sonner";
 
 type Page =
   | "login" | "register" | "forgot-password"
@@ -142,7 +143,7 @@ export default function App() {
       case "admin-dashboard":
         return <AdminDashboard onNavigate={handleNavigate} isSuperAdmin={role === "superadmin"} />;
       case "admin-approval":
-        return <ApprovalQueue onNavigate={handleNavigate} />;
+        return <ApprovalQueue onNavigate={handleNavigate} isSuperAdmin={role === "superadmin"} />;
       case "admin-schedule":
         return <ScheduleControl />;
       case "admin-rooms":
@@ -168,16 +169,19 @@ export default function App() {
   };
 
   return (
-    <MainLayout
-      role={role}
-      currentUser={currentUser}
-      currentPage={nav.page}
-      onNavigate={handleNavigate}
-      onLogout={handleLogout}
-      pageTitle={pageInfo.title}
-      pageSubtitle={pageInfo.subtitle}
-    >
-      {renderPage()}
-    </MainLayout>
+    <>
+      <MainLayout
+        role={role}
+        currentUser={currentUser}
+        currentPage={nav.page}
+        onNavigate={handleNavigate}
+        onLogout={handleLogout}
+        pageTitle={pageInfo.title}
+        pageSubtitle={pageInfo.subtitle}
+      >
+        {renderPage()}
+      </MainLayout>
+      <Toaster position="top-center" closeButton richColors />
+    </>
   );
 }

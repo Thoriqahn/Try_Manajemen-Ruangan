@@ -134,11 +134,11 @@ export class ApiError extends Error {
 export const api = {
   get: <T = any>(url: string, opts?: RequestInit) => apiFetch<T>(url, { method: 'GET', ...opts }),
   post: <T = any>(url: string, body?: any, opts?: RequestInit) =>
-    apiFetch<T>(url, { method: 'POST', body: JSON.stringify(body), ...opts }),
+    apiFetch<T>(url, { method: 'POST', body: body instanceof FormData ? body : JSON.stringify(body), ...opts }),
   put: <T = any>(url: string, body?: any, opts?: RequestInit) =>
-    apiFetch<T>(url, { method: 'PUT', body: JSON.stringify(body), ...opts }),
+    apiFetch<T>(url, { method: 'PUT', body: body instanceof FormData ? body : JSON.stringify(body), ...opts }),
   delete: <T = any>(url: string, body?: any, opts?: RequestInit) =>
-    apiFetch<T>(url, { method: 'DELETE', body: body ? JSON.stringify(body) : undefined, ...opts }),
+    apiFetch<T>(url, { method: 'DELETE', body: body ? (body instanceof FormData ? body : JSON.stringify(body)) : undefined, ...opts }),
   upload: <T = any>(url: string, formData: FormData) =>
     apiFetch<T>(url, { method: 'POST', body: formData }),
 };

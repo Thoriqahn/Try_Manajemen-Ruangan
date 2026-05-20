@@ -4,10 +4,10 @@ export const buildingService = {
   async list() {
     return api.get('/buildings');
   },
-  async create(data: { name: string; address?: string; lat?: string; lng?: string; image_url?: string; total_floors?: number }) {
+  async create(data: FormData) {
     return api.post('/buildings', data);
   },
-  async update(id: string, data: { name: string; address?: string; lat?: string; lng?: string; image_url?: string; total_floors?: number }) {
+  async update(id: string, data: FormData) {
     return api.put(`/buildings/${id}`, data);
   },
   async delete(id: string) {

@@ -50,6 +50,14 @@ async function initSchema() {
     created_at INTEGER DEFAULT (strftime('%s','now'))
   )`);
 
+  await dbRun(`CREATE TABLE IF NOT EXISTS room_photos (
+    id TEXT PRIMARY KEY,
+    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    url TEXT NOT NULL,
+    is_primary INTEGER DEFAULT 0,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  )`);
+
   await dbRun(`CREATE TABLE IF NOT EXISTS room_layouts (
     id TEXT PRIMARY KEY,
     room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,

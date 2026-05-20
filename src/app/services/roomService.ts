@@ -29,6 +29,7 @@ export interface RoomFilter {
   status?: string;
   search?: string;
   approval_type?: string;
+  admin_id?: string;
 }
 
 export const roomService = {

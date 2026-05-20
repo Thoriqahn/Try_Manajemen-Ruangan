@@ -57,6 +57,19 @@ const updateRole = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Role tidak valid' });
     const user = await dbGet('SELECT * FROM users WHERE id=?', [req.params.id]);
     if (!user) return res.status(404).json({ success: false, message: 'Pengguna tidak ditemukan' });
+
+    const isHyperAdmin = req.user.id === 'u-super' || req.user.email === 'superadmin@oikn.go.id';
+
+    // Prevent non-hyperadmins from changing role to superadmin
+    if (role === 'superadmin' && !isHyperAdmin) {
+      return res.status(403).json({ success: false, message: 'Hanya Super Admin Utama yang dapat menetapkan peran Super Admin' });
+    }
+
+    // Prevent non-hyperadmins from changing role from superadmin
+    if (user.role === 'superadmin' && !isHyperAdmin) {
+      return res.status(403).json({ success: false, message: 'Hanya Super Admin Utama yang dapat mengubah peran Super Admin' });
+    }
+
     await dbRun('UPDATE users SET role=? WHERE id=?', [role, req.params.id]);
     await audit({ actorId: req.user.id, actorName: req.user.name, action: 'UPDATE_USER_ROLE', resource: user.name, ip: req.ip, before: { role: user.role }, after: { role } });
     res.json({ success: true, message: 'Role pengguna diperbarui' });
@@ -91,12 +104,7 @@ const updateRoomAssignment = async (req, res, next) => {
         [uuidv4(), req.params.id, roomId]);
     }
 
-    // Also update rooms' admin_id for assigned rooms
-    if (roomIds && roomIds.length > 0) {
-      for (const roomId of roomIds) {
-        await dbRun('UPDATE rooms SET admin_id=? WHERE id=?', [req.params.id, roomId]);
-      }
-    }
+
 
     await audit({ actorId: req.user.id, actorName: req.user.name, action: 'UPDATE_ROOM_ASSIGNMENT', resource: user.name, ip: req.ip, after: { roomIds } });
     res.json({ success: true, message: 'Pemetaan wilayah tugas berhasil diperbarui' });

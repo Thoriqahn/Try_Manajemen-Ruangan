@@ -15,10 +15,11 @@ const db = new sqlite3.Database(path.resolve(DB_PATH), (err) => {
   console.log('✅ Connected to SQLite database:', path.resolve(DB_PATH));
 });
 
-// Enable WAL mode and foreign keys
+// Enable WAL mode and foreign keys, and set busy timeout for concurrency
 db.serialize(() => {
   db.run('PRAGMA journal_mode = WAL');
   db.run('PRAGMA foreign_keys = ON');
+  db.run('PRAGMA busy_timeout = 5000');
 });
 
 // Promisified helpers

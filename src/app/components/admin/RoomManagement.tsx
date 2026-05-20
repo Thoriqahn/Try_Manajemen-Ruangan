@@ -3,6 +3,12 @@ import { Plus, Edit2, Power, Search, MapPin, Users, AlertTriangle, Check, X, Ima
 import { roomService, Room } from "../../services/roomService";
 import { buildingService, userService } from "../../services/index";
 
+const getImageUrl = (url: string | null | undefined) => {
+  if (!url) return undefined;
+  if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
+  return `http://localhost:5000${url.startsWith('/') ? url : '/' + url}`;
+};
+
 interface RoomManagementProps {
   isSuperAdmin?: boolean;
   onNavigate?: (page: string, data?: any) => void;
@@ -16,17 +22,32 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
   const [editRoom, setEditRoom] = useState<any>(null);
   const [disableModal, setDisableModal] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [selectedAdminFilter, setSelectedAdminFilter] = useState("");
+  const [adminList, setAdminList] = useState<any[]>([]);
 
-  const load = async () => {
+  const load = async (adminFilterValue?: string) => {
     setLoading(true);
     try {
-      const res = await roomService.list({ search: search || undefined });
+      const filterAdmin = adminFilterValue !== undefined ? adminFilterValue : selectedAdminFilter;
+      const res = await roomService.list({ 
+        search: search || undefined,
+        admin_id: filterAdmin || undefined
+      });
       setRooms(res.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    if (isSuperAdmin) {
+      userService.list({ role: "admin" })
+        .then(res => {
+          setAdminList(res.data || []);
+        })
+        .catch(e => console.error("Gagal memuat daftar admin", e));
+    }
+  }, [isSuperAdmin]);
 
   const handleToggleStatus = async (room: Room) => {
     setToggling(room.id);
@@ -60,7 +81,25 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
             onKeyDown={e => e.key === "Enter" && load()}
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white" />
         </div>
-        <button onClick={load} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-1.5">
+        
+        {isSuperAdmin && (
+          <select
+            value={selectedAdminFilter}
+            onChange={e => {
+              const val = e.target.value;
+              setSelectedAdminFilter(val);
+              load(val);
+            }}
+            className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white text-gray-700 min-w-[200px]"
+          >
+            <option value="">Semua Admin Ruangan</option>
+            {adminList.map(admin => (
+              <option key={admin.id} value={admin.id}>{admin.name}</option>
+            ))}
+          </select>
+        )}
+
+        <button onClick={() => load()} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-1.5">
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
@@ -89,7 +128,7 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                            {room.image_url ? <img src={room.image_url} alt={room.name} className="w-full h-full object-cover" /> : <MapPin size={18} className="text-gray-400" />}
+                            {room.image_url ? <img src={getImageUrl(room.image_url)} alt={room.name} className="w-full h-full object-cover" /> : <MapPin size={18} className="text-gray-400" />}
                           </div>
                           <div>
                             <div className="text-sm text-gray-800" style={{ fontWeight: 500 }}>{room.name}</div>

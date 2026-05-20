@@ -17,6 +17,7 @@ export interface Booking {
   rejection_reason?: string;
   cancel_reason?: string;
   created_at?: number;
+  admin_names?: string;
 }
 
 export interface CreateBookingPayload {
@@ -35,6 +36,7 @@ export interface BookingFilter {
   date_to?: string;
   user_id?: string;
   limit?: number;
+  admin_id?: string;
 }
 
 export const bookingService = {

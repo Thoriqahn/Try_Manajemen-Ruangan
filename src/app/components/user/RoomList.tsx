@@ -6,6 +6,12 @@ import L from "leaflet";
 import { roomService } from "../../services/roomService";
 import { buildingService } from "../../services/index";
 
+const getImageUrl = (url: string | null | undefined) => {
+  if (!url) return undefined;
+  if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
+  return `http://localhost:5000${url.startsWith('/') ? url : '/' + url}`;
+};
+
 interface RoomListProps {
   onNavigate: (page: string, data?: any) => void;
 }
@@ -161,7 +167,7 @@ export function RoomList({ onNavigate }: RoomListProps) {
             >
               <div className="relative h-44 bg-gray-100 overflow-hidden">
                 {room.image_url ? (
-                  <img src={room.image_url} alt={room.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <img src={getImageUrl(room.image_url)} alt={room.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
                     <Monitor size={40} className="text-blue-300" />

@@ -45,9 +45,13 @@ const checkPolicy = async (date, startTime, endTime, userRole) => {
 // GET /api/bookings
 const listBookings = async (req, res, next) => {
   try {
-    const { status, room_id, date_from, date_to, user_id } = req.query;
+    const { status, room_id, date_from, date_to, user_id, admin_id } = req.query;
     let sql = `
-      SELECT b.*, r.name as room_name, b2.name as building_name, f.name as floor_name, u.name as user_name
+      SELECT b.*, r.name as room_name, b2.name as building_name, f.name as floor_name, u.name as user_name,
+             (SELECT GROUP_CONCAT(u2.name, ', ') 
+              FROM room_assignments ra 
+              JOIN users u2 ON ra.admin_id = u2.id 
+              WHERE ra.room_id = b.room_id) as admin_names
       FROM bookings b
       LEFT JOIN rooms r ON b.room_id = r.id
       LEFT JOIN buildings b2 ON r.building_id = b2.id
@@ -70,6 +74,10 @@ const listBookings = async (req, res, next) => {
     if (date_from) { sql += ' AND b.date >= ?'; params.push(date_from); }
     if (date_to) { sql += ' AND b.date <= ?'; params.push(date_to); }
     if (user_id && req.user.role === 'superadmin') { sql += ' AND b.user_id = ?'; params.push(user_id); }
+    if (admin_id && req.user.role === 'superadmin') {
+      sql += ` AND b.room_id IN (SELECT room_id FROM room_assignments WHERE admin_id = ?)`;
+      params.push(admin_id);
+    }
 
     sql += ' ORDER BY b.date DESC, b.start_time';
     const bookings = await dbAll(sql, params);
@@ -102,6 +110,7 @@ const getBooking = async (req, res, next) => {
 
 // POST /api/bookings
 const createBooking = async (req, res, next) => {
+  let transactionActive = false;
   try {
     const { room_id, date, start_time, end_time, agenda, participants } = req.body;
     if (!room_id || !date || !start_time || !end_time || !agenda)
@@ -122,9 +131,17 @@ const createBooking = async (req, res, next) => {
     const policyError = await checkPolicy(date, start_time, end_time, req.user.role);
     if (policyError) return res.status(400).json({ success: false, message: policyError });
 
-    // Conflict check
+    // Acquire write lock immediately to prevent race conditions
+    await dbRun('BEGIN IMMEDIATE TRANSACTION');
+    transactionActive = true;
+
+    // Conflict check under exclusive lock
     const conflict = await hasConflict(room_id, date, start_time, end_time);
-    if (conflict) return res.status(409).json({ success: false, message: 'Slot waktu sudah dipesan. Pilih waktu lain.' });
+    if (conflict) {
+      await dbRun('ROLLBACK');
+      transactionActive = false;
+      return res.status(409).json({ success: false, message: 'Slot waktu sudah dipesan. Pilih waktu lain.' });
+    }
 
     const bookingId = uuidv4();
     const status = room.approval_type === 'instant' ? 'confirmed' : 'pending';
@@ -133,6 +150,9 @@ const createBooking = async (req, res, next) => {
       `INSERT INTO bookings (id, room_id, user_id, date, start_time, end_time, agenda, participants, status) VALUES (?,?,?,?,?,?,?,?,?)`,
       [bookingId, room_id, req.user.id, date, start_time, end_time, agenda, participants || 1, status]
     );
+
+    await dbRun('COMMIT');
+    transactionActive = false;
 
     await audit({
       actorId: req.user.id, actorName: `${req.user.name} (${req.user.role})`,
@@ -146,11 +166,17 @@ const createBooking = async (req, res, next) => {
       message: status === 'confirmed' ? 'Booking berhasil dikonfirmasi!' : 'Permohonan booking dikirim, menunggu persetujuan Admin.',
       data: booking
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    if (transactionActive) {
+      try { await dbRun('ROLLBACK'); } catch (e) { console.error(e); }
+    }
+    next(err);
+  }
 };
 
 // PUT /api/bookings/:id
 const updateBooking = async (req, res, next) => {
+  let transactionActive = false;
   try {
     const booking = await dbGet('SELECT * FROM bookings WHERE id=?', [req.params.id]);
     if (!booking) return res.status(404).json({ success: false, message: 'Booking tidak ditemukan' });
@@ -172,15 +198,31 @@ const updateBooking = async (req, res, next) => {
     const policyError = await checkPolicy(newDate, newStart, newEnd, req.user.role);
     if (policyError) return res.status(400).json({ success: false, message: policyError });
 
+    // Acquire write lock immediately to prevent race conditions during updates
+    await dbRun('BEGIN IMMEDIATE TRANSACTION');
+    transactionActive = true;
+
     const conflict = await hasConflict(booking.room_id, newDate, newStart, newEnd, req.params.id);
-    if (conflict) return res.status(409).json({ success: false, message: 'Slot waktu sudah dipesan. Pilih waktu lain.' });
+    if (conflict) {
+      await dbRun('ROLLBACK');
+      transactionActive = false;
+      return res.status(409).json({ success: false, message: 'Slot waktu sudah dipesan. Pilih waktu lain.' });
+    }
 
     await dbRun(`UPDATE bookings SET date=?, start_time=?, end_time=?, agenda=COALESCE(?,agenda), participants=COALESCE(?,participants) WHERE id=?`,
       [newDate, newStart, newEnd, agenda||null, participants||null, req.params.id]);
 
+    await dbRun('COMMIT');
+    transactionActive = false;
+
     const updated = await dbGet('SELECT * FROM bookings WHERE id=?', [req.params.id]);
     res.json({ success: true, message: 'Booking berhasil diperbarui', data: updated });
-  } catch (err) { next(err); }
+  } catch (err) {
+    if (transactionActive) {
+      try { await dbRun('ROLLBACK'); } catch (e) { console.error(e); }
+    }
+    next(err);
+  }
 };
 
 // DELETE /api/bookings/:id (cancel)

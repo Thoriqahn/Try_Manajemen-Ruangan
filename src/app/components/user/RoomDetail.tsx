@@ -3,6 +3,13 @@ import { ArrowLeft, MapPin, Users, Clock, Monitor, Wifi, Volume2, Zap, Calendar,
 import { roomService, Room } from "../../services/roomService";
 import { bookingService, Booking } from "../../services/bookingService";
 import { TokenStore } from "../../services/apiClient";
+import { toast } from "sonner";
+
+const getImageUrl = (url: string | null | undefined) => {
+  if (!url) return undefined;
+  if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
+  return `http://localhost:5000${url.startsWith('/') ? url : '/' + url}`;
+};
 
 interface RoomDetailProps {
   roomId: string;
@@ -18,8 +25,14 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"info" | "schedule" | "history">("info");
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<{ time: string; date: string } | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<{ time: string; date: string; endTime?: string } | null>(null);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+
+  // Drag states
+  const [dragStart, setDragStart] = useState<{ date: string; time: string } | null>(null);
+  const [dragEnd, setDragEnd] = useState<{ date: string; time: string } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const getWeekDays = (offset = 0) => {
     const days = [];
@@ -37,6 +50,15 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
   };
 
   const weekDays = getWeekDays(currentWeekOffset);
+
+  const fetchAvailability = async () => {
+    try {
+      const avail = await roomService.availability(roomId, weekDays[0].full, weekDays[4].full);
+      setAvailability(avail.data?.availability || []);
+    } catch (e) {
+      console.error("Gagal memuat ketersediaan:", e);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -59,21 +81,116 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
 
   useEffect(() => {
     if (!room) return;
-    roomService.availability(roomId, weekDays[0].full, weekDays[4].full)
-      .then(res => setAvailability(res.data?.availability || [])).catch(() => {});
+    fetchAvailability();
   }, [currentWeekOffset]);
 
   const isBooked = (date: string, time: string) => {
-    return availability.some((b: any) => {
-      if (b.date !== date) return false;
+    const day = availability.find(d => d.date === date);
+    if (!day) return false;
+    if (day.isBlackout) return true; // Blackout slots cannot be booked
+    return day.bookings?.some((b: any) => {
       const slotMins = parseInt(time.split(":")[0]) * 60 + parseInt(time.split(":")[1]);
-      const startMins = parseInt(b.start_time.split(":")[0]) * 60 + parseInt(b.start_time.split(":")[1]);
-      const endMins = parseInt(b.end_time.split(":")[0]) * 60 + parseInt(b.end_time.split(":")[1]);
+      const startMins = parseInt(b.startTime.split(":")[0]) * 60 + parseInt(b.startTime.split(":")[1]);
+      const endMins = parseInt(b.endTime.split(":")[0]) * 60 + parseInt(b.endTime.split(":")[1]);
       return slotMins >= startMins && slotMins < endMins;
-    });
+    }) || false;
+  };
+
+  const getBookingForSlot = (date: string, time: string) => {
+    const day = availability.find(d => d.date === date);
+    if (!day) return null;
+    return day.bookings?.find((b: any) => {
+      const slotMins = parseInt(time.split(":")[0]) * 60 + parseInt(time.split(":")[1]);
+      const startMins = parseInt(b.startTime.split(":")[0]) * 60 + parseInt(b.startTime.split(":")[1]);
+      const endMins = parseInt(b.endTime.split(":")[0]) * 60 + parseInt(b.endTime.split(":")[1]);
+      return slotMins >= startMins && slotMins < endMins;
+    }) || null;
+  };
+
+  const isBlackoutDate = (date: string) => {
+    const day = availability.find(d => d.date === date);
+    return day?.isBlackout || false;
   };
 
   const timeSlots = ["07:00","07:30","08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00"];
+
+  const isSlotInDragRange = (date: string, time: string) => {
+    if (!isDragging || !dragStart || !dragEnd || date !== dragStart.date) return false;
+    const startIndex = timeSlots.indexOf(dragStart.time);
+    const endIndex = timeSlots.indexOf(dragEnd.time);
+    const currIndex = timeSlots.indexOf(time);
+    if (startIndex === -1 || endIndex === -1 || currIndex === -1) return false;
+    return currIndex >= Math.min(startIndex, endIndex) && currIndex <= Math.max(startIndex, endIndex);
+  };
+
+  const getDragLabel = (date: string, time: string) => {
+    if (!isDragging || !dragStart || !dragEnd || date !== dragStart.date) return "+ Booking";
+    const startIndex = timeSlots.indexOf(dragStart.time);
+    const endIndex = timeSlots.indexOf(dragEnd.time);
+    const currIndex = timeSlots.indexOf(time);
+    if (startIndex === -1 || endIndex === -1 || currIndex === -1) return "+ Booking";
+
+    const minIdx = Math.min(startIndex, endIndex);
+    const maxIdx = Math.max(startIndex, endIndex);
+
+    if (currIndex < minIdx || currIndex > maxIdx) return "+ Booking";
+
+    if (minIdx === maxIdx) return "30 Mins";
+    if (currIndex === minIdx) return `Mulai (${timeSlots[minIdx]})`;
+    if (currIndex === maxIdx) {
+      const timeOptions = [
+        "07:00","07:30","08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30",
+        "12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30",
+        "17:00","17:30","18:00"
+      ];
+      const endVal = timeOptions[maxIdx + 1] || "17:30";
+      return `Selesai (${endVal})`;
+    }
+    return "·";
+  };
+
+  const handleDragEnd = () => {
+    if (!isDragging || !dragStart || !dragEnd) return;
+    setIsDragging(false);
+
+    const startIndex = timeSlots.indexOf(dragStart.time);
+    const endIndex = timeSlots.indexOf(dragEnd.time);
+    if (startIndex === -1 || endIndex === -1) {
+      setDragStart(null);
+      setDragEnd(null);
+      return;
+    }
+
+    const minIdx = Math.min(startIndex, endIndex);
+    const maxIdx = Math.max(startIndex, endIndex);
+    const selectedTimes = timeSlots.slice(minIdx, maxIdx + 1);
+
+    // Validate conflicts
+    const hasConflict = selectedTimes.some(t => isBooked(dragStart.date, t));
+    if (hasConflict) {
+      toast.error("Rentang waktu yang dipilih berbenturan dengan booking yang sudah ada!");
+      setDragStart(null);
+      setDragEnd(null);
+      return;
+    }
+
+    const startTime = selectedTimes[0];
+    const timeOptions = [
+      "07:00","07:30","08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30",
+      "12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30",
+      "17:00","17:30","18:00"
+    ];
+    const startIdxInOptions = timeOptions.indexOf(startTime);
+    const selectedLen = selectedTimes.length;
+    const endTime = timeOptions[startIdxInOptions + selectedLen] || "17:30";
+
+    setSelectedSlot({ date: dragStart.date, time: startTime, endTime });
+    setShowBookingModal(true);
+    fetchAvailability(); // Double check current availability
+
+    setDragStart(null);
+    setDragEnd(null);
+  };
 
   const facilityIcons: Record<string, any> = {
     tv: { icon: <Monitor size={16} />, label: "TV Monitor" },
@@ -117,29 +234,33 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
     );
   }
 
-  const photos = room.photos || [];
-  const heroImage = photos.find((p: any) => p.is_primary)?.url || photos[0]?.url;
+  let photos = room.photos || [];
+  if (photos.length === 0 && room.image_url) {
+    photos = [{ url: room.image_url, id: 'primary' }];
+  }
+  
+  const heroImage = getImageUrl(room.image_url);
   const layouts = room.layouts || [];
   const facilities = room.facilities || {};
 
   return (
     <div className="flex flex-col h-full overflow-auto">
       {/* Hero */}
-      <div className="relative h-56 bg-gray-200 flex-shrink-0">
+      <div className="relative h-32 bg-gray-200 flex-shrink-0">
         {heroImage
           ? <img src={heroImage} alt={room.name} className="w-full h-full object-cover" />
           : <div className="w-full h-full bg-gradient-to-br from-[#1E3A5F] to-[#0F2144]" />}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         <button onClick={() => onNavigate("rooms")}
           className="absolute top-4 left-4 bg-white/90 hover:bg-white text-gray-700 rounded-lg p-2 flex items-center gap-1.5 text-sm shadow">
           <ArrowLeft size={16} /> Kembali
         </button>
         <div className="absolute bottom-4 left-4 right-4">
-          <h1 className="text-white" style={{ fontWeight: 700, fontSize: "1.3rem" }}>{room.name}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <MapPin size={14} className="text-white/70" />
-            <span className="text-white/80 text-sm">{room.floor_name} · {room.building_name}</span>
-            <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${room.status === "active" ? "bg-green-400/80 text-white" : "bg-gray-400/80 text-white"}`} style={{ fontWeight: 500 }}>
+          <h1 className="text-white" style={{ fontWeight: 700, fontSize: "1.4rem" }}>{room.name}</h1>
+          <div className="flex items-center gap-2 mt-1.5">
+            <MapPin size={14} className="text-white/80" />
+            <span className="text-white/90 text-sm">{room.floor_name} · {room.building_name}</span>
+            <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${room.status === "active" ? "bg-green-500/90 text-white" : "bg-gray-500/90 text-white"}`} style={{ fontWeight: 500 }}>
               {room.status === "active" ? "Aktif" : "Nonaktif"}
             </span>
           </div>
@@ -147,16 +268,19 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
       </div>
 
       {/* Quick stats */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4 flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 px-6 py-1 grid grid-cols-2 sm:grid-cols-4 gap-4 flex-shrink-0 items-center">
         {[
           { icon: <Users size={18} className="text-blue-500" />, label: "Kapasitas", value: layouts.length > 0 ? `s.d. ${Math.max(...layouts.map((l: any) => l.capacity || 0))} orang` : "–" },
           { icon: <Clock size={18} className="text-purple-500" />, label: "Operasional", value: room.operational_start ? `${room.operational_start} – ${room.operational_end}` : "24 Jam" },
           { icon: <Calendar size={18} className="text-green-500" />, label: "Sistem Booking", value: room.approval_type === "instant" ? "Instan" : "Perlu Approval" },
           { icon: <Monitor size={18} className="text-orange-500" />, label: "Layout", value: `${layouts.length} tipe` },
         ].map((s, i) => (
-          <div key={i} className="flex items-start gap-3">
+          <div key={i} className="flex items-center gap-3 py-1">
             <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100">{s.icon}</div>
-            <div><div className="text-xs text-gray-400">{s.label}</div><div className="text-sm text-gray-700" style={{ fontWeight: 500 }}>{s.value}</div></div>
+            <div>
+              <div className="text-xs text-gray-400">{s.label}</div>
+              <div className="text-sm text-gray-700" style={{ fontWeight: 500 }}>{s.value}</div>
+            </div>
           </div>
         ))}
       </div>
@@ -176,25 +300,55 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
       <div className="flex-1 overflow-auto bg-gray-50">
         {activeTab === "info" && (
           <div className="p-6 space-y-6">
-            {room.description && (
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <h3 className="text-gray-700 mb-2" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Deskripsi</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{room.description}</p>
-              </div>
-            )}
-            {layouts.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Layout & Kapasitas</h3>
-                <div className="space-y-2">
-                  {layouts.map((l: any) => (
-                    <div key={l.id || l.name} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                      <span className="text-sm text-gray-600">{l.name}</span>
-                      <span className="text-sm" style={{ fontWeight: 500 }}>{l.capacity} orang</span>
+            
+            {/* Carousel Galeri Foto */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Galeri Foto Ruangan</h3>
+              {photos.length > 0 ? (
+                <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
+                  {photos.map((p: any, i: number) => (
+                    <div key={p.id || i} 
+                         className="w-64 h-40 sm:w-72 sm:h-48 rounded-xl overflow-hidden border border-gray-200 flex-shrink-0 snap-center relative group cursor-pointer"
+                         onClick={() => setSelectedPhoto(p.url)}>
+                      <img src={getImageUrl(p.url)} alt={`Foto ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <svg className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="bg-gray-50 border border-gray-100 rounded-lg p-6 flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  </div>
+                  <p className="text-sm text-gray-500 font-medium">Belum ada foto galeri</p>
+                  <p className="text-xs text-gray-400 mt-1">Admin belum mengunggah foto tambahan untuk ruangan ini.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-6">
+              {room.description && (
+                <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1">
+                  <h3 className="text-gray-700 mb-2" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Deskripsi</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{room.description}</p>
+                </div>
+              )}
+              {layouts.length > 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1">
+                  <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Layout & Kapasitas</h3>
+                  <div className="space-y-2">
+                    {layouts.map((l: any) => (
+                      <div key={l.id || l.layout_type} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                        <span className="text-sm text-gray-600">{l.layout_type}</span>
+                        <span className="text-sm" style={{ fontWeight: 500 }}>{l.capacity} orang</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             {Object.keys(facilities).length > 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Fasilitas</h3>
@@ -222,7 +376,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
               <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                 <div>
                   <h3 className="text-gray-700" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Jadwal Mingguan</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Klik slot kosong untuk booking</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Tarik/drag rentang waktu kosong untuk membooking</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => setCurrentWeekOffset(o => o - 1)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400">‹</button>
@@ -230,7 +384,11 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                   <button onClick={() => setCurrentWeekOffset(o => o + 1)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400">›</button>
                 </div>
               </div>
-              <div className="overflow-auto">
+              <div 
+                className="overflow-auto select-none"
+                onMouseUp={handleDragEnd}
+                onMouseLeave={() => { if (isDragging) setIsDragging(false); }}
+              >
                 <div style={{ minWidth: "600px" }}>
                   <div className="grid border-b border-gray-200" style={{ gridTemplateColumns: "80px repeat(5, 1fr)" }}>
                     <div className="p-3" />
@@ -246,14 +404,78 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                       <div className="px-3 py-2 text-xs text-gray-400 text-right" style={{ fontWeight: 500 }}>{time}</div>
                       {weekDays.map(d => {
                         const booked = isBooked(d.full, time);
+                        const isInDrag = isSlotInDragRange(d.full, time);
+                        const dragLabel = getDragLabel(d.full, time);
                         return (
-                          <div key={d.full} className="border-l border-gray-100 h-10 relative">
-                            {booked
-                              ? <div className="absolute inset-0.5 rounded bg-blue-200" />
-                              : <button onClick={() => { setSelectedSlot({ time, date: d.full }); setShowBookingModal(true); }}
-                                  className="absolute inset-0.5 rounded hover:bg-green-50 hover:border border-green-200 transition-all group">
-                                  <span className="text-green-600 opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontSize: "10px" }}>+ Booking</span>
-                                </button>}
+                          <div
+                            key={d.full}
+                            className="border-l border-gray-100 h-10 relative"
+                            onMouseDown={(e) => {
+                              if (!booked) {
+                                e.preventDefault(); // Prevent text/ghost dragging in browser
+                                setIsDragging(true);
+                                setDragStart({ date: d.full, time });
+                                setDragEnd({ date: d.full, time });
+                              }
+                            }}
+                            onMouseEnter={() => {
+                              if (isDragging && dragStart && dragStart.date === d.full) {
+                                // Concurrency overlap prevention: restrict dragging beyond booked slots
+                                const startIdx = timeSlots.indexOf(dragStart.time);
+                                const currIdx = timeSlots.indexOf(time);
+                                const minIdx = Math.min(startIdx, currIdx);
+                                const maxIdx = Math.max(startIdx, currIdx);
+                                const pathTimes = timeSlots.slice(minIdx, maxIdx + 1);
+                                const pathHasConflict = pathTimes.some(t => isBooked(d.full, t));
+                                if (!pathHasConflict) {
+                                  setDragEnd({ date: d.full, time });
+                                }
+                              }
+                            }}
+                          >
+                            {booked ? (
+                              isBlackoutDate(d.full) ? (
+                                <div className="absolute inset-0.5 rounded bg-gray-100 border border-gray-200 text-gray-400 text-[10px] font-medium flex items-center justify-center shadow-sm select-none">Libur/Tutup</div>
+                              ) : (() => {
+                                const booking = getBookingForSlot(d.full, time);
+                                return (
+                                  <div
+                                    className={`absolute inset-0.5 rounded flex items-center justify-center overflow-hidden border shadow-sm select-none ${
+                                      booking?.status === "pending"
+                                        ? "bg-amber-500 border-amber-600 text-white"
+                                        : booking?.status === "ongoing"
+                                        ? "bg-emerald-600 border-emerald-700 text-white"
+                                        : "bg-[#1E3A5F] border-[#132742] text-white"
+                                    }`}
+                                    title={booking ? `${booking.agenda} (${booking.userName || "Pemesan"}) - ${booking.status === "pending" ? "Menunggu Persetujuan" : "Disetujui"}` : "Terbooking"}
+                                  >
+                                    {booking && time === booking.startTime && (
+                                      <span className="text-white truncate px-1 text-center font-bold" style={{ fontSize: "9px", fontWeight: 700 }}>
+                                        {booking.status === "pending" ? "⏳ " : ""}
+                                        {booking.agenda}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })()
+                            ) : (
+                              <div
+                                className={`absolute inset-0.5 rounded transition-all cursor-pointer flex items-center justify-center border text-center px-1 ${
+                                  isInDrag
+                                    ? "bg-amber-100 border-amber-400 text-amber-800 font-semibold shadow-md scale-[1.01] z-10 animate-pulse"
+                                    : "hover:bg-green-50 border-transparent hover:border-green-200 text-transparent hover:text-green-600"
+                                }`}
+                              >
+                                <span className="text-[10px]" style={{ fontWeight: 600 }}>
+                                  {isInDrag ? (
+                                    <span className="flex items-center gap-1">
+                                      <span>⏳</span>
+                                      {dragLabel}
+                                    </span>
+                                  ) : "+ Booking"}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -261,9 +483,12 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                   ))}
                 </div>
               </div>
-              <div className="p-4 border-t border-gray-100 flex gap-4 text-xs text-gray-500">
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-blue-200" /><span>Sudah Dibooking</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-green-100 border border-green-200" /><span>Tersedia</span></div>
+              <div className="p-4 border-t border-gray-100 flex flex-wrap gap-4 text-xs text-gray-500 bg-gray-50/50">
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-500" /><span>⏳ Menunggu Persetujuan</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#1E3A5F]" /><span>✅ Disetujui (Terkonfirmasi)</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-emerald-600" /><span>⚡ Sedang Berjalan</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-100 border border-amber-400" /><span>Pilihan Anda (Proses Request)</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-white border border-gray-200" /><span>Tersedia</span></div>
               </div>
             </div>
           </div>
@@ -292,7 +517,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
       {/* Sticky CTA */}
       {room.status === "active" && (
         <div className="bg-white border-t border-gray-200 px-6 py-4 flex-shrink-0">
-          <button onClick={() => { setSelectedSlot(null); setShowBookingModal(true); }}
+          <button onClick={() => { setSelectedSlot(null); setShowBookingModal(true); fetchAvailability(); }}
             className="w-full py-3 bg-[#1E3A5F] text-white rounded-xl text-sm hover:bg-[#0F2144] transition-all" style={{ fontWeight: 500 }}>
             Booking Ruangan Ini
           </button>
@@ -300,19 +525,56 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
       )}
 
       {showBookingModal && room && (
-        <QuickBookingModal room={room} initialDate={selectedSlot?.date} initialTime={selectedSlot?.time}
+        <QuickBookingModal room={room} initialDate={selectedSlot?.date} initialTime={selectedSlot?.time} initialEndTime={selectedSlot?.endTime}
           onClose={() => setShowBookingModal(false)}
-          onConfirm={() => { setShowBookingModal(false); bookingService.list({ room_id: roomId }).then(d => setBookings(d.bookings || d)); }} />
+          onConfirm={() => {
+            setShowBookingModal(false);
+            bookingService.list({ room_id: roomId, limit: 50 }).then(d => setBookings(d.data || d.bookings || d));
+            fetchAvailability();
+          }} />
       )}
+
+      {/* Lightbox Modal */}
+      {selectedPhoto && (() => {
+        const selectedIndex = photos.findIndex((p: any) => p.url === selectedPhoto);
+        const hasPrev = selectedIndex > 0;
+        const hasNext = selectedIndex >= 0 && selectedIndex < photos.length - 1;
+
+        return (
+          <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelectedPhoto(null)}>
+            <button className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white/70 hover:text-white p-2 z-10" onClick={() => setSelectedPhoto(null)}>
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            
+            {hasPrev && (
+              <button className="absolute left-2 sm:left-8 text-white/50 hover:text-white p-3 rounded-full hover:bg-white/10 transition-colors z-10" 
+                      onClick={(e) => { e.stopPropagation(); setSelectedPhoto(photos[selectedIndex - 1].url); }}>
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+            )}
+            
+            <div className="relative max-w-full max-h-[90vh] flex items-center justify-center px-12 sm:px-24" onClick={e => e.stopPropagation()}>
+              <img src={getImageUrl(selectedPhoto)} alt="Detail Foto" className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl select-none" />
+            </div>
+
+            {hasNext && (
+              <button className="absolute right-2 sm:right-8 text-white/50 hover:text-white p-3 rounded-full hover:bg-white/10 transition-colors z-10" 
+                      onClick={(e) => { e.stopPropagation(); setSelectedPhoto(photos[selectedIndex + 1].url); }}>
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
 
-function QuickBookingModal({ room, initialDate, initialTime, onClose, onConfirm }: any) {
+function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onClose, onConfirm }: any) {
   const [form, setForm] = useState({
     date: initialDate || new Date().toISOString().split("T")[0],
     startTime: initialTime || "",
-    endTime: "",
+    endTime: initialEndTime || "",
     agenda: "",
     participants: "",
     layout: "",

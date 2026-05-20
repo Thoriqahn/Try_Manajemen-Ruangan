@@ -142,7 +142,7 @@ export function GlobalPolicy() {
             <div className="mt-3 pt-3 border-t border-gray-100">
               <p className="text-xs text-gray-500 mb-2" style={{ fontWeight: 500 }}>Tanggal yang diblokir ({blackoutDates.length}):</p>
               <div className="flex flex-wrap gap-1">
-                {blackoutDates.sort().map(date => (
+                {[...blackoutDates].sort().map(date => (
                   <button key={date} onClick={() => toggleBlackout(date)} className="flex items-center gap-1 px-2 py-1 bg-red-50 text-red-600 text-xs rounded-lg border border-red-100 hover:bg-red-100">
                     {date}<span className="text-red-400">×</span>
                   </button>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Search, ChevronDown, ChevronRight, Shield, User, Cpu, Check, Edit2, AlertTriangle, X, Building2, UserCog, RefreshCw } from "lucide-react";
 import { userService } from "../../services/index";
 import { buildingService } from "../../services/index";
+import { UserStore } from "../../services/apiClient";
 
 type Role = "user" | "admin" | "superadmin" | "api";
 type Status = "active" | "inactive";
@@ -19,10 +20,14 @@ export function UserManagement() {
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterRoom, setFilterRoom] = useState("all");
   const [editModal, setEditModal] = useState<any>(null);
   const [assignModal, setAssignModal] = useState<any>(null);
   const [buildings, setBuildings] = useState<any[]>([]);
   const [expandedBuildings, setExpandedBuildings] = useState<string[]>([]);
+
+  const currentUser = UserStore.get();
+  const isHyperAdmin = currentUser?.id === "u-super" || currentUser?.email === "superadmin@oikn.go.id";
 
   const load = async () => {
     setLoading(true);
@@ -33,31 +38,44 @@ export function UserManagement() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [filterRole, filterStatus]);
+  const loadBuildings = async () => {
+    try {
+      const res = await buildingService.list();
+      const bList = res.data || [];
+      const withFloors = await Promise.all(bList.map(async (b: any) => {
+        const fRes = await buildingService.listFloors(b.id);
+        return { ...b, floors: fRes.data || [] };
+      }));
+      setBuildings(withFloors);
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => {
+    load();
+    loadBuildings();
+  }, [filterRole, filterStatus]);
 
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); load(); };
 
   const openAssign = async (user: any) => {
     setAssignModal(user);
     if (buildings.length === 0) {
-      try {
-        const res = await buildingService.list();
-        const bList = res.data || [];
-        // fetch floors for each building
-        const withFloors = await Promise.all(bList.map(async (b: any) => {
-          const fRes = await buildingService.listFloors(b.id);
-          return { ...b, floors: fRes.data || [] };
-        }));
-        setBuildings(withFloors);
-      } catch (e) { console.error(e); }
+      await loadBuildings();
     }
   };
 
-  const handleSaveRole = async (userId: string, role: Role, status: Status) => {
+  const handleSaveRole = async (userId: string, role: Role, status: Status, selectedRooms?: string[]) => {
     try {
+      if (role === "admin" && (!selectedRooms || selectedRooms.length === 0)) {
+        alert("Wilayah tugas wajib diisi untuk Admin Ruangan!");
+        return;
+      }
       await userService.updateRole(userId, role);
       await userService.updateStatus(userId, status);
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role, status } : u));
+      if (role === "admin" && selectedRooms) {
+        await userService.updateRoomAssignment(userId, selectedRooms);
+      }
+      await load();
     } catch (e: any) { alert(e.message || "Gagal memperbarui"); }
     setEditModal(null);
   };
@@ -65,12 +83,17 @@ export function UserManagement() {
   const handleSaveAssignment = async (userId: string, roomIds: string[]) => {
     try {
       await userService.updateRoomAssignment(userId, roomIds);
+      await load();
     } catch (e: any) { alert(e.message || "Gagal menyimpan wilayah tugas"); }
     setAssignModal(null);
   };
 
   const filteredUsers = users.filter(u => {
     if (search && !u.name?.toLowerCase().includes(search.toLowerCase()) && !u.email?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterRole === "admin" && filterRoom !== "all") {
+      const hasRoom = u.assignedRooms?.some((r: any) => r.room_id === filterRoom);
+      if (!hasRoom) return false;
+    }
     return true;
   });
 
@@ -87,12 +110,24 @@ export function UserManagement() {
           <input type="text" placeholder="Cari nama atau email..." value={search} onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white" />
         </div>
-        <select value={filterRole} onChange={e => setFilterRole(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white">
+        <select value={filterRole} onChange={e => { setFilterRole(e.target.value); setFilterRoom("all"); }} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white">
           <option value="all">Semua Role</option>
           <option value="user">Pengguna Biasa</option>
           <option value="admin">Admin Ruangan</option>
           <option value="superadmin">Super Admin</option>
         </select>
+        {filterRole === "admin" && (
+          <select value={filterRoom} onChange={e => setFilterRoom(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white">
+            <option value="all">Semua Wilayah Tugas</option>
+            {buildings.flatMap((b: any) =>
+              (b.floors || []).flatMap((f: any) =>
+                (f.rooms || []).map((r: any) => (
+                  <option key={r.id} value={r.id}>{b.name} - {r.name}</option>
+                ))
+              )
+            )}
+          </select>
+        )}
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white">
           <option value="all">Semua Status</option>
           <option value="active">Aktif</option>
@@ -111,14 +146,14 @@ export function UserManagement() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  {["Pengguna", "Peran", "Status", "Bergabung", "Aksi"].map(h => (
+                  {["Pengguna", "Peran", "Wilayah Tugas", "Status", "Bergabung", "Aksi"].map(h => (
                     <th key={h} className={`${h === "Aksi" ? "text-right" : "text-left"} px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider`} style={{ fontWeight: 600 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filteredUsers.length === 0 ? (
-                  <tr><td colSpan={5} className="px-5 py-12 text-center text-sm text-gray-400">Tidak ada pengguna ditemukan</td></tr>
+                  <tr><td colSpan={6} className="px-5 py-12 text-center text-sm text-gray-400">Tidak ada pengguna ditemukan</td></tr>
                 ) : filteredUsers.map(user => {
                   const roleCfg = roleConfig[user.role as Role] || roleConfig.user;
                   return (
@@ -140,6 +175,23 @@ export function UserManagement() {
                         </span>
                       </td>
                       <td className="px-5 py-4">
+                        {user.role === "admin" ? (
+                          <div className="flex flex-wrap gap-1 max-w-[220px]">
+                            {user.assignedRooms && user.assignedRooms.length > 0 ? (
+                              user.assignedRooms.map((r: any) => (
+                                <span key={r.room_id} className="text-[10px] bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded" style={{ fontWeight: 500 }}>
+                                  {r.room_name}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-red-500 font-medium">Belum ada wilayah tugas</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
                         <span className={`flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-full text-xs ${user.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`} style={{ fontWeight: 500 }}>
                           <span className={`w-1.5 h-1.5 rounded-full ${user.status === "active" ? "bg-green-500" : "bg-gray-400"}`} />
                           {user.status === "active" ? "Aktif" : "Nonaktif"}
@@ -153,9 +205,13 @@ export function UserManagement() {
                               <Building2 size={11} /> Wilayah Tugas
                             </button>
                           )}
-                          <button onClick={() => setEditModal(user)} className="px-3 py-1.5 text-xs border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 flex items-center gap-1 transition-colors">
-                            <Edit2 size={11} /> Edit Peran
-                          </button>
+                          {!(user.role === "superadmin" && !isHyperAdmin) ? (
+                            <button onClick={() => setEditModal(user)} className="px-3 py-1.5 text-xs border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 flex items-center gap-1 transition-colors">
+                              <Edit2 size={11} /> Edit Peran
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-400 italic px-3 py-1.5">Super Admin Utama</span>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -168,8 +224,8 @@ export function UserManagement() {
       )}
 
       {editModal && (
-        <RoleEditModal user={editModal} currentRole={editModal.role as Role} currentStatus={editModal.status as Status}
-          onSave={async (role, status) => { await handleSaveRole(editModal.id, role, status); if (role === "admin") openAssign({ ...editModal, role }); }}
+        <RoleEditModal user={editModal} currentRole={editModal.role as Role} currentStatus={editModal.status as Status} buildings={buildings}
+          onSave={async (role, status, selectedRooms) => { await handleSaveRole(editModal.id, role, status, selectedRooms); }}
           onClose={() => setEditModal(null)} />
       )}
 
@@ -183,7 +239,9 @@ export function UserManagement() {
 
 function AssignModal({ user, buildings, onClose, onSave }: any) {
   const [expandedBuildings, setExpandedBuildings] = useState<string[]>(buildings[0] ? [buildings[0].id] : []);
-  const [selectedRooms, setSelectedRooms] = useState<string[]>(user.assigned_rooms || []);
+  const [selectedRooms, setSelectedRooms] = useState<string[]>(
+    user.assignedRooms ? user.assignedRooms.map((r: any) => r.room_id) : []
+  );
 
   const toggleBuilding = (id: string) => setExpandedBuildings(p => p.includes(id) ? p.filter(b => b !== id) : [...p, id]);
   const toggleRoom = (id: string) => setSelectedRooms(p => p.includes(id) ? p.filter(r => r !== id) : [...p, id]);
@@ -238,8 +296,8 @@ function AssignModal({ user, buildings, onClose, onSave }: any) {
   );
 }
 
-function RoleEditModal({ user, currentRole, currentStatus, onSave, onClose }: {
-  user: any; currentRole: Role; currentStatus: Status; onSave: (role: Role, status: Status) => void; onClose: () => void;
+function RoleEditModal({ user, currentRole, currentStatus, buildings, onSave, onClose }: {
+  user: any; currentRole: Role; currentStatus: Status; buildings: any[]; onSave: (role: Role, status: Status, selectedRooms?: string[]) => void; onClose: () => void;
 }) {
   const [role, setRole] = useState<Role>(currentRole);
   const [status, setStatus] = useState<Status>(currentStatus);
@@ -247,19 +305,36 @@ function RoleEditModal({ user, currentRole, currentStatus, onSave, onClose }: {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const currentUser = UserStore.get();
+  const isHyperAdmin = currentUser?.id === "u-super" || currentUser?.email === "superadmin@oikn.go.id";
+
+  const [expandedBuildings, setExpandedBuildings] = useState<string[]>(buildings[0] ? [buildings[0].id] : []);
+  const [selectedRooms, setSelectedRooms] = useState<string[]>(
+    user.assignedRooms ? user.assignedRooms.map((r: any) => r.room_id) : []
+  );
+
+  const toggleBuilding = (id: string) => setExpandedBuildings(p => p.includes(id) ? p.filter(b => b !== id) : [...p, id]);
+  const toggleRoom = (id: string) => setSelectedRooms(p => p.includes(id) ? p.filter(r => r !== id) : [...p, id]);
+
   const roleOptions = [
     { value: "user" as Role, label: "Pengguna Biasa", desc: "Dapat melihat kalender dan melakukan booking ruangan", color: "bg-blue-50", borderColor: "border-blue-400", icon: <User size={18} className="text-blue-600" /> },
     { value: "admin" as Role, label: "Admin Ruangan", desc: "Mengelola ruangan, menyetujui & menolak booking", color: "bg-purple-50", borderColor: "border-purple-400", icon: <Shield size={18} className="text-purple-600" /> },
-    { value: "superadmin" as Role, label: "Super Admin", desc: "Akses penuh: kelola pengguna, kebijakan global, audit trail", color: "bg-red-50", borderColor: "border-red-400", icon: <UserCog size={18} className="text-red-600" />, warn: true },
+    ...(isHyperAdmin ? [
+      { value: "superadmin" as Role, label: "Super Admin", desc: "Akses penuh: kelola pengguna, kebijakan global, audit trail", color: "bg-red-50", borderColor: "border-red-400", icon: <UserCog size={18} className="text-red-600" />, warn: true }
+    ] : [])
   ];
 
   const handleSave = () => {
+    if (role === "admin" && selectedRooms.length === 0) {
+      alert("Admin Ruangan wajib memiliki minimal 1 Wilayah Tugas!");
+      return;
+    }
     if (role === "superadmin" && !confirmSuperadmin) { setConfirmSuperadmin(true); return; }
     setLoading(true);
-    setTimeout(() => { setLoading(false); setSaved(true); setTimeout(() => onSave(role, status), 800); }, 500);
+    setTimeout(() => { setLoading(false); setSaved(true); setTimeout(() => onSave(role, status, selectedRooms), 800); }, 500);
   };
 
-  const hasChanges = role !== currentRole || status !== currentStatus;
+  const hasChanges = role !== currentRole || status !== currentStatus || (role === "admin" && JSON.stringify(selectedRooms.sort()) !== JSON.stringify((user.assignedRooms?.map((r: any) => r.room_id) || []).sort()));
 
   if (saved) return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -303,6 +378,51 @@ function RoleEditModal({ user, currentRole, currentStatus, onSave, onClose }: {
               ))}
             </div>
           </div>
+          
+          {role === "admin" && (
+            <div className="border border-purple-100 rounded-xl p-4 bg-purple-50/50 space-y-3">
+              <div className="flex items-center gap-2 text-purple-700 font-semibold text-sm">
+                <Building2 size={16} />
+                <span>Wilayah Tugas (Wajib) <span className="text-red-500">*</span></span>
+              </div>
+              <p className="text-xs text-gray-500">Tentukan gedung dan ruangan mana saja yang wajib dikelola oleh Admin Ruangan ini.</p>
+              
+              <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+                {buildings.length === 0 && <p className="text-xs text-gray-400 italic">Memuat data gedung & ruangan...</p>}
+                {buildings.map((building: any) => (
+                  <div key={building.id} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                    <button type="button" onClick={() => toggleBuilding(building.id)} className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <span className="text-xs text-gray-700 font-bold">{building.name}</span>
+                      {expandedBuildings.includes(building.id) ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+                    </button>
+                    {expandedBuildings.includes(building.id) && (
+                      <div className="px-3 py-2 space-y-3">
+                        {(building.floors || []).map((floor: any) => (
+                          <div key={floor.id}>
+                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">{floor.name}</div>
+                            <div className="space-y-1.5">
+                              {(floor.rooms || []).map((room: any) => (
+                                <label key={room.id} className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedRooms.includes(room.id)}
+                                    onChange={() => toggleRoom(room.id)}
+                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                  />
+                                  <span className="text-xs text-gray-600">{room.name}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm text-gray-700 mb-3" style={{ fontWeight: 600 }}>Status Akun</label>
             <div className="grid grid-cols-2 gap-2">
