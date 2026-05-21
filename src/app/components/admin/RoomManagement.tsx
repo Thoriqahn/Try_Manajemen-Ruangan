@@ -132,6 +132,8 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                               <img src={getImageUrl(room.image_url)} alt={room.name} className="w-full h-full object-cover" />
                             ) : room.room_type === 'digital' ? (
                               <div className="w-full h-full bg-purple-50 flex items-center justify-center text-purple-600 font-semibold text-sm">Zoom</div>
+                            ) : room.room_type === 'hybrid' ? (
+                              <div className="w-full h-full bg-teal-50 flex items-center justify-center text-teal-600 font-semibold text-sm">H</div>
                             ) : (
                               <MapPin size={18} className="text-gray-400" />
                             )}
@@ -150,6 +152,15 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                             <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" />
                             Digital (Zoom)
                           </span>
+                        ) : room.room_type === 'hybrid' ? (
+                          <>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-100 text-teal-800 border border-teal-200 mb-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-teal-600 animate-pulse" />
+                              Hybrid (Fisik + Zoom)
+                            </span>
+                            <div className="flex items-center gap-1 text-sm text-gray-600"><MapPin size={13} className="text-gray-400" /><span>{room.floor_name}</span></div>
+                            <div className="text-xs text-gray-400 mt-0.5">{room.building_name}</div>
+                          </>
                         ) : (
                           <>
                             <div className="flex items-center gap-1 text-sm text-gray-600"><MapPin size={13} className="text-gray-400" /><span>{room.floor_name}</span></div>
@@ -259,7 +270,7 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!room && form.room_type === 'physical' && photos.length < 3) {
+    if (!room && form.room_type !== 'digital' && photos.length < 3) {
       setError("Pilih minimal 3 foto untuk ruangan baru");
       return;
     }
@@ -321,9 +332,13 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
             
             <div>
               <label className="block text-sm text-gray-700 mb-2" style={{ fontWeight: 500 }}>Tipe Ruangan <span className="text-red-500">*</span></label>
-              <div className="grid grid-cols-2 gap-2">
-                {[{ value: "physical", label: "Ruangan Fisik", desc: "Ruangan rapat di kantor/gedung" }, { value: "digital", label: "Ruangan Digital (Zoom)", desc: "Ruangan virtual berbasis Zoom" }].map(opt => (
-                  <label key={opt.value} className={`p-3 rounded-lg border cursor-pointer transition-all ${form.room_type === opt.value ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: "physical", label: "Ruangan Fisik", desc: "Ruangan rapat di kantor/gedung", activeColor: "border-blue-400 bg-blue-50" },
+                  { value: "hybrid", label: "Ruangan Hybrid", desc: "Ruangan fisik + fasilitas Zoom", activeColor: "border-teal-400 bg-teal-50" },
+                  { value: "digital", label: "Ruangan Digital", desc: "Ruangan virtual berbasis Zoom", activeColor: "border-purple-400 bg-purple-50" },
+                ].map(opt => (
+                  <label key={opt.value} className={`p-3 rounded-lg border cursor-pointer transition-all ${form.room_type === opt.value ? opt.activeColor : "border-gray-200 hover:border-gray-300"}`}>
                     <input type="radio" value={opt.value} checked={form.room_type === opt.value} onChange={e => setForm({ ...form, room_type: e.target.value })} className="sr-only" />
                     <div className="text-sm text-gray-700 font-semibold">{opt.label}</div>
                     <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
@@ -337,23 +352,36 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
               <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} maxLength={100} required className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" />
             </div>
 
-            {form.room_type === 'physical' ? (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Gedung <span className="text-red-500">*</span></label>
-                  <select value={form.building_id} onChange={e => setForm({ ...form, building_id: e.target.value, floor_id: "" })} required className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50">
-                    <option value="">Pilih gedung</option>
-                    {buildings.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
+            {form.room_type !== 'digital' ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Gedung <span className="text-red-500">*</span></label>
+                    <select value={form.building_id} onChange={e => setForm({ ...form, building_id: e.target.value, floor_id: "" })} required className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50">
+                      <option value="">Pilih gedung</option>
+                      {buildings.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Lantai <span className="text-red-500">*</span></label>
+                    <select value={form.floor_id} onChange={e => setForm({ ...form, floor_id: e.target.value })} required disabled={!form.building_id} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 disabled:opacity-50">
+                      <option value="">Pilih lantai</option>
+                      {floors.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Lantai <span className="text-red-500">*</span></label>
-                  <select value={form.floor_id} onChange={e => setForm({ ...form, floor_id: e.target.value })} required disabled={!form.building_id} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 disabled:opacity-50">
-                    <option value="">Pilih lantai</option>
-                    {floors.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
-                  </select>
-                </div>
-              </div>
+                {form.room_type === 'hybrid' && (
+                  <div className="p-4 bg-teal-50 rounded-xl border border-teal-200 flex items-start gap-3">
+                    <div className="p-2 bg-teal-100 text-teal-700 rounded-lg font-bold text-xs uppercase flex-shrink-0">Hybrid</div>
+                    <div>
+                      <h5 className="text-sm font-semibold text-teal-950">Ruangan Fisik + Zoom Otomatis</h5>
+                      <p className="text-xs text-teal-700 mt-0.5">
+                        Ruangan fisik yang dilengkapi fasilitas virtual Zoom. Saat pengguna memesan ruangan ini, link Zoom Premium akan dibuat otomatis sekaligus mengamankan ruangan fisiknya.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="p-4 bg-purple-50 rounded-xl border border-purple-100 flex items-start gap-3">
                 <div className="p-2 bg-purple-100 text-purple-600 rounded-lg font-bold text-xs uppercase flex-shrink-0">Zoom</div>
@@ -382,7 +410,7 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
             </div>
           </div>
 
-          {form.room_type === 'physical' && (
+          {form.room_type !== 'digital' && (
             <div className="space-y-3">
               <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>2. Tata Letak & Kapasitas</h4>
               {layouts.map((l, i) => (
@@ -462,7 +490,7 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
             <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>4. Foto Ruangan</h4>
             <div>
               <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>
-                Upload Foto {form.room_type === 'physical' ? "(Min. 3, Maks. 10)" : "(Opsional, Maks. 10)"} {!room && form.room_type === 'physical' && <span className="text-red-500">*</span>}
+                Upload Foto {form.room_type !== 'digital' ? "(Min. 3, Maks. 10)" : "(Opsional, Maks. 10)"} {!room && form.room_type !== 'digital' && <span className="text-red-500">*</span>}
               </label>
               <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
                 <input type="file" multiple accept="image/*" onChange={(e) => {
@@ -491,13 +519,13 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
                   ))}
                 </div>
               )}
-              {!room && form.room_type === 'physical' && photos.length > 0 && photos.length < 3 && <p className="text-xs text-red-500 mt-2">Pilih minimal {3 - photos.length} foto lagi</p>}
+              {!room && form.room_type !== 'digital' && photos.length > 0 && photos.length < 3 && <p className="text-xs text-red-500 mt-2">Pilih minimal {3 - photos.length} foto lagi</p>}
             </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="px-6 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Batal</button>
-            <button type="submit" disabled={!form.name || (form.room_type === 'physical' && (!form.building_id || !form.floor_id)) || loading}
+            <button type="submit" disabled={!form.name || (form.room_type !== 'digital' && (!form.building_id || !form.floor_id)) || loading}
               className="px-6 py-2.5 bg-[#1E3A5F] text-white rounded-lg text-sm hover:bg-[#0F2144] disabled:opacity-50 flex items-center gap-2">
               {loading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Menyimpan...</> : "Simpan Ruangan"}
             </button>

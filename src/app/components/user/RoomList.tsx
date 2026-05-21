@@ -173,6 +173,11 @@ export function RoomList({ onNavigate }: RoomListProps) {
                     <span className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">Zoom</span>
                     <div className="text-white text-xs font-bold tracking-widest opacity-80 uppercase">Zoom Digital Room</div>
                   </div>
+                ) : room.room_type === 'hybrid' ? (
+                  <div className="w-full h-full bg-gradient-to-br from-teal-500 to-indigo-600 flex flex-col items-center justify-center gap-2">
+                    <span className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white text-lg">🔄</span>
+                    <div className="text-white text-xs font-bold tracking-widest opacity-80 uppercase">Hybrid Room</div>
+                  </div>
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
                     <Monitor size={40} className="text-blue-300" />
@@ -195,6 +200,15 @@ export function RoomList({ onNavigate }: RoomListProps) {
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-600 font-semibold border border-purple-100 text-[10px]">
                       Virtual Meeting
                     </span>
+                  ) : room.room_type === 'hybrid' ? (
+                    <>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-teal-50 text-teal-700 font-semibold border border-teal-200 text-[10px]">
+                        Hybrid (Fisik + Zoom)
+                      </span>
+                      <span className="mx-1">·</span>
+                      <MapPin size={12} />
+                      <span className="truncate">{room.floor_name} · {room.building_name}</span>
+                    </>
                   ) : (
                     <>
                       <MapPin size={12} />
@@ -212,6 +226,21 @@ export function RoomList({ onNavigate }: RoomListProps) {
                     <div className="flex items-center gap-1">
                       <Monitor size={12} className="text-indigo-400" />
                       <span>Sesi Virtual</span>
+                    </div>
+                  </div>
+                ) : room.room_type === 'hybrid' ? (
+                  <div className="flex gap-3 text-xs text-gray-500 mb-3">
+                    <div className="flex items-center gap-1">
+                      <Users size={12} className="text-teal-400" />
+                      <span>s.d. {getMaxCapacity(room)} org</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Monitor size={12} className="text-indigo-400" />
+                      <span>+ Zoom</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Wifi size={12} className="text-teal-400" />
+                      <span>Hybrid</span>
                     </div>
                   </div>
                 ) : (
@@ -237,6 +266,14 @@ export function RoomList({ onNavigate }: RoomListProps) {
                   <div className="flex flex-wrap gap-1">
                     <span className="px-2 py-0.5 bg-purple-50 text-purple-600 text-[10px] rounded-full border border-purple-100">Zoom Premium</span>
                     <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] rounded-full border border-indigo-100">Auto Meeting Link</span>
+                  </div>
+                ) : room.room_type === 'hybrid' ? (
+                  <div className="flex flex-wrap gap-1">
+                    <span className="px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] rounded-full border border-teal-200">Zoom Premium</span>
+                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] rounded-full border border-indigo-100">Ruangan Fisik</span>
+                    {room.layouts?.slice(0, 2).map((l: any) => (
+                      <span key={l.id} className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">{l.layout_type}</span>
+                    ))}
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-1">

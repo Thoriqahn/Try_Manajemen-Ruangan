@@ -259,7 +259,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
           <h1 className="text-white" style={{ fontWeight: 700, fontSize: "1.4rem" }}>{room.name}</h1>
           <div className="flex items-center gap-2 mt-1.5">
             <MapPin size={14} className="text-white/80" />
-            <span className="text-white/90 text-sm">{room.room_type === 'digital' ? "Virtual Rapat · Zoom" : `${room.floor_name} · ${room.building_name}`}</span>
+            <span className="text-white/90 text-sm">{room.room_type === 'digital' ? "Virtual Rapat · Zoom" : room.room_type === 'hybrid' ? `Hybrid · ${room.floor_name} · ${room.building_name}` : `${room.floor_name} · ${room.building_name}`}</span>
             <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${room.status === "active" ? "bg-green-500/90 text-white" : "bg-gray-500/90 text-white"}`} style={{ fontWeight: 500 }}>
               {room.status === "active" ? "Aktif" : "Nonaktif"}
             </span>
@@ -273,7 +273,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
           { icon: <Users size={18} className="text-blue-500" />, label: "Kapasitas", value: room.room_type === 'digital' ? "s.d. 100 orang" : layouts.length > 0 ? `s.d. ${Math.max(...layouts.map((l: any) => l.capacity || 0))} orang` : "–" },
           { icon: <Clock size={18} className="text-purple-500" />, label: "Operasional", value: room.operational_start ? `${room.operational_start} – ${room.operational_end}` : "24 Jam" },
           { icon: <Calendar size={18} className="text-green-500" />, label: "Sistem Booking", value: room.approval_type === "instant" ? "Instan" : "Perlu Approval" },
-          { icon: <Monitor size={18} className="text-orange-500" />, label: room.room_type === 'digital' ? "Platform" : "Layout", value: room.room_type === 'digital' ? "Zoom Premium" : `${layouts.length} tipe` },
+          { icon: <Monitor size={18} className="text-orange-500" />, label: room.room_type === 'digital' ? "Platform" : room.room_type === 'hybrid' ? "Mode" : "Layout", value: room.room_type === 'digital' ? "Zoom Premium" : room.room_type === 'hybrid' ? "Fisik + Zoom" : `${layouts.length} tipe` },
         ].map((s, i) => (
           <div key={i} className="flex items-center gap-3 py-1">
             <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100">{s.icon}</div>
@@ -317,6 +317,18 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                     </div>
                   ))}
                 </div>
+              ) : room.room_type === 'hybrid' ? (
+                <div className="bg-gradient-to-r from-teal-50 to-indigo-50 border border-teal-200 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-4 text-left">
+                  <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center flex-shrink-0 text-teal-700 font-bold text-sm border border-teal-200">
+                    Hybrid
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-teal-950">Ruangan Hybrid (Fisik + Zoom)</h4>
+                    <p className="text-xs text-teal-700 mt-1 leading-relaxed">
+                      Ruangan fisik yang dilengkapi integrasi Zoom Premium. Saat Anda memesan, ruangan fisik akan diamankan dan tautan Zoom akan dibuat secara otomatis.
+                    </p>
+                  </div>
+                </div>
               ) : room.room_type === 'digital' ? (
                 <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-4 text-left">
                   <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center flex-shrink-0 text-purple-600 font-bold text-sm border border-purple-100">
@@ -347,7 +359,39 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                   <p className="text-sm text-gray-500 leading-relaxed">{room.description}</p>
                 </div>
               )}
-              {room.room_type === 'digital' ? (
+              {room.room_type === 'hybrid' ? (
+                <>
+                  {layouts.length > 0 && (
+                    <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1">
+                      <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Layout & Kapasitas (Fisik)</h3>
+                      <div className="space-y-2">
+                        {layouts.map((l: any) => (
+                          <div key={l.id || l.layout_type} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                            <span className="text-sm text-gray-600">{l.layout_type}</span>
+                            <span className="text-sm" style={{ fontWeight: 500 }}>{l.capacity} orang</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="bg-white rounded-xl border border-teal-200 p-5 flex-1">
+                    <h3 className="text-teal-800 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Integrasi Zoom Premium</h3>
+                    <div className="space-y-2">
+                      {[
+                        { label: "Kapasitas Virtual", val: "s.d. 100 Partisipan" },
+                        { label: "Batas Durasi", val: "Tanpa Batas (Unlimited)" },
+                        { label: "Link Zoom", val: "Otomatis saat booking" },
+                        { label: "Fitur", val: "Breakout Rooms, Screen Share, Recording" }
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between py-2 border-b border-teal-50 last:border-0">
+                          <span className="text-sm text-gray-600">{item.label}</span>
+                          <span className="text-sm text-teal-700" style={{ fontWeight: 600 }}>{item.val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : room.room_type === 'digital' ? (
                 <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1">
                   <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Spesifikasi Virtual</h3>
                   <div className="space-y-2">
@@ -610,7 +654,7 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
     participants: "",
     layout: "",
     notes: "",
-    meetingType: (room.room_type === "digital" ? "online" : "offline") as "offline" | "online" | "hybrid",
+    meetingType: (room.room_type === "digital" ? "online" : room.room_type === "hybrid" ? "hybrid" : "offline") as "offline" | "online" | "hybrid",
     suratTerkait: "",
   });
   const [loading, setLoading] = useState(false);
@@ -690,6 +734,16 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
                 <div className="text-sm font-semibold text-purple-900">Ruangan Rapat Digital (Zoom)</div>
                 <p className="text-xs text-purple-700 mt-0.5">
                   Tipe rapat otomatis dikonfigurasi secara <strong>Online</strong>. Link Zoom Premium yang unik akan dibuat secara otomatis setelah pemesanan disetujui.
+                </p>
+              </div>
+            </div>
+          ) : room.room_type === "hybrid" ? (
+            <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 flex items-start gap-3">
+              <span className="text-2xl mt-0.5">🔄</span>
+              <div>
+                <div className="text-sm font-semibold text-teal-900">Ruangan Hybrid (Fisik + Zoom)</div>
+                <p className="text-xs text-teal-700 mt-0.5">
+                  Tipe rapat dikunci ke <strong>Hybrid</strong>. Ruangan fisik <strong>{room.name}</strong> akan diamankan, dan link Zoom Premium yang unik akan dibuat secara otomatis.
                 </p>
               </div>
             </div>
