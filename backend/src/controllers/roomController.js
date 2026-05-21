@@ -7,7 +7,7 @@ const path = require('path');
 const getRoomFull = async (roomId) => {
   const room = await dbGet(`
     SELECT r.*, b.name as building_name, f.name as floor_name,
-      (SELECT STRING_AGG(u2.name, ', ') FROM room_assignments ra JOIN users u2 ON ra.admin_id = u2.id WHERE ra.room_id = r.id AND ra.deleted_at IS NULL AND u2.deleted_at IS NULL) as admin_name
+      (SELECT STRING_AGG(u2.name, ', ') FROM room_assignments ra JOIN users u2 ON ra.user_id = u2.id WHERE ra.room_id = r.id AND u2.deleted_at IS NULL) as admin_name
     FROM rooms r
     LEFT JOIN buildings b ON r.building_id = b.id
     LEFT JOIN floors f ON r.floor_id = f.id
@@ -33,7 +33,7 @@ const listRooms = async (req, res, next) => {
     const { building_id, floor_id, status, search, approval_type, admin_id } = req.query;
     let sql = `
       SELECT r.*, b.name as building_name, f.name as floor_name,
-        (SELECT STRING_AGG(u2.name, ', ') FROM room_assignments ra JOIN users u2 ON ra.admin_id = u2.id WHERE ra.room_id = r.id AND ra.deleted_at IS NULL AND u2.deleted_at IS NULL) as admin_name
+        (SELECT STRING_AGG(u2.name, ', ') FROM room_assignments ra JOIN users u2 ON ra.user_id = u2.id WHERE ra.room_id = r.id AND u2.deleted_at IS NULL) as admin_name
       FROM rooms r
       LEFT JOIN buildings b ON r.building_id = b.id
       LEFT JOIN floors f ON r.floor_id = f.id
@@ -55,10 +55,10 @@ const listRooms = async (req, res, next) => {
 
     // Scope for admin (only their assigned rooms)
     if (req.user && req.user.role === 'admin') {
-      sql += ` AND r.id IN (SELECT room_id FROM room_assignments WHERE admin_id = $${paramIdx++} AND deleted_at IS NULL)`;
+      sql += ` AND r.id IN (SELECT room_id FROM room_assignments WHERE user_id = $${paramIdx++})`;
       params.push(req.user.id);
     } else if (req.user && req.user.role === 'superadmin' && admin_id) {
-      sql += ` AND r.id IN (SELECT room_id FROM room_assignments WHERE admin_id = $${paramIdx++} AND deleted_at IS NULL)`;
+      sql += ` AND r.id IN (SELECT room_id FROM room_assignments WHERE user_id = $${paramIdx++})`;
       params.push(admin_id);
     }
 
@@ -88,13 +88,14 @@ const getRoom = async (req, res, next) => {
 const createRoom = async (req, res, next) => {
   try {
     const { name, building_id, floor_id, admin_id, description, status = 'active', approval_type = 'instant',
-      restrict_hours = false, hours_start, hours_end, layouts = [], facilities = [], room_type = 'physical' } = req.body;
+      restrict_hours = false, hours_start, hours_end, layouts = [], facilities = [], room_type = 'physical',
+      jenis_manajemen_ruang = 'MEETING_ROOM', total_meja_kerja = null } = req.body;
 
     if (room_type === 'physical' || room_type === 'hybrid') {
       if (!name || !building_id || !floor_id) {
         return res.status(400).json({ success: false, message: 'Nama ruangan, gedung, dan lantai wajib diisi' });
       }
-      if (layouts.length === 0) {
+      if (jenis_manajemen_ruang !== 'WORKSPACE' && layouts.length === 0) {
         return res.status(400).json({ success: false, message: 'Minimal 1 layout harus dipilih' });
       }
     } else {
@@ -114,19 +115,22 @@ const createRoom = async (req, res, next) => {
 
     const roomId = uuidv4();
     const effectiveAdminId = req.user.role === 'superadmin' ? (admin_id || null) : req.user.id;
+    const finalTotalMeja = jenis_manajemen_ruang === 'WORKSPACE' ? (parseInt(total_meja_kerja) || 1) : null;
 
     await dbRun(
-      `INSERT INTO rooms (id, name, building_id, floor_id, admin_id, description, status, approval_type, restrict_hours, hours_start, hours_end, image_url, room_type)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+      `INSERT INTO rooms (id, name, building_id, floor_id, admin_id, description, status, approval_type, restrict_hours, hours_start, hours_end, image_url, room_type, jenis_manajemen_ruang, total_meja_kerja)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
       [roomId, name, room_type === 'digital' ? null : building_id, room_type === 'digital' ? null : floor_id, effectiveAdminId, description || null, status, approval_type,
        restrict_hours ? true : false, restrict_hours ? hours_start : null, restrict_hours ? hours_end : null,
-       req.body.image_url || null, room_type]
+       req.body.image_url || null, room_type, jenis_manajemen_ruang, finalTotalMeja]
     );
 
     // Insert layouts
-    const finalLayouts = room_type === 'digital' && layouts.length === 0 
-      ? [{ type: 'Virtual (Zoom)', capacity: 100 }]
-      : layouts;
+    const finalLayouts = jenis_manajemen_ruang === 'WORKSPACE'
+      ? [{ type: 'Workspace Seating', capacity: finalTotalMeja }]
+      : (room_type === 'digital' && layouts.length === 0 
+         ? [{ type: 'Virtual (Zoom)', capacity: 100 }]
+         : layouts);
 
     for (const layout of finalLayouts) {
       await dbRun(`INSERT INTO room_layouts (id, room_id, layout_type, capacity) VALUES ($1,$2,$3,$4)`,
@@ -141,8 +145,16 @@ const createRoom = async (req, res, next) => {
 
     // Auto-assign to admin if superadmin set admin_id
     if (effectiveAdminId) {
-      await dbRun(`INSERT INTO room_assignments (id, admin_id, room_id) VALUES ($1,$2,$3) ON CONFLICT (admin_id, room_id) DO NOTHING`,
-        [uuidv4(), effectiveAdminId, roomId]);
+      await dbRun(`INSERT INTO room_assignments (user_id, room_id) VALUES ($1,$2) ON CONFLICT (user_id, room_id) DO NOTHING`,
+        [effectiveAdminId, roomId]);
+    }
+
+    // If WORKSPACE, automatically generate desks nodes
+    if (jenis_manajemen_ruang === 'WORKSPACE' && finalTotalMeja > 0) {
+      for (let i = 1; i <= finalTotalMeja; i++) {
+        const deskId = `Desk-${String(i).padStart(2, '0')}`;
+        await dbRun(`INSERT INTO workspace_desks (room_id, desk_id, status) VALUES ($1, $2, 'VACANT')`, [roomId, deskId]);
+      }
     }
 
     await audit({
@@ -163,12 +175,13 @@ const updateRoom = async (req, res, next) => {
     if (!room) return res.status(404).json({ success: false, message: 'Ruangan tidak ditemukan' });
 
     if (req.user.role === 'admin') {
-      const assigned = await dbGet('SELECT id FROM room_assignments WHERE admin_id=$1 AND room_id=$2 AND deleted_at IS NULL', [req.user.id, id]);
+      const assigned = await dbGet('SELECT 1 FROM room_assignments WHERE user_id=$1 AND room_id=$2', [req.user.id, id]);
       if (!assigned) return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses ke ruangan ini' });
     }
 
     const { name, building_id, floor_id, admin_id, description, status, approval_type,
-      restrict_hours, hours_start, hours_end, layouts, facilities, image_url, room_type } = req.body;
+      restrict_hours, hours_start, hours_end, layouts, facilities, image_url, room_type,
+      jenis_manajemen_ruang, total_meja_kerja } = req.body;
 
     const before = { ...room };
     const isDigital = (room_type || room.room_type) === 'digital';
@@ -185,6 +198,9 @@ const updateRoom = async (req, res, next) => {
       if (dup) return res.status(409).json({ success: false, message: 'Nama ruangan sudah digunakan' });
     }
 
+    const activeJenis = jenis_manajemen_ruang || room.jenis_manajemen_ruang;
+    const finalTotalMeja = activeJenis === 'WORKSPACE' ? (parseInt(total_meja_kerja) || room.total_meja_kerja || 1) : null;
+
     await dbRun(`UPDATE rooms SET
       name = COALESCE($1, name),
       building_id = $2,
@@ -197,8 +213,10 @@ const updateRoom = async (req, res, next) => {
       hours_start = $9,
       hours_end = $10,
       image_url = COALESCE($11, image_url),
-      room_type = COALESCE($12, room_type)
-      WHERE id = $13`,
+      room_type = COALESCE($12, room_type),
+      jenis_manajemen_ruang = $13,
+      total_meja_kerja = $14
+      WHERE id = $15`,
       [name||null, isDigital ? null : (building_id || room.building_id), isDigital ? null : (floor_id || room.floor_id),
        req.user.role==='superadmin' ? (admin_id||null) : null,
        description!==undefined ? description : null,
@@ -206,16 +224,20 @@ const updateRoom = async (req, res, next) => {
        restrict_hours!==undefined ? (restrict_hours?true:false) : null,
        restrict_hours ? (hours_start||null) : null,
        restrict_hours ? (hours_end||null) : null,
-       image_url||null, room_type||null, id]
+       image_url||null, room_type||null, activeJenis, finalTotalMeja, id]
     );
 
     if (req.user.role === 'superadmin' && admin_id) {
-      await dbRun(`INSERT INTO room_assignments (id, admin_id, room_id) VALUES ($1,$2,$3) ON CONFLICT (admin_id, room_id) DO NOTHING`,
-        [uuidv4(), admin_id, id]);
+      await dbRun(`INSERT INTO room_assignments (user_id, room_id) VALUES ($1,$2) ON CONFLICT (user_id, room_id) DO NOTHING`,
+        [admin_id, id]);
     }
 
-    // Update layouts if provided
-    if (layouts && layouts.length > 0) {
+    // Update layouts if provided (or if it's WORKSPACE, auto-set layout)
+    if (activeJenis === 'WORKSPACE') {
+      await dbRun('UPDATE room_layouts SET deleted_at=NOW() WHERE room_id=$1 AND deleted_at IS NULL', [id]);
+      await dbRun(`INSERT INTO room_layouts (id, room_id, layout_type, capacity) VALUES ($1,$2,$3,$4)`,
+        [uuidv4(), id, 'Workspace Seating', finalTotalMeja]);
+    } else if (layouts && layouts.length > 0) {
       await dbRun('UPDATE room_layouts SET deleted_at=NOW() WHERE room_id=$1 AND deleted_at IS NULL', [id]);
       for (const l of layouts) {
         await dbRun(`INSERT INTO room_layouts (id, room_id, layout_type, capacity) VALUES ($1,$2,$3,$4)`,
@@ -229,6 +251,28 @@ const updateRoom = async (req, res, next) => {
       for (const f of facilities) {
         await dbRun(`INSERT INTO room_facilities (id, room_id, facility_type, quantity) VALUES ($1,$2,$3,$4)`,
           [uuidv4(), id, f.type, f.quantity]);
+      }
+    }
+
+    // If WORKSPACE, check existing desks and generate/delete if changed
+    if (activeJenis === 'WORKSPACE' && finalTotalMeja > 0) {
+      const existingDesks = await dbAll('SELECT desk_id, status FROM workspace_desks WHERE room_id = $1 ORDER BY desk_id', [id]);
+      const currentCount = existingDesks.length;
+      if (finalTotalMeja > currentCount) {
+        // Add more desks
+        for (let i = currentCount + 1; i <= finalTotalMeja; i++) {
+          const deskId = `Desk-${String(i).padStart(2, '0')}`;
+          await dbRun(`INSERT INTO workspace_desks (room_id, desk_id, status) VALUES ($1, $2, 'VACANT') ON CONFLICT DO NOTHING`, [id, deskId]);
+        }
+      } else if (finalTotalMeja < currentCount) {
+        // Safe delete desks from the end ONLY if they are not occupied
+        for (let i = currentCount; i > finalTotalMeja; i--) {
+          const deskId = `Desk-${String(i).padStart(2, '0')}`;
+          const targetDesk = existingDesks.find(d => d.desk_id === deskId);
+          if (targetDesk && targetDesk.status !== 'OCCUPIED') {
+            await dbRun(`DELETE FROM workspace_desks WHERE room_id = $1 AND desk_id = $2`, [id, deskId]);
+          }
+        }
       }
     }
 
@@ -251,7 +295,7 @@ const deleteRoom = async (req, res, next) => {
     if (!room) return res.status(404).json({ success: false, message: 'Ruangan tidak ditemukan' });
 
     if (req.user.role === 'admin') {
-      const assigned = await dbGet('SELECT id FROM room_assignments WHERE admin_id=$1 AND room_id=$2 AND deleted_at IS NULL', [req.user.id, id]);
+      const assigned = await dbGet('SELECT 1 FROM room_assignments WHERE user_id=$1 AND room_id=$2', [req.user.id, id]);
       if (!assigned) return res.status(403).json({ success: false, message: 'Akses ditolak' });
     }
 

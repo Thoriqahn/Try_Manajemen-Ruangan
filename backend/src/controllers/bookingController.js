@@ -80,8 +80,8 @@ const listBookings = async (req, res, next) => {
       SELECT b.*, r.name as room_name, b2.name as building_name, f.name as floor_name, u.name as user_name,
              (SELECT STRING_AGG(u2.name, ', ')
               FROM room_assignments ra
-              JOIN users u2 ON ra.admin_id = u2.id
-              WHERE ra.room_id = b.room_id AND ra.deleted_at IS NULL AND u2.deleted_at IS NULL) as admin_names
+              JOIN users u2 ON ra.user_id = u2.id
+              WHERE ra.room_id = b.room_id AND u2.deleted_at IS NULL) as admin_names
       FROM bookings b
       LEFT JOIN rooms r ON b.room_id = r.id
       LEFT JOIN buildings b2 ON r.building_id = b2.id
@@ -96,7 +96,7 @@ const listBookings = async (req, res, next) => {
     if (req.user.role === 'user') {
       sql += ` AND b.user_id = $${paramIdx++}`; params.push(req.user.id);
     } else if (req.user.role === 'admin') {
-      sql += ` AND r.id IN (SELECT room_id FROM room_assignments WHERE admin_id = $${paramIdx++} AND deleted_at IS NULL)`;
+      sql += ` AND r.id IN (SELECT room_id FROM room_assignments WHERE user_id = $${paramIdx++})`;
       params.push(req.user.id);
     }
 
@@ -106,7 +106,7 @@ const listBookings = async (req, res, next) => {
     if (date_to) { sql += ` AND b.date <= $${paramIdx++}`; params.push(date_to); }
     if (user_id && req.user.role === 'superadmin') { sql += ` AND b.user_id = $${paramIdx++}`; params.push(user_id); }
     if (admin_id && req.user.role === 'superadmin') {
-      sql += ` AND b.room_id IN (SELECT room_id FROM room_assignments WHERE admin_id = $${paramIdx++} AND deleted_at IS NULL)`;
+      sql += ` AND b.room_id IN (SELECT room_id FROM room_assignments WHERE user_id = $${paramIdx++})`;
       params.push(admin_id);
     }
 
@@ -407,7 +407,7 @@ const approveBooking = async (req, res, next) => {
 
     // Admin can only approve bookings in their rooms
     if (req.user.role === 'admin') {
-      const assigned = await dbGet('SELECT id FROM room_assignments WHERE admin_id=$1 AND room_id=$2 AND deleted_at IS NULL', [req.user.id, booking.room_id]);
+      const assigned = await dbGet('SELECT 1 FROM room_assignments WHERE user_id=$1 AND room_id=$2', [req.user.id, booking.room_id]);
       if (!assigned) return res.status(403).json({ success: false, message: 'Akses ditolak' });
     }
 
@@ -434,7 +434,7 @@ const rejectBooking = async (req, res, next) => {
     if (booking.status !== 'pending') return res.status(400).json({ success: false, message: 'Hanya booking pending yang bisa ditolak' });
 
     if (req.user.role === 'admin') {
-      const assigned = await dbGet('SELECT id FROM room_assignments WHERE admin_id=$1 AND room_id=$2 AND deleted_at IS NULL', [req.user.id, booking.room_id]);
+      const assigned = await dbGet('SELECT 1 FROM room_assignments WHERE user_id=$1 AND room_id=$2', [req.user.id, booking.room_id]);
       if (!assigned) return res.status(403).json({ success: false, message: 'Akses ditolak' });
     }
 
@@ -470,7 +470,7 @@ const forceCancel = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Booking tidak dapat dibatalkan' });
 
     if (req.user.role === 'admin') {
-      const assigned = await dbGet('SELECT id FROM room_assignments WHERE admin_id=$1 AND room_id=$2 AND deleted_at IS NULL', [req.user.id, booking.room_id]);
+      const assigned = await dbGet('SELECT 1 FROM room_assignments WHERE user_id=$1 AND room_id=$2', [req.user.id, booking.room_id]);
       if (!assigned) return res.status(403).json({ success: false, message: 'Akses ditolak' });
     }
 
@@ -489,4 +489,155 @@ const forceCancel = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { listBookings, getBooking, createBooking, updateBooking, cancelBooking, approveBooking, rejectBooking, forceCancel };
+// POST /api/v1/bookings/check-in
+const checkInBooking = async (req, res, next) => {
+  try {
+    const { room_id, scanned_qr_token } = req.body;
+    const authenticated_user_id = req.user.id;
+
+    // 1. Verify QR Token Matches
+    const room = await dbGet(
+      'SELECT id, name, qr_token FROM rooms WHERE id = $1 AND deleted_at IS NULL',
+      [room_id]
+    );
+
+    if (!room) {
+      return res.status(404).json({ success: false, message: 'Ruangan tidak ditemukan' });
+    }
+
+    if (room.qr_token !== scanned_qr_token) {
+      return res.status(403).json({ success: false, message: 'Token QR Code tidak valid untuk ruangan ini' });
+    }
+
+    // 2. Find confirmed, not yet checked-in bookings for this user on the current date
+    const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    
+    const bookings = await dbAll(
+      `SELECT id, room_id, user_id, date, start_time, end_time, status, is_checked_in
+       FROM bookings
+       WHERE room_id = $1 AND user_id = $2 AND date = $3 AND status = 'confirmed' AND is_checked_in = FALSE
+       ORDER BY start_time ASC`,
+      [room_id, authenticated_user_id, todayStr]
+    );
+
+    if (bookings.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Tidak ada pemesanan terkonfirmasi yang aktif untuk Anda di ruangan ini pada hari ini' 
+      });
+    }
+
+    // Find the current booking that matches the check-in time windows
+    const now = new Date();
+    let targetBooking = null;
+    let timeErrorReason = null;
+
+    for (const b of bookings) {
+      const bookingStart = new Date(`${b.date}T${b.start_time}:00`);
+      const bookingEnd = new Date(`${b.date}T${b.end_time}:00`);
+      
+      const earlyLimit = new Date(bookingStart.getTime() - 10 * 60 * 1000); // 10 mins early
+      const lateLimit = new Date(bookingStart.getTime() + 15 * 60 * 1000); // 15 mins late
+
+      if (now >= earlyLimit && now <= bookingEnd) {
+        // Late check-in check
+        if (now > lateLimit) {
+          timeErrorReason = 'Window check-in telah berakhir (lebih dari 15 menit dari jam mulai)';
+          continue;
+        }
+
+        // Early check-in check
+        if (now >= earlyLimit && now < bookingStart) {
+          const tenMinsAgoTimeStr = new Date(bookingStart.getTime() - 10 * 60 * 1000)
+            .toTimeString().split(' ')[0].substring(0, 5);
+          
+          const precedingBooking = await dbGet(
+            `SELECT id FROM bookings
+             WHERE room_id = $1 AND date = $2 AND id <> $3
+               AND status IN ('confirmed', 'ongoing', 'completed')
+               AND end_time > $4 AND end_time <= $5
+             LIMIT 1`,
+            [room_id, b.date, b.id, tenMinsAgoTimeStr, b.start_time]
+          );
+
+          if (precedingBooking) {
+            timeErrorReason = 'Check-in awal diblokir karena ada sesi pertemuan pendahulu yang sedang berlangsung';
+            continue;
+          }
+        }
+
+        targetBooking = b;
+        break;
+      }
+    }
+
+    if (!targetBooking) {
+      if (timeErrorReason === 'Window check-in telah berakhir (lebih dari 15 menit dari jam mulai)') {
+        return res.status(410).json({ 
+          success: false, 
+          message: 'Check-in gagal: Batas waktu check-in (15 menit) telah kedaluwarsa' 
+        });
+      }
+      if (timeErrorReason === 'Check-in awal diblokir karena ada sesi pertemuan pendahulu yang sedang berlangsung') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Check-in awal tidak diizinkan karena pertemuan pendahulu masih aktif. Harap tunggu hingga waktu mulai tepat.' 
+        });
+      }
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Check-in gagal: Waktu saat ini berada di luar rentang waktu pemesanan Anda' 
+      });
+    }
+
+    // 4. Update the room booking record
+    const client = await getClient();
+    try {
+      await client.query('BEGIN');
+
+      await client.query(
+        `UPDATE bookings
+         SET is_checked_in = TRUE, status = 'ongoing'
+         WHERE id = $1`,
+        [targetBooking.id]
+      );
+
+      // Audit Log check-in event
+      const auditId = uuidv4();
+      const action = 'CHECK_IN';
+      const resource = `Booking #${targetBooking.id} - ${room.name || 'Room'}`;
+      const payloadBefore = JSON.stringify({ is_checked_in: false, status: 'confirmed' });
+      const payloadAfter = JSON.stringify({ is_checked_in: true, status: 'ongoing' });
+
+      await client.query(
+        `INSERT INTO audit_logs (id, actor_id, actor_name, action, resource, payload_before, payload_after)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [auditId, req.user.id, `${req.user.name} (${req.user.role})`, action, resource, payloadBefore, payloadAfter]
+      );
+
+      await client.query('COMMIT');
+
+      return res.status(200).json({
+        success: true,
+        message: 'Check-in berhasil dilakukan',
+        data: {
+          booking_id: targetBooking.id,
+          room_id: targetBooking.room_id,
+          start_time: targetBooking.start_time,
+          end_time: targetBooking.end_time,
+          is_checked_in: true,
+          status: 'ongoing'
+        }
+      });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { listBookings, getBooking, createBooking, updateBooking, cancelBooking, approveBooking, rejectBooking, forceCancel, checkInBooking };

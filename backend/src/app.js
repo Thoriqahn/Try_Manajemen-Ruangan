@@ -84,6 +84,7 @@ app.get('/api/openapi.json', (req, res) => res.json(swaggerSpec));
 app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/rooms', require('./routes/rooms'));
 app.use('/api/bookings', require('./routes/bookings'));
+app.use('/api/v1/bookings', require('./routes/bookings'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/buildings', require('./routes/buildings'));
 app.use('/api/policy', require('./routes/policy'));
@@ -91,6 +92,7 @@ app.use('/api/tokens', require('./routes/tokens'));
 app.use('/api/audit', require('./routes/audit'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/zoom', require('./routes/zoom'));
+app.use('/api/v1/workspaces', require('./routes/workspaces'));
 
 // ─── Health Check ────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -108,10 +110,12 @@ async function start() {
   try {
     await initSchema();
     await seedData();
+    const { startNoShowWorker } = require('./jobs/noShowWorker');
     app.listen(PORT, () => {
       console.log(`\n🚀 Menara API Server running on http://localhost:${PORT}`);
       console.log(`📚 API Docs: http://localhost:${PORT}/api/docs`);
       console.log(`❤️  Health: http://localhost:${PORT}/api/health\n`);
+      startNoShowWorker();
     });
   } catch (err) {
     console.error('❌ Failed to start server:', err);

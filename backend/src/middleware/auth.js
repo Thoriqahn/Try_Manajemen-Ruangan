@@ -1,6 +1,14 @@
 const { verifyAccessToken } = require('../utils/jwt');
 const { dbGet } = require('../config/database');
 
+const normalizeRole = (dbRole) => {
+  if (!dbRole) return 'user';
+  const r = dbRole.toUpperCase();
+  if (r === 'SUPERADMIN') return 'superadmin';
+  if (r === 'ADMIN_RAPAT' || r === 'ADMIN_KERJA') return 'admin';
+  return 'user';
+};
+
 // Verify JWT token
 const authGuard = async (req, res, next) => {
   try {
@@ -15,6 +23,8 @@ const authGuard = async (req, res, next) => {
     if (!user || user.status === 'inactive') {
       return res.status(401).json({ success: false, message: 'Akun tidak ditemukan atau tidak aktif' });
     }
+    user.rawRole = user.role;
+    user.role = normalizeRole(user.role);
     req.user = user;
     next();
   } catch (err) {
@@ -42,7 +52,11 @@ const optionalAuth = async (req, res, next) => {
       const token = authHeader.split(' ')[1];
       const decoded = verifyAccessToken(token);
       const user = await dbGet('SELECT id, name, email, role, status FROM users WHERE id = $1 AND deleted_at IS NULL', [decoded.id]);
-      if (user && user.status === 'active') req.user = user;
+      if (user && user.status === 'active') {
+        user.rawRole = user.role;
+        user.role = normalizeRole(user.role);
+        req.user = user;
+      }
     }
   } catch {}
   next();

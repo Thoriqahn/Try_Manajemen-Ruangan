@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Edit2, Power, Search, MapPin, Users, AlertTriangle, Check, X, ImagePlus, Star, Trash2, MoveRight, RefreshCw } from "lucide-react";
+import { Plus, Edit2, Power, Search, MapPin, Users, AlertTriangle, Check, X, ImagePlus, Star, Trash2, MoveRight, RefreshCw, QrCode } from "lucide-react";
 import { roomService, Room } from "../../services/roomService";
 import { buildingService, userService } from "../../services/index";
 
@@ -57,6 +57,105 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
     } catch (e: any) { alert(e.message || "Gagal mengubah status"); }
     setToggling(null);
     setDisableModal(null);
+  };
+
+  const downloadQRCode = (room: any) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 800;
+    canvas.height = 1000;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Draw background (premium gradient)
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, "#1E3A5F");
+    gradient.addColorStop(0.3, "#0F2144");
+    gradient.addColorStop(1, "#0A1428");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw border
+    ctx.strokeStyle = "#4B6584";
+    ctx.lineWidth = 10;
+    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+
+    // Draw Header Text
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "bold 28px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("OTORITA IBU KOTA NUSANTARA", canvas.width / 2, 80);
+
+    ctx.fillStyle = "#A4B0BE";
+    ctx.font = "18px sans-serif";
+    ctx.fillText("SISTEM MANAJEMEN RUANGAN (SMART SPACE)", canvas.width / 2, 115);
+
+    // Draw Accent Line
+    ctx.fillStyle = "#38D39F";
+    ctx.fillRect(canvas.width / 2 - 150, 140, 300, 4);
+
+    // Draw Room Card Container
+    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(80, 180, canvas.width - 160, 160, 15);
+    } else {
+      ctx.rect(80, 180, canvas.width - 160, 160);
+    }
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw Room Label / Name
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "bold 42px sans-serif";
+    ctx.fillText(room.name, canvas.width / 2, 245);
+
+    ctx.fillStyle = "#38D39F";
+    ctx.font = "bold 20px sans-serif";
+    const jmr = room.jenis_manajemen_ruang || "MEETING_ROOM";
+    ctx.fillText(jmr === "WORKSPACE" ? "WORKSPACE SEATING" : "MEETING ROOM", canvas.width / 2, 290);
+
+    // Draw Instruction
+    ctx.fillStyle = "#F1F2F6";
+    ctx.font = "italic 20px sans-serif";
+    ctx.fillText("Pindai QR Code di bawah untuk validasi kehadiran (Check-In)", canvas.width / 2, 385);
+
+    // Draw QR Code Background Box
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(175, 425, 450, 450, 20);
+    } else {
+      ctx.rect(175, 425, 450, 450);
+    }
+    ctx.fill();
+
+    // Load QR Code from api.qrserver.com
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${room.qr_token || room.id}`;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      ctx.drawImage(img, 200, 450, 400, 400);
+
+      // Draw footer text below the QR Code box
+      ctx.fillStyle = "#A4B0BE";
+      ctx.font = "14px sans-serif";
+      ctx.fillText(`Token ID: ${room.qr_token || 'N/A'}`, canvas.width / 2, 915);
+
+      ctx.fillStyle = "#747D8C";
+      ctx.font = "12px sans-serif";
+      ctx.fillText("Harap lakukan check-in maksimal 15 menit setelah waktu pemesanan dimulai.", canvas.width / 2, 945);
+
+      const url = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `QR_CODE_${room.name.replace(/\s+/g, '_')}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+    img.src = qrUrl;
   };
 
   const filtered = rooms.filter(r => !search || r.name.toLowerCase().includes(search.toLowerCase()));
@@ -123,6 +222,7 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                 ) : filtered.map(room => {
                   const layouts = room.layouts || [];
                   const maxCap = layouts.length > 0 ? Math.max(...layouts.map(l => l.capacity || 0)) : 0;
+                  const jmr = room.jenis_manajemen_ruang || "MEETING_ROOM";
                   return (
                     <tr key={room.id} className={`hover:bg-gray-50 transition-colors ${room.status === "inactive" ? "opacity-60" : ""}`}>
                       <td className="px-5 py-4">
@@ -139,16 +239,25 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                             )}
                           </div>
                           <div>
-                            <div className="text-sm text-gray-800" style={{ fontWeight: 500 }}>{room.name}</div>
+                            <div className="text-sm text-gray-800 flex items-center gap-2" style={{ fontWeight: 600 }}>
+                              {room.name}
+                              <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${jmr === "WORKSPACE" ? "bg-indigo-50 text-indigo-600 border border-indigo-100" : "bg-purple-50 text-purple-600 border border-purple-100"}`}>
+                                {jmr === "WORKSPACE" ? "Workspace" : "Rapat"}
+                              </span>
+                            </div>
                             {room.room_type !== 'digital' && (
-                              <div className="text-xs text-gray-400">{layouts.map(l => l.layout_type || l.name).join(", ")}</div>
+                              <div className="text-xs text-gray-400">
+                                {jmr === 'WORKSPACE'
+                                  ? `${room.total_meja_kerja || 0} Meja Kerja`
+                                  : layouts.map(l => l.layout_type || l.name).join(", ")}
+                              </div>
                             )}
                           </div>
                         </div>
                       </td>
                       <td className="px-5 py-4">
                         {room.room_type === 'digital' ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">
+                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" />
                             Digital (Zoom)
                           </span>
@@ -171,7 +280,13 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-1 text-sm text-gray-600">
                           <Users size={13} className="text-gray-400" />
-                          <span>{room.room_type === 'digital' ? "100 (Zoom)" : `s.d. ${maxCap || "–"} orang`}</span>
+                          <span>
+                            {jmr === 'WORKSPACE'
+                              ? `${room.total_meja_kerja || 0} Meja`
+                              : room.room_type === 'digital'
+                                ? "100 (Zoom)"
+                                : `s.d. ${maxCap || "–"} orang`}
+                          </span>
                         </div>
                       </td>
                       <td className="px-5 py-4">
@@ -188,6 +303,11 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                       {isSuperAdmin && <td className="px-5 py-4 text-sm text-gray-600">{room.admin_name || "–"}</td>}
                       <td className="px-5 py-4">
                         <div className="flex gap-2 justify-end">
+                          {room.room_type !== 'digital' && (
+                            <button onClick={() => downloadQRCode(room)} className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg" title="Unduh QR Code Pintu">
+                              <QrCode size={15} />
+                            </button>
+                          )}
                           <button onClick={() => { setEditRoom(room); setShowForm(true); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit"><Edit2 size={15} /></button>
                           <button onClick={() => setDisableModal(room.id)} disabled={toggling === room.id}
                             className={`p-1.5 rounded-lg transition-all ${room.status === "inactive" ? "text-green-500 hover:bg-green-50" : "text-gray-400 hover:text-red-500 hover:bg-red-50"}`} title={room.status === "inactive" ? "Aktifkan" : "Nonaktifkan"}>
@@ -243,6 +363,8 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
     operational_end: room?.hours_end || "17:00",
     admin_id: room?.admin_id || "",
     room_type: room?.room_type || "physical",
+    jenis_manajemen_ruang: room?.jenis_manajemen_ruang || "MEETING_ROOM",
+    total_meja_kerja: room?.total_meja_kerja || 10,
   });
   const [buildings, setBuildings] = useState<any[]>([]);
   const [floors, setFloors] = useState<any[]>([]);
@@ -280,7 +402,13 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
       const payload: any = { ...form };
       if (!form.operational_enabled) { delete payload.operational_start; delete payload.operational_end; }
       delete payload.operational_enabled;
-      payload.layouts = form.room_type === 'digital' ? [] : layouts;
+      
+      if (form.jenis_manajemen_ruang === 'WORKSPACE') {
+        payload.layouts = [];
+      } else {
+        payload.layouts = form.room_type === 'digital' ? [] : layouts;
+        payload.total_meja_kerja = null;
+      }
       
       if (form.room_type === 'digital') {
         payload.building_id = null;
@@ -348,6 +476,32 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
               </div>
             </div>
 
+            {form.room_type !== 'digital' && (
+              <div>
+                <label className="block text-sm text-gray-700 mb-2" style={{ fontWeight: 500 }}>Jenis Manajemen Ruang <span className="text-red-500">*</span></label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { value: "MEETING_ROOM", label: "Ruangan Rapat", desc: "Berbasis kalender grid mingguan/jam", activeColor: "border-purple-400 bg-purple-50" },
+                    { value: "WORKSPACE", label: "Ruangan Kerja (Workspace)", desc: "Berbasis alokasi meja individual permanen", activeColor: "border-indigo-400 bg-indigo-50" },
+                  ].map(opt => (
+                    <label key={opt.value} className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${form.jenis_manajemen_ruang === opt.value ? opt.activeColor : "border-gray-100 hover:border-gray-200 bg-white"}`}>
+                      <input type="radio" name="jenis_manajemen_ruang" value={opt.value} checked={form.jenis_manajemen_ruang === opt.value} onChange={e => setForm({ ...form, jenis_manajemen_ruang: e.target.value })} className="sr-only" />
+                      <div className="text-sm text-gray-800 font-semibold">{opt.label}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {form.jenis_manajemen_ruang === 'WORKSPACE' && form.room_type !== 'digital' && (
+              <div>
+                <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Total Meja Kerja (Kapasitas) <span className="text-red-500">*</span></label>
+                <input type="number" min={1} required={form.jenis_manajemen_ruang === 'WORKSPACE'} value={form.total_meja_kerja} onChange={e => setForm({ ...form, total_meja_kerja: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" />
+                <p className="text-xs text-gray-400 mt-1">Jumlah meja kerja yang akan digenerate otomatis (e.g. Desk-01 s.d Desk-NN)</p>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Nama Ruangan <span className="text-red-500">*</span></label>
               <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} maxLength={100} required className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" />
@@ -411,7 +565,7 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
             </div>
           </div>
 
-          {form.room_type !== 'digital' && (
+          {form.room_type !== 'digital' && form.jenis_manajemen_ruang !== 'WORKSPACE' && (
             <div className="space-y-3">
               <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>2. Tata Letak & Kapasitas</h4>
               {layouts.map((l, i) => (

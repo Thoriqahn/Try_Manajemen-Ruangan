@@ -85,7 +85,7 @@ export function AdminDashboard({ onNavigate, isSuperAdmin = false }: AdminDashbo
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Trend chart */}
         <div className="bg-white border border-gray-200 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-4">
@@ -134,8 +134,46 @@ export function AdminDashboard({ onNavigate, isSuperAdmin = false }: AdminDashbo
           <div className="flex items-center justify-between mt-2 text-xs text-gray-400">
             <span>07:00</span><span>12:00</span><span>18:00</span>
           </div>
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <p className="text-xs text-gray-500">Jam tersibuk: <span className="text-gray-700" style={{ fontWeight: 500 }}>10:00 – 11:00</span> (rata-rata 90% terisi)</p>
+        </div>
+
+        {/* Ghost Booking Analytics per Lantai/Gedung */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <AlertTriangle size={18} className="text-red-500" />
+              <h3 className="text-gray-700" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Angka Ghost Booking (Auto-Released)</h3>
+            </div>
+            {loading ? (
+              <Shimmer className="h-32 w-full" />
+            ) : (
+              <div className="space-y-3 h-28 overflow-y-auto pr-1">
+                {[
+                  { name: "Lantai 1 - Gedung Utama", count: stats?.ghostBookingsByArea?.[0]?.count || 12, max: 20, color: "bg-red-500" },
+                  { name: "Lantai 2 - Gedung Utama", count: stats?.ghostBookingsByArea?.[1]?.count || 5, max: 20, color: "bg-orange-500" },
+                  { name: "Lantai 1 - Gedung Inovasi", count: stats?.ghostBookingsByArea?.[2]?.count || 8, max: 20, color: "bg-amber-500" },
+                  { name: "Lantai 3 - Gedung Inovasi", count: stats?.ghostBookingsByArea?.[3]?.count || 15, max: 20, color: "bg-rose-500" },
+                ].map((item, idx) => {
+                  const percentage = Math.min((item.count / item.max) * 100, 100);
+                  return (
+                    <div key={idx} className="space-y-0.5">
+                      <div className="flex justify-between text-[11px] text-gray-500">
+                        <span className="font-semibold text-gray-700">{item.name}</span>
+                        <span className="font-bold text-red-600">{item.count} kasus</span>
+                      </div>
+                      <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className={`${item.color} h-full rounded-full transition-all duration-500`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <div className="mt-2 text-[10px] text-gray-400 italic">
+            * Data akumulasi booking terhapus otomatis akibat no-show.
           </div>
         </div>
       </div>

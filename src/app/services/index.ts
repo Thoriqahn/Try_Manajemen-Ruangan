@@ -1,5 +1,7 @@
 import { api } from './apiClient';
 export { zoomService } from './zoomService';
+export { workspaceService } from './workspaceService';
+
 
 export const buildingService = {
   async list() {

@@ -3,6 +3,7 @@ import { useState } from "react";
 
 interface SidebarProps {
   role: "user" | "admin" | "superadmin";
+  rawRole?: string;
   currentPage: string;
   onNavigate: (page: string) => void;
   onLogout: () => void;
@@ -21,7 +22,7 @@ interface NavGroup {
   items: NavItem[];
 }
 
-export function Sidebar({ role, currentPage, onNavigate, onLogout, collapsed = false }: SidebarProps) {
+export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, collapsed = false }: SidebarProps) {
   const [expandedGroups, setExpandedGroups] = useState<string[]>(["user", "admin", "superadmin"]);
 
   const toggleGroup = (group: string) => {
@@ -32,19 +33,31 @@ export function Sidebar({ role, currentPage, onNavigate, onLogout, collapsed = f
     title: "Menu Utama",
     items: [
       { icon: <Calendar size={18} />, label: "Kalender Ruangan", page: "calendar" },
-      { icon: <LayoutGrid size={18} />, label: "Daftar Ruangan", page: "rooms" },
-      { icon: <BookOpen size={18} />, label: "Booking Saya", page: "my-bookings" },
+      { icon: <LayoutGrid size={18} />, label: "Manajemen Ruang Kerja", page: "workspaces" },
+      { icon: <BookOpen size={18} />, label: "Dashboard Saya", page: "my-bookings" },
     ],
   };
 
+  const adminItems: NavItem[] = [
+    { icon: <BarChart2 size={18} />, label: "Dashboard", page: "admin-dashboard" },
+  ];
+
+  const effectiveRawRole = rawRole || (role === "superadmin" ? "SUPERADMIN" : role === "admin" ? "ADMIN_RAPAT" : "USER");
+
+  if (effectiveRawRole === "ADMIN_RAPAT" || effectiveRawRole === "SUPERADMIN") {
+    adminItems.push({ icon: <CheckSquare size={18} />, label: "Persetujuan Rapat", page: "admin-approval" });
+    adminItems.push({ icon: <Clock size={18} />, label: "Jadwal Rapat Aktif", page: "admin-schedule" });
+  }
+
+  if (effectiveRawRole === "ADMIN_KERJA" || effectiveRawRole === "SUPERADMIN") {
+    adminItems.push({ icon: <CheckSquare size={18} />, label: "Persetujuan Meja", page: "admin-workspace-approval" });
+  }
+
+  adminItems.push({ icon: <Settings size={18} />, label: "Kelola Ruangan", page: "admin-rooms" });
+
   const adminNav: NavGroup = {
     title: "Admin Ruangan",
-    items: [
-      { icon: <BarChart2 size={18} />, label: "Dashboard", page: "admin-dashboard" },
-      { icon: <CheckSquare size={18} />, label: "Persetujuan", page: "admin-approval", badge: 3 },
-      { icon: <Clock size={18} />, label: "Jadwal Aktif", page: "admin-schedule" },
-      { icon: <Settings size={18} />, label: "Kelola Ruangan", page: "admin-rooms" },
-    ],
+    items: adminItems,
   };
 
   const superAdminNav: NavGroup = {

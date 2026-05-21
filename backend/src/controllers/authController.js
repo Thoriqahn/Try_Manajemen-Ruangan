@@ -6,6 +6,14 @@ const { sendOtpEmail } = require('../utils/email');
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+const normalizeRole = (dbRole) => {
+  if (!dbRole) return 'user';
+  const r = dbRole.toUpperCase();
+  if (r === 'SUPERADMIN') return 'superadmin';
+  if (r === 'ADMIN_RAPAT' || r === 'ADMIN_KERJA') return 'admin';
+  return 'user';
+};
+
 // POST /api/auth/register
 const register = async (req, res, next) => {
   try {
@@ -27,7 +35,7 @@ const register = async (req, res, next) => {
 
     await dbRun(
       `INSERT INTO users (id, name, email, password_hash, role, status, otp, otp_expires, otp_type) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-      [userId, name, email.toLowerCase(), hash, 'user', 'pending', otp, otpExpires, 'verify']
+      [userId, name, email.toLowerCase(), hash, 'USER', 'pending', otp, otpExpires, 'verify']
     );
 
     await sendOtpEmail(email, otp, 'verify');
@@ -49,6 +57,9 @@ const verifyOtp = async (req, res, next) => {
 
     await dbRun(`UPDATE users SET status='active', otp=NULL, otp_expires=NULL, otp_type=NULL WHERE id=$1`, [userId]);
     const updatedUser = await dbGet('SELECT id, name, email, role FROM users WHERE id=$1', [userId]);
+    
+    updatedUser.role = normalizeRole(updatedUser.role);
+    
     const { accessToken, refreshToken } = generateTokens(updatedUser);
     await dbRun('UPDATE users SET refresh_token=$1 WHERE id=$2', [refreshToken, userId]);
 
@@ -93,6 +104,8 @@ const login = async (req, res, next) => {
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ success: false, message: 'Email atau password salah' });
 
+    user.role = normalizeRole(user.role);
+
     const { accessToken, refreshToken } = generateTokens(user);
     await dbRun('UPDATE users SET refresh_token=$1 WHERE id=$2', [refreshToken, user.id]);
 
@@ -127,6 +140,8 @@ const refresh = async (req, res, next) => {
     const user = await dbGet('SELECT * FROM users WHERE id=$1 AND refresh_token=$2 AND deleted_at IS NULL', [decoded.id, refreshToken]);
     if (!user) return res.status(401).json({ success: false, message: 'Refresh token tidak valid atau sudah kadaluarsa' });
 
+    user.role = normalizeRole(user.role);
+
     const tokens = generateTokens(user);
     await dbRun('UPDATE users SET refresh_token=$1 WHERE id=$2', [tokens.refreshToken, user.id]);
 
@@ -143,6 +158,9 @@ const refresh = async (req, res, next) => {
 const me = async (req, res, next) => {
   try {
     const user = await dbGet('SELECT id, name, email, role, status, created_at FROM users WHERE id=$1 AND deleted_at IS NULL', [req.user.id]);
+    if (user) {
+      user.role = normalizeRole(user.role);
+    }
     res.json({ success: true, user });
   } catch (err) { next(err); }
 };

@@ -28,24 +28,45 @@ pool.on('error', (err) => {
  * Returns { rows, rowCount }.
  */
 const dbRun = async (sql, params = []) => {
-  const result = await pool.query(sql, params);
-  return { rows: result.rows, rowCount: result.rowCount };
+  try {
+    const result = await pool.query(sql, params);
+    return { rows: result.rows, rowCount: result.rowCount };
+  } catch (err) {
+    console.error('[DATABASE ERROR in dbRun]', err.message);
+    console.error('[QUERY]', sql);
+    console.error('[PARAMS]', params);
+    throw err;
+  }
 };
 
 /**
  * Execute a query and return the first row, or undefined.
  */
 const dbGet = async (sql, params = []) => {
-  const result = await pool.query(sql, params);
-  return result.rows[0] || null;
+  try {
+    const result = await pool.query(sql, params);
+    return result.rows[0] || null;
+  } catch (err) {
+    console.error('[DATABASE ERROR in dbGet]', err.message);
+    console.error('[QUERY]', sql);
+    console.error('[PARAMS]', params);
+    throw err;
+  }
 };
 
 /**
  * Execute a query and return all rows.
  */
 const dbAll = async (sql, params = []) => {
-  const result = await pool.query(sql, params);
-  return result.rows;
+  try {
+    const result = await pool.query(sql, params);
+    return result.rows;
+  } catch (err) {
+    console.error('[DATABASE ERROR in dbAll]', err.message);
+    console.error('[QUERY]', sql);
+    console.error('[PARAMS]', params);
+    throw err;
+  }
 };
 
 /**

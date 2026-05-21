@@ -5,7 +5,7 @@ import { bookingService } from "../../services/bookingService";
 
 interface MainLayoutProps {
   role: "user" | "admin" | "superadmin";
-  currentUser?: { id: string; name: string; email: string; role: string } | null;
+  currentUser?: { id: string; name: string; email: string; role: string; rawRole?: string } | null;
   currentPage: string;
   onNavigate: (page: string) => void;
   onLogout: () => void;
@@ -118,6 +118,7 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
       `}>
         <Sidebar
           role={role}
+          rawRole={currentUser?.rawRole}
           currentPage={currentPage}
           onNavigate={(page) => { onNavigate(page); setMobileOpen(false); }}
           onLogout={onLogout}

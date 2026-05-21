@@ -7,6 +7,8 @@ import { CalendarView } from "./components/user/CalendarView";
 import { RoomList } from "./components/user/RoomList";
 import { RoomDetail } from "./components/user/RoomDetail";
 import { MyBookings } from "./components/user/MyBookings";
+import { WorkspaceDeskMap } from "./components/workspace/WorkspaceDeskMap";
+import { WorkspaceApproval } from "./components/admin/WorkspaceApproval";
 import { AdminDashboard } from "./components/admin/AdminDashboard";
 import { ApprovalQueue } from "./components/admin/ApprovalQueue";
 import { ScheduleControl } from "./components/admin/ScheduleControl";
@@ -20,11 +22,13 @@ import { ZoomManagement } from "./components/superadmin/ZoomManagement";
 import { authService } from "./services/authService";
 import { TokenStore, UserStore } from "./services/apiClient";
 import { Toaster } from "./components/ui/sonner";
+import { QrScanSimulator } from "./components/shared/QrScanSimulator";
+
 
 type Page =
   | "login" | "register" | "forgot-password"
-  | "calendar" | "rooms" | "room-detail" | "my-bookings"
-  | "admin-dashboard" | "admin-approval" | "admin-schedule" | "admin-rooms"
+  | "calendar" | "rooms" | "room-detail" | "my-bookings" | "workspaces"
+  | "admin-dashboard" | "admin-approval" | "admin-schedule" | "admin-rooms" | "admin-workspace-approval"
   | "sa-buildings" | "sa-rooms" | "sa-users" | "sa-policy" | "sa-api" | "sa-audit" | "sa-zoom";
 
 type Role = "user" | "admin" | "superadmin";
@@ -45,11 +49,13 @@ const pageTitles: Record<string, { title: string; subtitle?: string }> = {
   calendar: { title: "Kalender Ruangan", subtitle: "Cari dan pesan slot waktu yang tersedia" },
   rooms: { title: "Daftar Ruangan", subtitle: "Jelajahi semua ruangan yang tersedia" },
   "room-detail": { title: "Detail Ruangan" },
-  "my-bookings": { title: "Booking Saya", subtitle: "Kelola reservasi ruangan Anda" },
+  "my-bookings": { title: "Dashboard Saya", subtitle: "Pantau penempatan meja kerja dan jadwal reservasi rapat Anda" },
+  workspaces: { title: "Manajemen Ruang Kerja", subtitle: "Denah spasial dan penempatan tempat duduk Anda" },
   "admin-dashboard": { title: "Dashboard", subtitle: "Statistik operasional ruangan" },
   "admin-approval": { title: "Persetujuan Booking", subtitle: "Kelola antrean permohonan booking" },
   "admin-schedule": { title: "Jadwal Aktif", subtitle: "Pantau dan kelola jadwal yang sedang berjalan" },
   "admin-rooms": { title: "Kelola Ruangan", subtitle: "Manajemen ruangan yang menjadi tanggung jawab Anda" },
+  "admin-workspace-approval": { title: "Persetujuan Meja", subtitle: "Kelola antrean permohonan meja pegawai" },
   "sa-buildings": { title: "Manajemen Gedung", subtitle: "Kelola daftar gedung, kantor, dan lokasi peta" },
   "sa-rooms": { title: "Ruangan Global", subtitle: "Kelola seluruh ruangan di semua gedung" },
   "sa-users": { title: "Manajemen Pengguna", subtitle: "Kelola akun dan delegasi wilayah tugas" },
@@ -140,6 +146,8 @@ export default function App() {
         return <RoomDetail roomId={nav.data?.roomId || "r1"} onNavigate={handleNavigate} userRole={role} />;
       case "my-bookings":
         return <MyBookings onNavigate={handleNavigate} />;
+      case "workspaces":
+        return <WorkspaceDeskMap initialRoomId={nav.data?.roomId} />;
 
       // Admin
       case "admin-dashboard":
@@ -150,6 +158,8 @@ export default function App() {
         return <ScheduleControl />;
       case "admin-rooms":
         return <RoomManagement isSuperAdmin={false} onNavigate={handleNavigate} />;
+      case "admin-workspace-approval":
+        return <WorkspaceApproval onNavigate={handleNavigate} isSuperAdmin={role === "superadmin"} />;
 
       // Super Admin
       case "sa-buildings":
@@ -185,6 +195,7 @@ export default function App() {
       >
         {renderPage()}
       </MainLayout>
+      <QrScanSimulator onCheckInSuccess={() => { window.dispatchEvent(new CustomEvent('menara:checkin-success')); }} />
       <Toaster position="top-center" closeButton richColors />
     </>
   );

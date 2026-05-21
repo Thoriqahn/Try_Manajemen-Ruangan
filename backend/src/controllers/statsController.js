@@ -11,10 +11,10 @@ const adminStats = async (req, res, next) => {
     let paramIdx = 1;
 
     if (!isSuperAdmin) {
-      roomCondition = `AND r.id IN (SELECT room_id FROM room_assignments WHERE admin_id = $${paramIdx++} AND deleted_at IS NULL)`;
+      roomCondition = `AND r.id IN (SELECT room_id FROM room_assignments WHERE user_id = $${paramIdx++})`;
       params = [req.user.id];
     } else if (admin_id) {
-      roomCondition = `AND r.id IN (SELECT room_id FROM room_assignments WHERE admin_id = $${paramIdx++} AND deleted_at IS NULL)`;
+      roomCondition = `AND r.id IN (SELECT room_id FROM room_assignments WHERE user_id = $${paramIdx++})`;
       params = [admin_id];
     }
 

@@ -8,20 +8,44 @@ async function initSchema() {
   // Enable uuid-ossp extension for gen_random_uuid()
   await dbRun(`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`);
 
+  // Migrate existing users role column values first to avoid check constraint errors on table alter
+  try {
+    // FIRST drop the old constraint if it exists, so we can change the roles to uppercase
+    await dbRun(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
+
+    // THEN update the roles to uppercase
+    await dbRun(`UPDATE users SET role = 'SUPERADMIN' WHERE role = 'superadmin'`);
+    await dbRun(`UPDATE users SET role = 'ADMIN_RAPAT' WHERE role = 'admin'`);
+    await dbRun(`UPDATE users SET role = 'USER' WHERE role = 'user'`);
+    await dbRun(`UPDATE users SET role = 'USER' WHERE role = 'api'`);
+  } catch (err) {
+    console.log('Migration info (users role updates):', err.message);
+  }
+
   await dbRun(`CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT,
-    role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user','admin','superadmin','api')),
+    role TEXT NOT NULL DEFAULT 'USER' CHECK(role IN ('SUPERADMIN','ADMIN_RAPAT','ADMIN_KERJA','USER')),
     status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','active','inactive')),
     otp TEXT,
     otp_expires BIGINT,
     otp_type TEXT,
     refresh_token TEXT,
+    avatar_url TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     deleted_at TIMESTAMPTZ DEFAULT NULL
   )`);
+
+  // Apply new check constraint to users role
+  try {
+    await dbRun(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
+    await dbRun(`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('SUPERADMIN','ADMIN_RAPAT','ADMIN_KERJA','USER'))`);
+    await dbRun(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`);
+  } catch (err) {
+    console.log('Migration info (users constraint/avatar update):', err.message);
+  }
 
   await dbRun(`CREATE TABLE IF NOT EXISTS buildings (
     id TEXT PRIMARY KEY,
@@ -58,17 +82,44 @@ async function initSchema() {
     hours_end TEXT,
     image_url TEXT,
     room_type TEXT NOT NULL DEFAULT 'physical' CHECK(room_type IN ('physical','digital','hybrid')),
+    jenis_manajemen_ruang TEXT NOT NULL DEFAULT 'MEETING_ROOM' CHECK(jenis_manajemen_ruang IN ('MEETING_ROOM', 'WORKSPACE')),
+    total_meja_kerja INTEGER,
+    qr_token UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ DEFAULT NULL
+    deleted_at TIMESTAMPTZ DEFAULT NULL,
+    CONSTRAINT chk_workspace_desk_count CHECK (
+      (jenis_manajemen_ruang <> 'WORKSPACE') OR
+      (jenis_manajemen_ruang = 'WORKSPACE' AND total_meja_kerja IS NOT NULL AND total_meja_kerja > 0)
+    )
   )`);
 
-  // Migrate existing rooms table if room_type is not present, and update check constraint
+  // Migrate existing rooms table for classification, desk count, and QR code token
   try {
     await dbRun(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS room_type TEXT NOT NULL DEFAULT 'physical'`);
     await dbRun(`ALTER TABLE rooms DROP CONSTRAINT IF EXISTS rooms_room_type_check`);
     await dbRun(`ALTER TABLE rooms ADD CONSTRAINT rooms_room_type_check CHECK (room_type IN ('physical','digital','hybrid'))`);
+    
+    // Add jenis_manajemen_ruang
+    await dbRun(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS jenis_manajemen_ruang TEXT NOT NULL DEFAULT 'MEETING_ROOM'`);
+    await dbRun(`ALTER TABLE rooms DROP CONSTRAINT IF EXISTS rooms_jenis_manajemen_ruang_check`);
+    await dbRun(`ALTER TABLE rooms ADD CONSTRAINT rooms_jenis_manajemen_ruang_check CHECK (jenis_manajemen_ruang IN ('MEETING_ROOM', 'WORKSPACE'))`);
+    
+    // Add total_meja_kerja
+    await dbRun(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS total_meja_kerja INTEGER`);
+    await dbRun(`ALTER TABLE rooms DROP CONSTRAINT IF EXISTS chk_workspace_desk_count`);
+    await dbRun(`ALTER TABLE rooms ADD CONSTRAINT chk_workspace_desk_count CHECK (
+      (jenis_manajemen_ruang <> 'WORKSPACE') OR
+      (jenis_manajemen_ruang = 'WORKSPACE' AND total_meja_kerja IS NOT NULL AND total_meja_kerja > 0)
+    )`);
+    
+    // Add qr_token with default
+    await dbRun(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS qr_token UUID DEFAULT gen_random_uuid()`);
+    await dbRun(`UPDATE rooms SET qr_token = gen_random_uuid() WHERE qr_token IS NULL`);
+    await dbRun(`ALTER TABLE rooms ALTER COLUMN qr_token SET NOT NULL`);
+    await dbRun(`ALTER TABLE rooms DROP CONSTRAINT IF EXISTS rooms_qr_token_key`);
+    await dbRun(`ALTER TABLE rooms ADD CONSTRAINT rooms_qr_token_key UNIQUE (qr_token)`);
   } catch (err) {
-    console.log('Migration info (rooms.room_type):', err.message);
+    console.log('Migration info (rooms updates):', err.message);
   }
 
   await dbRun(`CREATE TABLE IF NOT EXISTS room_photos (
@@ -97,13 +148,78 @@ async function initSchema() {
     deleted_at TIMESTAMPTZ DEFAULT NULL
   )`);
 
+  // Recreate room_assignments junction table with composite primary key and indexes
+  try {
+    await dbRun(`DROP TABLE IF EXISTS room_assignments CASCADE`);
+  } catch (err) {
+    console.log('Junction table drop info:', err.message);
+  }
+
   await dbRun(`CREATE TABLE IF NOT EXISTS room_assignments (
-    id TEXT PRIMARY KEY,
-    admin_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
-    deleted_at TIMESTAMPTZ DEFAULT NULL,
-    UNIQUE(admin_id, room_id)
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (user_id, room_id)
   )`);
+
+  try {
+    await dbRun(`CREATE INDEX IF NOT EXISTS idx_room_assignments_user_id ON room_assignments (user_id)`);
+    await dbRun(`CREATE INDEX IF NOT EXISTS idx_room_assignments_room_id ON room_assignments (room_id)`);
+  } catch (err) {
+    console.log('Junction table index info:', err.message);
+  }
+
+  // Create dependent workspace_desks table
+  await dbRun(`CREATE TABLE IF NOT EXISTS workspace_desks (
+    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    desk_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'VACANT' CHECK(status IN ('VACANT', 'OCCUPIED', 'DISABLED')),
+    assigned_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (room_id, desk_id)
+  )`);
+
+  try {
+    await dbRun(`CREATE INDEX IF NOT EXISTS idx_workspace_desks_room_id ON workspace_desks (room_id)`);
+    await dbRun(`CREATE INDEX IF NOT EXISTS idx_workspace_desks_assigned_user_id ON workspace_desks (assigned_user_id)`);
+  } catch (err) {
+    console.log('workspace_desks index info:', err.message);
+  }
+
+  // Create seating_requests table
+  await dbRun(`CREATE TABLE IF NOT EXISTS seating_requests (
+    id TEXT PRIMARY KEY,
+    room_id TEXT NOT NULL,
+    desk_id TEXT NOT NULL,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    FOREIGN KEY (room_id, desk_id) REFERENCES workspace_desks(room_id, desk_id) ON DELETE CASCADE
+  )`);
+
+  try {
+    await dbRun(`CREATE INDEX IF NOT EXISTS idx_seating_requests_user_id ON seating_requests (user_id)`);
+    await dbRun(`CREATE INDEX IF NOT EXISTS idx_seating_requests_room_desk ON seating_requests (room_id, desk_id)`);
+  } catch (err) {
+    console.log('seating_requests index info:', err.message);
+  }
+
+  // Create notifications table
+  await dbRun(`CREATE TABLE IF NOT EXISTS notifications (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    payload TEXT,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  )`);
+
+  try {
+    await dbRun(`CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications (user_id)`);
+  } catch (err) {
+    console.log('notifications index info:', err.message);
+  }
 
   await dbRun(`CREATE TABLE IF NOT EXISTS bookings (
     id TEXT PRIMARY KEY,
@@ -114,7 +230,7 @@ async function initSchema() {
     end_time TEXT NOT NULL,
     agenda TEXT NOT NULL,
     participants INTEGER DEFAULT 1,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','confirmed','ongoing','completed','cancelled','rejected')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','confirmed','ongoing','completed','cancelled','rejected','CANCELLED_NOSHOW')),
     rejection_reason TEXT,
     cancel_reason TEXT,
     surat_terkait TEXT,
@@ -123,8 +239,27 @@ async function initSchema() {
     zoom_join_url TEXT,
     zoom_passcode TEXT,
     zoom_host_email TEXT,
+    is_checked_in BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     deleted_at TIMESTAMPTZ DEFAULT NULL
+  )`);
+
+  // Migrate existing bookings table for is_checked_in column and status constraint
+  try {
+    await dbRun(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS is_checked_in BOOLEAN DEFAULT FALSE`);
+    await dbRun(`ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_status_check`);
+    await dbRun(`ALTER TABLE bookings ADD CONSTRAINT bookings_status_check CHECK(status IN ('pending','confirmed','ongoing','completed','cancelled','rejected','CANCELLED_NOSHOW'))`);
+  } catch (err) {
+    console.log('Migration info (bookings constraint and column update):', err.message);
+  }
+
+  // Create global_audit_trail table
+  await dbRun(`CREATE TABLE IF NOT EXISTS global_audit_trail (
+    id TEXT PRIMARY KEY,
+    timestamp TIMESTAMPTZ DEFAULT NOW(),
+    actor_id TEXT NOT NULL,
+    action_type TEXT NOT NULL,
+    payload TEXT NOT NULL
   )`);
 
   await dbRun(`CREATE TABLE IF NOT EXISTS global_policy (
@@ -232,14 +367,14 @@ async function seedData() {
 
   // Users
   const users = [
-    { id: 'u-super', name: 'Super Admin', email: 'superadmin@oikn.go.id', role: 'superadmin', status: 'active' },
-    { id: 'u-admin1', name: 'Ahmad Fauzi', email: 'admin@oikn.go.id', role: 'admin', status: 'active' },
-    { id: 'u-admin2', name: 'Sari Dewi', email: 'sari.dewi@oikn.go.id', role: 'admin', status: 'active' },
-    { id: 'u-admin3', name: 'Bima Pradana', email: 'bima.pradana@oikn.go.id', role: 'admin', status: 'active' },
-    { id: 'u-admin4', name: 'Rina Kusuma', email: 'rina.kusuma@oikn.go.id', role: 'admin', status: 'active' },
-    { id: 'u-user1', name: 'Budi Santoso', email: 'user@oikn.go.id', role: 'user', status: 'active' },
-    { id: 'u-user2', name: 'Dewi Rahayu', email: 'dewi.rahayu@oikn.go.id', role: 'user', status: 'active' },
-    { id: 'u-api1', name: 'Admin Sistem IKNOW', email: 'api-iknow@system.oikn.go.id', role: 'api', status: 'active' },
+    { id: 'u-super', name: 'Super Admin', email: 'superadmin@oikn.go.id', role: 'SUPERADMIN', status: 'active' },
+    { id: 'u-admin1', name: 'Ahmad Fauzi', email: 'admin@oikn.go.id', role: 'ADMIN_RAPAT', status: 'active' },
+    { id: 'u-admin2', name: 'Sari Dewi', email: 'sari.dewi@oikn.go.id', role: 'ADMIN_RAPAT', status: 'active' },
+    { id: 'u-admin3', name: 'Bima Pradana', email: 'bima.pradana@oikn.go.id', role: 'ADMIN_RAPAT', status: 'active' },
+    { id: 'u-admin4', name: 'Rina Kusuma', email: 'rina.kusuma@oikn.go.id', role: 'ADMIN_KERJA', status: 'active' },
+    { id: 'u-user1', name: 'Budi Santoso', email: 'user@oikn.go.id', role: 'USER', status: 'active' },
+    { id: 'u-user2', name: 'Dewi Rahayu', email: 'dewi.rahayu@oikn.go.id', role: 'USER', status: 'active' },
+    { id: 'u-api1', name: 'Admin Sistem IKNOW', email: 'api-iknow@system.oikn.go.id', role: 'USER', status: 'active' },
   ];
   for (const u of users) {
     await dbRun(
@@ -273,17 +408,18 @@ async function seedData() {
 
   // Rooms
   const rooms = [
-    { id: 'r1', name: 'Ruang Rapat Eksekutif A', building_id: 'b1', floor_id: 'f3', admin_id: 'u-admin1', description: 'Ruang rapat premium untuk rapat eksekutif dan tamu VVIP.', status: 'active', approval_type: 'manual', restrict_hours: true, hours_start: '07:00', hours_end: '18:00', image_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80' },
-    { id: 'r2', name: 'Ruang Diskusi Inovasi', building_id: 'b1', floor_id: 'f2', admin_id: 'u-admin2', description: 'Ruang kolaborasi untuk sesi brainstorming dan workshop tim.', status: 'active', approval_type: 'instant', restrict_hours: true, hours_start: '08:00', hours_end: '17:00', image_url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400&q=80' },
-    { id: 'r3', name: 'Aula Serbaguna Nusantara', building_id: 'b2', floor_id: 'f4', admin_id: 'u-admin3', description: 'Aula besar untuk acara skala besar, seminar, dan pelantikan.', status: 'active', approval_type: 'manual', restrict_hours: false, hours_start: null, hours_end: null, image_url: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=400&q=80' },
-    { id: 'r4', name: 'Ruang Focus Work 01', building_id: 'b3', floor_id: 'f6', admin_id: 'u-admin4', description: 'Ruang kecil untuk meeting tim kecil dan sesi focus work.', status: 'active', approval_type: 'instant', restrict_hours: true, hours_start: '07:00', hours_end: '20:00', image_url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&q=80' },
-    { id: 'r5', name: 'Ruang Pelatihan Digital', building_id: 'b3', floor_id: 'f5', admin_id: 'u-admin4', description: 'Ruang pelatihan lengkap dengan perangkat teknologi terkini.', status: 'active', approval_type: 'instant', restrict_hours: true, hours_start: '08:00', hours_end: '16:00', image_url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=400&q=80' },
-    { id: 'r6', name: 'Lounge Kreatif B2', building_id: 'b1', floor_id: 'f1', admin_id: 'u-admin1', description: 'Ruang santai kreatif. Saat ini dalam renovasi.', status: 'inactive', approval_type: 'instant', restrict_hours: true, hours_start: '09:00', hours_end: '17:00', image_url: 'https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?w=400&q=80' },
+    { id: 'r1', name: 'Ruang Rapat Eksekutif A', building_id: 'b1', floor_id: 'f3', admin_id: 'u-admin1', description: 'Ruang rapat premium untuk rapat eksekutif dan tamu VVIP.', status: 'active', approval_type: 'manual', restrict_hours: true, hours_start: '07:00', hours_end: '18:00', image_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80', jenis_manajemen_ruang: 'MEETING_ROOM' },
+    { id: 'r2', name: 'Ruang Diskusi Inovasi', building_id: 'b1', floor_id: 'f2', admin_id: 'u-admin2', description: 'Ruang kolaborasi untuk sesi brainstorming dan workshop tim.', status: 'active', approval_type: 'instant', restrict_hours: true, hours_start: '08:00', hours_end: '17:00', image_url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400&q=80', jenis_manajemen_ruang: 'MEETING_ROOM' },
+    { id: 'r3', name: 'Aula Serbaguna Nusantara', building_id: 'b2', floor_id: 'f4', admin_id: 'u-admin3', description: 'Aula besar untuk acara skala besar, seminar, dan pelantikan.', status: 'active', approval_type: 'manual', restrict_hours: false, hours_start: null, hours_end: null, image_url: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=400&q=80', jenis_manajemen_ruang: 'MEETING_ROOM' },
+    { id: 'r4', name: 'Ruang Focus Work 01', building_id: 'b3', floor_id: 'f6', admin_id: 'u-admin4', description: 'Ruang kecil untuk meeting tim kecil dan sesi focus work.', status: 'active', approval_type: 'instant', restrict_hours: true, hours_start: '07:00', hours_end: '20:00', image_url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&q=80', jenis_manajemen_ruang: 'MEETING_ROOM' },
+    { id: 'r5', name: 'Ruang Pelatihan Digital', building_id: 'b3', floor_id: 'f5', admin_id: 'u-admin4', description: 'Ruang pelatihan lengkap dengan perangkat teknologi terkini.', status: 'active', approval_type: 'instant', restrict_hours: true, hours_start: '08:00', hours_end: '16:00', image_url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=400&q=80', jenis_manajemen_ruang: 'MEETING_ROOM' },
+    { id: 'r6', name: 'Lounge Kreatif B2', building_id: 'b1', floor_id: 'f1', admin_id: 'u-admin1', description: 'Ruang santai kreatif. Saat ini dalam renovasi.', status: 'inactive', approval_type: 'instant', restrict_hours: true, hours_start: '09:00', hours_end: '17:00', image_url: 'https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?w=400&q=80', jenis_manajemen_ruang: 'MEETING_ROOM' },
+    { id: 'r7', name: 'Ruang Kerja Bersama Level 5', building_id: 'b1', floor_id: 'f2', admin_id: 'u-admin4', description: 'Ruang kerja bersama (coworking space) premium dengan pemandangan sayap barat.', status: 'active', approval_type: 'manual', restrict_hours: false, hours_start: null, hours_end: null, image_url: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&q=80', jenis_manajemen_ruang: 'WORKSPACE' },
   ];
   for (const r of rooms) {
     await dbRun(
-      `INSERT INTO rooms (id, name, building_id, floor_id, admin_id, description, status, approval_type, restrict_hours, hours_start, hours_end, image_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-      [r.id, r.name, r.building_id, r.floor_id, r.admin_id, r.description, r.status, r.approval_type, r.restrict_hours, r.hours_start, r.hours_end, r.image_url]
+      `INSERT INTO rooms (id, name, building_id, floor_id, admin_id, description, status, approval_type, restrict_hours, hours_start, hours_end, image_url, jenis_manajemen_ruang) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+      [r.id, r.name, r.building_id, r.floor_id, r.admin_id, r.description, r.status, r.approval_type, r.restrict_hours, r.hours_start, r.hours_end, r.image_url, r.jenis_manajemen_ruang]
     );
   }
 
@@ -323,18 +459,19 @@ async function seedData() {
     }
   }
 
-  // Room assignments
+  // Room assignments (junction table seed)
   const assignments = [
-    { admin_id: 'u-admin1', room_id: 'r1' },
-    { admin_id: 'u-admin1', room_id: 'r6' },
-    { admin_id: 'u-admin2', room_id: 'r2' },
-    { admin_id: 'u-admin3', room_id: 'r3' },
-    { admin_id: 'u-admin4', room_id: 'r4' },
-    { admin_id: 'u-admin4', room_id: 'r5' },
+    { user_id: 'u-admin1', room_id: 'r1' },
+    { user_id: 'u-admin1', room_id: 'r6' },
+    { user_id: 'u-admin2', room_id: 'r2' },
+    { user_id: 'u-admin3', room_id: 'r3' },
+    { user_id: 'u-admin4', room_id: 'r4' },
+    { user_id: 'u-admin4', room_id: 'r5' },
+    { user_id: 'u-admin4', room_id: 'r7' },
   ];
   for (const a of assignments) {
-    await dbRun(`INSERT INTO room_assignments (id, admin_id, room_id) VALUES ($1,$2,$3) ON CONFLICT (admin_id, room_id) DO NOTHING`,
-      [uuidv4(), a.admin_id, a.room_id]);
+    await dbRun(`INSERT INTO room_assignments (user_id, room_id) VALUES ($1,$2) ON CONFLICT (user_id, room_id) DO NOTHING`,
+      [a.user_id, a.room_id]);
   }
 
   // Sample bookings (using today-relative dates)
@@ -380,6 +517,23 @@ async function seedData() {
   for (const al of auditLogs) {
     await dbRun(`INSERT INTO audit_logs (id, actor_id, actor_name, action, resource, ip, payload_before, payload_after) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
       [al.id, al.actor_id, al.actor_name, al.action, al.resource, al.ip, al.payload_before, al.payload_after]);
+  }
+
+  // Workspace Desks Seeding for r7
+  console.log('🌱 Seeding workspace desks for r7...');
+  await dbRun(`UPDATE rooms SET total_meja_kerja = 20 WHERE id = 'r7'`);
+  for (let i = 1; i <= 20; i++) {
+    const deskId = `Desk-${String(i).padStart(2, '0')}`;
+    const isOccupied = i === 12;
+    const isDisabled = i === 17;
+    const status = isOccupied ? 'OCCUPIED' : isDisabled ? 'DISABLED' : 'VACANT';
+    const assignedUser = isOccupied ? 'u-user1' : null;
+    await dbRun(
+      `INSERT INTO workspace_desks (room_id, desk_id, status, assigned_user_id) 
+       VALUES ('r7', $1, $2, $3)
+       ON CONFLICT (room_id, desk_id) DO UPDATE SET status = $2, assigned_user_id = $3`,
+      [deskId, status, assignedUser]
+    );
   }
 
   console.log('✅ Seed data inserted successfully.');
