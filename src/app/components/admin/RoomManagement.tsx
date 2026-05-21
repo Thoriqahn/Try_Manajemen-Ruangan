@@ -248,6 +248,7 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
   const [floors, setFloors] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
   const [photos, setPhotos] = useState<File[]>([]);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [layouts, setLayouts] = useState<{type: string, capacity: number}[]>(
     room?.layouts?.length ? room.layouts.map((l: any) => ({ type: l.layout_type || l.type || l.name, capacity: l.capacity })) : [{ type: "Boardroom", capacity: 10 }]
   );

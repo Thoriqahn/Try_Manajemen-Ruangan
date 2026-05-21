@@ -822,16 +822,23 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
           {/* Surat Terkait (optional) */}
           <div>
             <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>
-              Surat Terkait <span className="text-gray-400 text-xs font-normal">(opsional)</span>
+              Surat Terkait <span className="text-gray-400 text-xs font-normal">(opsional, max 2MB)</span>
             </label>
-            <textarea
-              value={form.suratTerkait}
-              onChange={e => setForm({ ...form, suratTerkait: e.target.value })}
-              placeholder="Contoh: SE-001/OTK/2025 — Rapat Koordinasi Antar Divisi. Cantumkan nomor surat atau keterangan urgensi jika diperlukan."
-              rows={2}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 resize-none"
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file && file.size > 2 * 1024 * 1024) {
+                  alert("File terlalu besar. Maksimal 2MB.");
+                  e.target.value = ""; // Reset the input
+                } else {
+                  setForm({ ...form, suratTerkait: file });
+                }
+              }}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50"
             />
-            <p className="text-[10px] text-gray-400 mt-1">Cantumkan nomor surat edaran, memo, atau referensi terkait untuk mendukung urgensi peminjaman.</p>
+            <p className="text-[10px] text-gray-400 mt-1">Unggah file surat edaran, memo, atau referensi terkait untuk mendukung urgensi peminjaman.</p>
           </div>
 
           {room.approval_type === "manual" && (
