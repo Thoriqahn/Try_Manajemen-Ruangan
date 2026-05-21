@@ -12,5 +12,6 @@ router.delete('/:id', authGuard, ctrl.cancelBooking);
 router.post('/:id/approve', authGuard, roleGuard('admin', 'superadmin'), ctrl.approveBooking);
 router.post('/:id/reject', authGuard, roleGuard('admin', 'superadmin'), ctrl.rejectBooking);
 router.post('/:id/force-cancel', authGuard, roleGuard('admin', 'superadmin'), ctrl.forceCancel);
+router.get('/:id/attendees', authGuard, ctrl.getBookingAttendees);
 
 module.exports = router;

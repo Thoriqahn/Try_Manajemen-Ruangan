@@ -50,6 +50,13 @@ export interface BookingFilter {
   admin_id?: string;
 }
 
+export interface Attendee {
+  id: string;
+  user_id: string;
+  user_name: string;
+  scanned_at: string;
+}
+
 export const bookingService = {
   async list(filters?: BookingFilter) {
     const params = new URLSearchParams();
@@ -89,5 +96,9 @@ export const bookingService = {
 
   async checkIn(roomId: string, scannedQrToken: string) {
     return api.post('/bookings/check-in', { room_id: roomId, scanned_qr_token: scannedQrToken });
+  },
+
+  async getAttendees(bookingId: string) {
+    return api.get<Attendee[]>(`/bookings/${bookingId}/attendees`);
   },
 };

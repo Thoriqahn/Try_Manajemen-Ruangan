@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { 
   Search, Calendar, MapPin, Clock, AlertTriangle, Video, ExternalLink, 
   Armchair, ArrowRight, CheckCircle2, Sparkles, X, Building, Check, 
-  CheckSquare, Info, Map, User, UserCheck, HelpCircle, BarChart2, ShieldAlert
+  CheckSquare, Info, Map, User, UserCheck, HelpCircle, BarChart2, ShieldAlert,
+  QrCode
 } from "lucide-react";
 import { bookingService } from "../../services/bookingService";
 import { workspaceService, AssignedDesk, PendingRequest, DeskNode } from "../../services/workspaceService";
@@ -161,6 +162,11 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
   const [search, setSearch] = useState("");
   const [cancelModal, setCancelModal] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
+
+  // Attendees States
+  const [attendeesModal, setAttendeesModal] = useState<string | null>(null);
+  const [attendeesList, setAttendeesList] = useState<any[]>([]);
+  const [attendeesLoading, setAttendeesLoading] = useState(false);
 
   // Seating States
   const [seatingLoading, setSeatingLoading] = useState(true);
@@ -365,14 +371,37 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
     }
   };
 
-  const tabBookings = bookings.filter(b => {
-    const isUpcoming = ["confirmed", "pending"].includes(b.status);
-    const isOngoing = b.status === "ongoing";
-    const isPast = ["completed", "cancelled", "rejected", "CANCELLED_NOSHOW"].includes(b.status);
+  const getBookingCategory = (b: any) => {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    
+    if (["completed", "cancelled", "rejected", "CANCELLED_NOSHOW"].includes(b.status)) {
+      return "past";
+    }
+    if (b.status === "ongoing") {
+      return "ongoing";
+    }
+    if (b.status === "confirmed") {
+      if (b.date === today) {
+        const startTime = new Date(`${b.date}T${b.start_time}:00`);
+        const endTime = new Date(`${b.date}T${b.end_time}:00`);
+        // Early check-in allowed 15 mins before
+        const earlyLimit = new Date(startTime.getTime() - 15 * 60 * 1000);
+        if (now >= earlyLimit && now <= endTime) {
+          return "ongoing"; // Time has arrived, show in ongoing for check-in
+        }
+      }
+      return "upcoming";
+    }
+    if (b.status === "pending") {
+      return "upcoming";
+    }
+    return "past";
+  };
 
-    if (activeTab === "upcoming" && !isUpcoming) return false;
-    if (activeTab === "ongoing" && !isOngoing) return false;
-    if (activeTab === "past" && !isPast) return false;
+  const tabBookings = bookings.filter(b => {
+    const category = getBookingCategory(b);
+    if (activeTab !== category) return false;
 
     if (search) {
       return (b.room_name || "").toLowerCase().includes(search.toLowerCase()) ||
@@ -382,11 +411,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
   });
 
   const tabCount = (tab: "upcoming" | "ongoing" | "past") =>
-    bookings.filter(b => {
-      if (tab === "upcoming") return ["confirmed", "pending"].includes(b.status);
-      if (tab === "ongoing") return b.status === "ongoing";
-      return ["completed", "cancelled", "rejected", "CANCELLED_NOSHOW"].includes(b.status);
-    }).length;
+    bookings.filter(b => getBookingCategory(b) === tab).length;
 
   const handleCancel = async (id: string) => {
     setCancelLoading(true);
@@ -409,6 +434,24 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
       toast.error(err.message || "Gagal membatalkan booking");
     } finally {
       setCancelLoading(false);
+    }
+  };
+
+  const handleOpenAttendees = async (bookingId: string) => {
+    setAttendeesModal(bookingId);
+    setAttendeesLoading(true);
+    try {
+      const res = await bookingService.getAttendees(bookingId);
+      if (res.success && res.data) {
+        setAttendeesList(res.data);
+      } else {
+        setAttendeesList([]);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Gagal memuat daftar hadir.");
+      setAttendeesList([]);
+    } finally {
+      setAttendeesLoading(false);
     }
   };
 
@@ -742,6 +785,52 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                       </div>
 
                       <div className="flex items-center md:items-end justify-between md:flex-col gap-2 flex-shrink-0">
+                        {/* Map Location Button */}
+                        {booking.building_name && booking.meeting_type !== "online" && (activeTab === "upcoming" || activeTab === "ongoing") && (
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.building_name + " IKN Nusantara")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+                            title={`Lihat rute ke ${booking.building_name}`}
+                          >
+                            <MapPin size={13} className="text-gray-500" />
+                            <span>Lokasi Gedung</span>
+                          </a>
+                        )}
+                        
+                        {/* Check-In Button for Ongoing Physical/Hybrid Meetings */}
+                        {activeTab === "ongoing" && booking.meeting_type !== "online" && (
+                          <button
+                            onClick={() => {
+                              window.dispatchEvent(new CustomEvent('menara:trigger-scan-simulator', { 
+                                detail: { bookingId: booking.id } 
+                              }));
+                            }}
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 ${
+                              booking.is_checked_in
+                                ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200"
+                                : "bg-gradient-to-tr from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white hover:shadow-md hover:-translate-y-0.5"
+                            }`}
+                            title={booking.is_checked_in ? "Scan QR untuk Presensi Kehadiran" : "Scan QR untuk Klaim Ruang Rapat"}
+                          >
+                            <QrCode size={13} />
+                            <span>{booking.is_checked_in ? "Presensi QR" : "Check In"}</span>
+                          </button>
+                        )}
+
+                        {/* Attendees List Button for Ongoing/Past */}
+                        {(activeTab === "ongoing" || activeTab === "past") && booking.meeting_type !== "online" && (
+                          <button
+                            onClick={() => handleOpenAttendees(booking.id)}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+                            title="Lihat Daftar Hadir"
+                          >
+                            <UserCheck size={13} className="text-emerald-500" />
+                            <span>Presensi</span>
+                          </button>
+                        )}
+
                         {/* Zoom Link Trigger Button */}
                         {booking.zoom_join_url && (booking.meeting_type === "online" || booking.meeting_type === "hybrid") && (
                           <a
@@ -1047,6 +1136,73 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                   ) : "Ya, Batalkan"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attendees Modal */}
+      {attendeesModal && (
+        <div className="fixed inset-0 bg-[#0A1428]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 shadow-2xl flex flex-col max-h-[85vh]">
+            <div className="px-6 py-4 bg-[#1E3A5F] text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/10 rounded-xl">
+                  <UserCheck size={20} className="text-emerald-300" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm">Daftar Kehadiran</h3>
+                  <p className="text-[10px] text-blue-200">Riwayat presensi dari pemindaian pintu ruangan</p>
+                </div>
+              </div>
+              <button onClick={() => setAttendeesModal(null)} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-blue-200 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-50 space-y-4 relative">
+              {attendeesLoading ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-3">
+                  <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Memuat Data Presensi...</span>
+                </div>
+              ) : attendeesList.length === 0 ? (
+                <div className="text-center py-10 px-4 bg-white border border-dashed border-gray-200 rounded-2xl">
+                  <UserCheck size={32} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-sm font-bold text-gray-600">Belum ada peserta hadir</p>
+                  <p className="text-xs text-gray-400 mt-1">Gunakan QR Simulator untuk men-scan pintu ruangan.</p>
+                </div>
+              ) : (
+                <div className="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-emerald-500/20 before:to-transparent">
+                  {attendeesList.map((attendee, index) => {
+                    const scannedTime = new Date(attendee.scanned_at);
+                    const timeString = scannedTime.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    const isFirst = index === 0;
+
+                    return (
+                      <div key={attendee.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-50 group-[.is-active]:bg-emerald-50 text-emerald-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                          {isFirst ? <Sparkles size={16} /> : <UserCheck size={16} />}
+                        </div>
+                        <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl border border-gray-100 bg-white shadow-sm flex flex-col">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                              {timeString}
+                            </span>
+                            {isFirst && <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 rounded-full">Klaim Ruangan</span>}
+                          </div>
+                          <span className="text-sm font-bold text-gray-800 line-clamp-1">{attendee.user_name}</span>
+                          <span className="text-[10px] text-gray-500 mt-0.5 uppercase tracking-wide">ID: {attendee.user_id.split('-').pop()}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 bg-white border-t border-gray-100 text-center text-[10px] text-gray-400">
+              Total peserta tercatat hadir: <strong className="text-gray-700">{attendeesList.length} orang</strong>
             </div>
           </div>
         </div>

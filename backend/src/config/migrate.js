@@ -334,10 +334,19 @@ async function initSchema() {
     deleted_at TIMESTAMPTZ DEFAULT NULL
   )`);
 
+  await dbRun(`CREATE TABLE IF NOT EXISTS meeting_attendees (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
+    booking_id TEXT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_name TEXT NOT NULL,
+    scanned_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(booking_id, user_id)
+  )`);
+
   await dbRun(`CREATE TABLE IF NOT EXISTS zoom_meeting_logs (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
-    booking_id TEXT NOT NULL REFERENCES bookings(id),
-    zoom_account_id TEXT REFERENCES zoom_accounts(id),
+    booking_id TEXT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    zoom_account_id TEXT REFERENCES zoom_accounts(id) ON DELETE SET NULL,
     zoom_meeting_id TEXT,
     zoom_join_url TEXT,
     zoom_passcode TEXT,
@@ -352,55 +361,83 @@ async function initSchema() {
 }
 
 async function seedData() {
-  // Check if already seeded
-  const existing = await dbAll('SELECT id FROM users LIMIT 1');
-  if (existing.length > 0) {
-    console.log('ℹ️  Database already seeded. Skipping.');
-    return;
-  }
+  console.log('🧹 Wiping all existing tables to prepare fresh showcase seed...');
+  await dbRun(`
+    TRUNCATE TABLE
+      meeting_attendees,
+      seating_requests,
+      workspace_desks,
+      room_photos,
+      room_layouts,
+      room_facilities,
+      room_assignments,
+      bookings,
+      rooms,
+      floors,
+      buildings,
+      audit_logs,
+      api_logs,
+      api_tokens,
+      notifications,
+      users,
+      global_policy,
+      blackout_dates,
+      zoom_meeting_logs,
+      zoom_config,
+      zoom_accounts,
+      global_audit_trail
+      CASCADE
+  `);
 
-  console.log('🌱 Seeding demo data...');
+  console.log('🌱 Seeding premium OIKN showcase data...');
   const hash = await bcrypt.hash('password123!', 10);
 
   // Seed default policy
-  await dbRun(`INSERT INTO global_policy (id, max_duration_hours, max_days_ahead) VALUES (1, 4, 30) ON CONFLICT (id) DO NOTHING`);
+  await dbRun(`INSERT INTO global_policy (id, max_duration_hours, max_days_ahead) VALUES (1, 6, 30) ON CONFLICT (id) DO NOTHING`);
 
   // Users
   const users = [
     { id: 'u-super', name: 'Super Admin', email: 'superadmin@oikn.go.id', role: 'SUPERADMIN', status: 'active' },
-    { id: 'u-admin1', name: 'Ahmad Fauzi', email: 'admin@oikn.go.id', role: 'ADMIN_RAPAT', status: 'active' },
-    { id: 'u-admin2', name: 'Sari Dewi', email: 'sari.dewi@oikn.go.id', role: 'ADMIN_RAPAT', status: 'active' },
-    { id: 'u-admin3', name: 'Bima Pradana', email: 'bima.pradana@oikn.go.id', role: 'ADMIN_RAPAT', status: 'active' },
-    { id: 'u-admin4', name: 'Rina Kusuma', email: 'rina.kusuma@oikn.go.id', role: 'ADMIN_KERJA', status: 'active' },
-    { id: 'u-user1', name: 'Budi Santoso', email: 'user@oikn.go.id', role: 'USER', status: 'active' },
-    { id: 'u-user2', name: 'Dewi Rahayu', email: 'dewi.rahayu@oikn.go.id', role: 'USER', status: 'active' },
-    { id: 'u-api1', name: 'Admin Sistem IKNOW', email: 'api-iknow@system.oikn.go.id', role: 'USER', status: 'active' },
+    { id: 'u-admin1', name: 'Ahmad Fauzi, S.Kom.', email: 'admin@oikn.go.id', role: 'ADMIN_RAPAT', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80' },
+    { id: 'u-admin2', name: 'Sari Dewi, M.T.', email: 'sari.dewi@oikn.go.id', role: 'ADMIN_RAPAT', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80' },
+    { id: 'u-admin3', name: 'Bima Pradana, M.B.A.', email: 'bima.pradana@oikn.go.id', role: 'ADMIN_RAPAT', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80' },
+    { id: 'u-admin4', name: 'Rina Kusuma, S.E.', email: 'rina.kusuma@oikn.go.id', role: 'ADMIN_KERJA', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80' },
+    { id: 'u-user1', name: 'Budi Santoso, M.Eng.', email: 'user@oikn.go.id', role: 'USER', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80' },
+    { id: 'u-user2', name: 'Dewi Rahayu, S.I.P.', email: 'dewi.rahayu@oikn.go.id', role: 'USER', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80' },
+    { id: 'u-user3', name: 'Eko Prasetyo, S.H.', email: 'eko.prasetyo@oikn.go.id', role: 'USER', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100&q=80' },
+    { id: 'u-user4', name: 'Siti Aminah, M.Si.', email: 'siti.aminah@oikn.go.id', role: 'USER', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80' },
+    { id: 'u-user5', name: 'Rian Hidayat, B.Eng.', email: 'rian.hidayat@oikn.go.id', role: 'USER', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&q=80' },
+    { id: 'u-api1', name: 'Admin Sistem IKNOW Core', email: 'api-iknow@system.oikn.go.id', role: 'USER', status: 'active' }
   ];
   for (const u of users) {
     await dbRun(
-      `INSERT INTO users (id, name, email, password_hash, role, status) VALUES ($1,$2,$3,$4,$5,$6)`,
-      [u.id, u.name, u.email, hash, u.role, u.status]
+      `INSERT INTO users (id, name, email, password_hash, role, status, avatar_url) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [u.id, u.name, u.email, hash, u.role, u.status, u.avatar_url || null]
     );
   }
 
   // Buildings
   const buildings = [
-    { id: 'b1', name: 'Gedung IKN Tower', address: 'Kawasan Inti IKN, Kalimantan Timur' },
-    { id: 'b2', name: 'Gedung Serba Guna', address: 'Kawasan IKN, Kalimantan Timur' },
-    { id: 'b3', name: 'Gedung Teknologi', address: 'Kawasan IKN, Kalimantan Timur' },
+    { id: 'b1', name: 'Gedung IKN Tower A', address: 'Kawasan Inti Pusat Pemerintahan (KIPP), Sepaku, Penajam Paser Utara, Kalimantan Timur', lat: '-0.9634', lng: '116.7089', total_floors: 12, image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&q=80' },
+    { id: 'b2', name: 'Gedung Serba Guna Nusantara', address: 'Kawasan Hunian ASN IKN, Sepaku, Kalimantan Timur', lat: '-0.9650', lng: '116.7110', total_floors: 3, image_url: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&q=80' },
+    { id: 'b3', name: 'Gedung Teknologi & Inovasi', address: 'Kawasan Technopark IKN, Sepaku, Kalimantan Timur', lat: '-0.9610', lng: '116.7040', total_floors: 5, image_url: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=400&q=80' },
   ];
   for (const b of buildings) {
-    await dbRun(`INSERT INTO buildings (id, name, address) VALUES ($1,$2,$3)`, [b.id, b.name, b.address]);
+    await dbRun(
+      `INSERT INTO buildings (id, name, address, lat, lng, total_floors, image_url) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [b.id, b.name, b.address, b.lat, b.lng, b.total_floors, b.image_url]
+    );
   }
 
   // Floors
   const floors = [
-    { id: 'f1', building_id: 'b1', name: 'Lantai 2', level: 2 },
-    { id: 'f2', building_id: 'b1', name: 'Lantai 5', level: 5 },
-    { id: 'f3', building_id: 'b1', name: 'Lantai 8', level: 8 },
-    { id: 'f4', building_id: 'b2', name: 'Lantai 1', level: 1 },
-    { id: 'f5', building_id: 'b3', name: 'Lantai 2', level: 2 },
-    { id: 'f6', building_id: 'b3', name: 'Lantai 3', level: 3 },
+    { id: 'f1', building_id: 'b1', name: 'Lantai 1 - Lobby & Resepsionis', level: 1 },
+    { id: 'f2', building_id: 'b1', name: 'Lantai 2 - Perencanaan Tata Ruang', level: 2 },
+    { id: 'f3', building_id: 'b1', name: 'Lantai 3 - Bidang Infrastruktur', level: 3 },
+    { id: 'f4', building_id: 'b1', name: 'Lantai 5 - Deputi Teknologi Informasi', level: 5 },
+    { id: 'f5', building_id: 'b2', name: 'Lantai Dasar - Hall Utama', level: 1 },
+    { id: 'f6', building_id: 'b3', name: 'Lantai 2 - Pusat Inkubasi Startup', level: 2 },
+    { id: 'f7', building_id: 'b3', name: 'Lantai 3 - Smart City Center', level: 3 },
   ];
   for (const f of floors) {
     await dbRun(`INSERT INTO floors (id, building_id, name, level) VALUES ($1,$2,$3,$4)`, [f.id, f.building_id, f.name, f.level]);
@@ -408,35 +445,32 @@ async function seedData() {
 
   // Rooms
   const rooms = [
-    { id: 'r1', name: 'Ruang Rapat Eksekutif A', building_id: 'b1', floor_id: 'f3', admin_id: 'u-admin1', description: 'Ruang rapat premium untuk rapat eksekutif dan tamu VVIP.', status: 'active', approval_type: 'manual', restrict_hours: true, hours_start: '07:00', hours_end: '18:00', image_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80', jenis_manajemen_ruang: 'MEETING_ROOM' },
-    { id: 'r2', name: 'Ruang Diskusi Inovasi', building_id: 'b1', floor_id: 'f2', admin_id: 'u-admin2', description: 'Ruang kolaborasi untuk sesi brainstorming dan workshop tim.', status: 'active', approval_type: 'instant', restrict_hours: true, hours_start: '08:00', hours_end: '17:00', image_url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400&q=80', jenis_manajemen_ruang: 'MEETING_ROOM' },
-    { id: 'r3', name: 'Aula Serbaguna Nusantara', building_id: 'b2', floor_id: 'f4', admin_id: 'u-admin3', description: 'Aula besar untuk acara skala besar, seminar, dan pelantikan.', status: 'active', approval_type: 'manual', restrict_hours: false, hours_start: null, hours_end: null, image_url: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=400&q=80', jenis_manajemen_ruang: 'MEETING_ROOM' },
-    { id: 'r4', name: 'Ruang Focus Work 01', building_id: 'b3', floor_id: 'f6', admin_id: 'u-admin4', description: 'Ruang kecil untuk meeting tim kecil dan sesi focus work.', status: 'active', approval_type: 'instant', restrict_hours: true, hours_start: '07:00', hours_end: '20:00', image_url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&q=80', jenis_manajemen_ruang: 'MEETING_ROOM' },
-    { id: 'r5', name: 'Ruang Pelatihan Digital', building_id: 'b3', floor_id: 'f5', admin_id: 'u-admin4', description: 'Ruang pelatihan lengkap dengan perangkat teknologi terkini.', status: 'active', approval_type: 'instant', restrict_hours: true, hours_start: '08:00', hours_end: '16:00', image_url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=400&q=80', jenis_manajemen_ruang: 'MEETING_ROOM' },
-    { id: 'r6', name: 'Lounge Kreatif B2', building_id: 'b1', floor_id: 'f1', admin_id: 'u-admin1', description: 'Ruang santai kreatif. Saat ini dalam renovasi.', status: 'inactive', approval_type: 'instant', restrict_hours: true, hours_start: '09:00', hours_end: '17:00', image_url: 'https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?w=400&q=80', jenis_manajemen_ruang: 'MEETING_ROOM' },
-    { id: 'r7', name: 'Ruang Kerja Bersama Level 5', building_id: 'b1', floor_id: 'f2', admin_id: 'u-admin4', description: 'Ruang kerja bersama (coworking space) premium dengan pemandangan sayap barat.', status: 'active', approval_type: 'manual', restrict_hours: false, hours_start: null, hours_end: null, image_url: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&q=80', jenis_manajemen_ruang: 'WORKSPACE' },
+    { id: 'r1', name: 'Ruang Rapat Eksekutif Garuda', building_id: 'b1', floor_id: 'f4', admin_id: 'u-admin1', description: 'Ruang rapat premium dengan fasilitas video conference VVIP, kedap suara, dan view KIPP IKN.', status: 'active', approval_type: 'manual', restrict_hours: true, hours_start: '07:00', hours_end: '18:00', image_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&q=80', jenis_manajemen_ruang: 'MEETING_ROOM', room_type: 'physical' },
+    { id: 'r2', name: 'Ruang Kolaborasi Nusantara', building_id: 'b1', floor_id: 'f2', admin_id: 'u-admin2', description: 'Ruang kolaborasi tim kreatif dilengkapi dengan interactive screens dan smart whiteboard.', status: 'active', approval_type: 'instant', restrict_hours: true, hours_start: '08:00', hours_end: '17:00', image_url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&q=80', jenis_manajemen_ruang: 'MEETING_ROOM', room_type: 'hybrid' },
+    { id: 'r3', name: 'Auditorium Bung Karno', building_id: 'b2', floor_id: 'f5', admin_id: 'u-admin3', description: 'Auditorium megah untuk seminar besar, upacara pelantikan, dan simposium nasional.', status: 'active', approval_type: 'manual', restrict_hours: false, hours_start: null, hours_end: null, image_url: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=600&q=80', jenis_manajemen_ruang: 'MEETING_ROOM', room_type: 'hybrid' },
+    { id: 'r4', name: 'Ruang Focus Work Smart City', building_id: 'b3', floor_id: 'f7', admin_id: 'u-admin4', description: 'Ruang kecil kedap suara untuk rapat tim kecil dan sesi kerja fokus individu.', status: 'active', approval_type: 'instant', restrict_hours: true, hours_start: '07:00', hours_end: '20:00', image_url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&q=80', jenis_manajemen_ruang: 'MEETING_ROOM', room_type: 'digital' },
+    { id: 'r5', name: 'Lab Pelatihan Komputer & GIS', building_id: 'b3', floor_id: 'f6', admin_id: 'u-admin4', description: 'Laboratorium pelatihan teknis geospasial (GIS) dengan komputer spesifikasi tinggi.', status: 'active', approval_type: 'instant', restrict_hours: true, hours_start: '08:00', hours_end: '18:00', image_url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&q=80', jenis_manajemen_ruang: 'MEETING_ROOM', room_type: 'hybrid' },
+    { id: 'r6', name: 'Studio Podcast OIKN', building_id: 'b1', floor_id: 'f1', admin_id: 'u-admin1', description: 'Studio rekaman podcast Humas OIKN. Saat ini dalam pemeliharaan perangkat sound system.', status: 'inactive', approval_type: 'manual', restrict_hours: true, hours_start: '09:00', hours_end: '17:00', image_url: 'https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?w=600&q=80', jenis_manajemen_ruang: 'MEETING_ROOM', room_type: 'physical' },
+    { id: 'r7', name: 'Ruang Kerja Bersama Level 5', building_id: 'b1', floor_id: 'f4', admin_id: 'u-admin4', description: 'Coworking space modern untuk staf OIKN dan deputi dengan fasilitas meja ergonomic dan high-speed Wi-Fi.', status: 'active', approval_type: 'manual', restrict_hours: false, hours_start: null, hours_end: null, image_url: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=600&q=80', jenis_manajemen_ruang: 'WORKSPACE', room_type: 'physical', total_meja_kerja: 30 },
   ];
   for (const r of rooms) {
     await dbRun(
-      `INSERT INTO rooms (id, name, building_id, floor_id, admin_id, description, status, approval_type, restrict_hours, hours_start, hours_end, image_url, jenis_manajemen_ruang) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-      [r.id, r.name, r.building_id, r.floor_id, r.admin_id, r.description, r.status, r.approval_type, r.restrict_hours, r.hours_start, r.hours_end, r.image_url, r.jenis_manajemen_ruang]
+      `INSERT INTO rooms (id, name, building_id, floor_id, admin_id, description, status, approval_type, restrict_hours, hours_start, hours_end, image_url, jenis_manajemen_ruang, room_type, total_meja_kerja) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+      [r.id, r.name, r.building_id, r.floor_id, r.admin_id, r.description, r.status, r.approval_type, r.restrict_hours, r.hours_start, r.hours_end, r.image_url, r.jenis_manajemen_ruang, r.room_type, r.total_meja_kerja || null]
     );
   }
 
   // Room layouts
   const layouts = [
-    { room_id: 'r1', layout_type: 'Boardroom', capacity: 16 },
-    { room_id: 'r1', layout_type: 'U-Shape', capacity: 12 },
-    { room_id: 'r2', layout_type: 'Classroom', capacity: 30 },
-    { room_id: 'r2', layout_type: 'U-Shape', capacity: 20 },
-    { room_id: 'r2', layout_type: 'Theater', capacity: 40 },
-    { room_id: 'r3', layout_type: 'Theater', capacity: 200 },
-    { room_id: 'r3', layout_type: 'Standing Setup', capacity: 300 },
-    { room_id: 'r3', layout_type: 'Classroom', capacity: 120 },
-    { room_id: 'r4', layout_type: 'Boardroom', capacity: 8 },
-    { room_id: 'r5', layout_type: 'Classroom', capacity: 40 },
-    { room_id: 'r6', layout_type: 'Standing Setup', capacity: 50 },
-    { room_id: 'r6', layout_type: 'Boardroom', capacity: 10 },
+    { room_id: 'r1', layout_type: 'Boardroom Setup', capacity: 20 },
+    { room_id: 'r1', layout_type: 'U-Shape Class', capacity: 16 },
+    { room_id: 'r2', layout_type: 'Creative Lounge', capacity: 35 },
+    { room_id: 'r2', layout_type: 'Workshop Setup', capacity: 25 },
+    { room_id: 'r3', layout_type: 'Theater Style', capacity: 250 },
+    { room_id: 'r3', layout_type: 'Classroom Setup', capacity: 150 },
+    { room_id: 'r4', layout_type: 'Individual Booths', capacity: 8 },
+    { room_id: 'r5', layout_type: 'PC Training Lab', capacity: 40 },
+    { room_id: 'r6', layout_type: 'Studio Setup', capacity: 6 },
   ];
   for (const l of layouts) {
     await dbRun(`INSERT INTO room_layouts (id, room_id, layout_type, capacity) VALUES ($1,$2,$3,$4)`,
@@ -445,12 +479,12 @@ async function seedData() {
 
   // Room facilities
   const facilities = [
-    { room_id: 'r1', items: [['tv_monitor',2],['projector',1],['video_conference',1],['sound_system',1],['whiteboard',2],['outlet',12]] },
-    { room_id: 'r2', items: [['tv_monitor',1],['projector',2],['video_conference',1],['sound_system',1],['whiteboard',3],['outlet',20]] },
-    { room_id: 'r3', items: [['tv_monitor',4],['projector',3],['video_conference',2],['sound_system',4],['whiteboard',1],['outlet',40]] },
+    { room_id: 'r1', items: [['tv_monitor',2],['projector',1],['video_conference',1],['sound_system',1],['whiteboard',2],['outlet',16]] },
+    { room_id: 'r2', items: [['tv_monitor',3],['projector',2],['video_conference',1],['sound_system',2],['whiteboard',4],['outlet',24]] },
+    { room_id: 'r3', items: [['tv_monitor',6],['projector',4],['video_conference',2],['sound_system',6],['whiteboard',2],['outlet',80]] },
     { room_id: 'r4', items: [['tv_monitor',1],['projector',0],['video_conference',0],['sound_system',0],['whiteboard',1],['outlet',8]] },
-    { room_id: 'r5', items: [['tv_monitor',2],['projector',2],['video_conference',1],['sound_system',2],['whiteboard',2],['outlet',40]] },
-    { room_id: 'r6', items: [['tv_monitor',1],['projector',0],['video_conference',0],['sound_system',1],['whiteboard',2],['outlet',16]] },
+    { room_id: 'r5', items: [['tv_monitor',2],['projector',2],['video_conference',1],['sound_system',2],['whiteboard',2],['outlet',45]] },
+    { room_id: 'r6', items: [['tv_monitor',1],['projector',0],['video_conference',0],['sound_system',2],['whiteboard',1],['outlet',12]] },
   ];
   for (const f of facilities) {
     for (const [type, qty] of f.items) {
@@ -474,60 +508,224 @@ async function seedData() {
       [a.user_id, a.room_id]);
   }
 
-  // Sample bookings (using today-relative dates)
+  // Bookings (using today-relative dates and dynamic hours)
   const today = new Date();
   const fmtDate = (d) => d.toISOString().split('T')[0];
   const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate()+n); return r; };
 
+  const pad = (n) => String(n).padStart(2, '0');
+  const nowHour = today.getUTCHours();
+
+  // Dynamic booking times to make sure "ongoing" matches actual time
+  const ongoingStart = `${pad((nowHour - 1 + 24) % 24)}:00`;
+  const ongoingEnd = `${pad((nowHour + 2) % 24)}:00`;
+
+  // FGD starts 5 minutes ago so it is ongoing but within the 15-minute check-in grace period
+  const fmtTime = (d) => `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+  const fiveMinAgo = new Date(today.getTime() - 5 * 60 * 1000);
+  const oneHourLater = new Date(today.getTime() + 60 * 60 * 1000);
+  const FGDDate = fmtDate(fiveMinAgo);
+  const FGDStart = fmtTime(fiveMinAgo);
+  const FGDEnd = fmtTime(oneHourLater);
+
   const bookings = [
-    { id: 'bk1', room_id: 'r1', user_id: 'u-user1', date: fmtDate(addDays(today,1)), start_time: '09:00', end_time: '11:00', agenda: 'Rapat Koordinasi Anggaran Q2', participants: 12, status: 'confirmed', meeting_type: 'offline' },
-    { id: 'bk2', room_id: 'r2', user_id: 'u-user1', date: fmtDate(addDays(today,1)), start_time: '13:00', end_time: '15:00', agenda: 'Workshop Digital Transformation', participants: 25, status: 'confirmed', meeting_type: 'hybrid' },
-    { id: 'bk3', room_id: 'r1', user_id: 'u-user2', date: fmtDate(addDays(today,2)), start_time: '10:00', end_time: '12:00', agenda: 'Presentasi Laporan Tahunan', participants: 14, status: 'pending', meeting_type: 'offline' },
-    { id: 'bk4', room_id: 'r3', user_id: 'u-admin3', date: fmtDate(addDays(today,3)), start_time: '08:00', end_time: '17:00', agenda: 'Seminar Nasional SPBE', participants: 180, status: 'pending', meeting_type: 'hybrid', surat_terkait: 'Surat Edaran No. SE-012/OIKN/2026' },
-    { id: 'bk5', room_id: 'r4', user_id: 'u-user1', date: fmtDate(today), start_time: '14:00', end_time: '16:00', agenda: 'Review Kode Aplikasi', participants: 5, status: 'ongoing', meeting_type: 'online' },
-    { id: 'bk6', room_id: 'r2', user_id: 'u-user1', date: fmtDate(addDays(today,-8)), start_time: '09:00', end_time: '11:00', agenda: 'Sprint Planning', participants: 8, status: 'completed', meeting_type: 'offline' },
-    { id: 'bk7', room_id: 'r1', user_id: 'u-user2', date: fmtDate(addDays(today,-6)), start_time: '13:00', end_time: '15:00', agenda: 'Rapat Direksi Bulanan', participants: 10, status: 'cancelled', meeting_type: 'offline' },
-    { id: 'bk8', room_id: 'r2', user_id: 'u-user2', date: fmtDate(addDays(today,4)), start_time: '09:00', end_time: '11:00', agenda: 'Onboarding Karyawan Baru', participants: 15, status: 'confirmed', meeting_type: 'offline' },
-    { id: 'bk9', room_id: 'r5', user_id: 'u-admin4', date: fmtDate(addDays(today,2)), start_time: '09:00', end_time: '12:00', agenda: 'Pelatihan Digital Transformasi', participants: 35, status: 'confirmed', meeting_type: 'offline' },
+    // 1. Sedang Berjalan (Claimed, Ongoing)
+    { 
+      id: 'bk-ongoing-1', 
+      room_id: 'r2', 
+      user_id: 'u-user1', // Budi Santoso
+      date: fmtDate(today), 
+      start_time: ongoingStart, 
+      end_time: ongoingEnd, 
+      agenda: 'Rapat Pleno Koordinasi Implementasi SPBE OIKN', 
+      participants: 15, 
+      status: 'ongoing', 
+      meeting_type: 'hybrid',
+      is_checked_in: true,
+      zoom_meeting_id: '987 6543 2100',
+      zoom_join_url: 'https://zoom.us/j/98765432100',
+      zoom_passcode: 'SPBE2026',
+      zoom_host_email: 'sari.dewi@oikn.go.id',
+      surat_terkait: 'S-142/OIKN/TI/2026'
+    },
+    // 2. Sedang Berjalan (Unclaimed/Confirmed, ready to scan QR code live!)
+    { 
+      id: 'bk-ongoing-2', 
+      room_id: 'r1', 
+      user_id: 'u-user2', // Dewi Rahayu
+      date: FGDDate, 
+      start_time: FGDStart, 
+      end_time: FGDEnd, 
+      agenda: 'FGD Masterplan Kawasan Inti Pusat Pemerintahan (KIPP) Barat', 
+      participants: 8, 
+      status: 'confirmed', 
+      meeting_type: 'offline',
+      is_checked_in: false,
+      surat_terkait: 'S-143/OIKN/PLAN/2026'
+    },
+    // 3. Mendatang (Upcoming, Confirmed)
+    { 
+      id: 'bk-upcoming-1', 
+      room_id: 'r2', 
+      user_id: 'u-user1', 
+      date: fmtDate(addDays(today, 1)), 
+      start_time: '09:00', 
+      end_time: '11:30', 
+      agenda: 'Workshop Penyusunan Peta Rencana Smart City IKN', 
+      participants: 25, 
+      status: 'confirmed', 
+      meeting_type: 'hybrid',
+      is_checked_in: false,
+      zoom_meeting_id: '987 6543 2101',
+      zoom_join_url: 'https://zoom.us/j/98765432101',
+      zoom_passcode: 'SMARTCITY',
+      zoom_host_email: 'sari.dewi@oikn.go.id',
+      surat_terkait: 'S-145/OIKN/TI/2026'
+    },
+    // 4. Mendatang (Upcoming, Pending - to show admin approval workflow)
+    { 
+      id: 'bk-upcoming-2', 
+      room_id: 'r1', 
+      user_id: 'u-user1', 
+      date: fmtDate(addDays(today, 2)), 
+      start_time: '13:30', 
+      end_time: '15:00', 
+      agenda: 'Rapat Koordinasi Anggaran Divisi Teknologi Informasi Q3', 
+      participants: 12, 
+      status: 'pending', 
+      meeting_type: 'offline',
+      is_checked_in: false
+    },
+    // 5. Mendatang (Upcoming, Pending)
+    { 
+      id: 'bk-upcoming-3', 
+      room_id: 'r3', 
+      user_id: 'u-admin3', 
+      date: fmtDate(addDays(today, 5)), 
+      start_time: '08:00', 
+      end_time: '12:00', 
+      agenda: 'Seminar Keamanan Siber dan Sistem Proteksi Data IKN', 
+      participants: 180, 
+      status: 'pending', 
+      meeting_type: 'hybrid',
+      is_checked_in: false,
+      surat_terkait: 'SE-022/OIKN/BSSN/2026'
+    },
+    // 6. Riwayat (Past, Completed, with attendees history)
+    { 
+      id: 'bk-past-1', 
+      room_id: 'r1', 
+      user_id: 'u-user1', 
+      date: fmtDate(addDays(today, -3)), 
+      start_time: '09:00', 
+      end_time: '11:00', 
+      agenda: 'Sprint Planning & Evaluasi Teknis Aplikasi Menara v1.0', 
+      participants: 8, 
+      status: 'completed', 
+      meeting_type: 'offline',
+      is_checked_in: true
+    },
+    // 7. Riwayat (Past, Cancelled)
+    { 
+      id: 'bk-past-2', 
+      room_id: 'r2', 
+      user_id: 'u-user2', 
+      date: fmtDate(addDays(today, -5)), 
+      start_time: '14:00', 
+      end_time: '16:00', 
+      agenda: 'Koordinasi Teknis Integrasi GIS Kementerian ATR/BPN', 
+      participants: 15, 
+      status: 'cancelled', 
+      meeting_type: 'hybrid',
+      is_checked_in: false,
+      cancel_reason: 'Perubahan jadwal kementerian mitra teknis'
+    },
+    // 8. Riwayat (Past, CANCELLED_NOSHOW - anti-ghost booking display)
+    { 
+      id: 'bk-past-3', 
+      room_id: 'r4', 
+      user_id: 'u-user3', 
+      date: fmtDate(addDays(today, -1)), 
+      start_time: '10:00', 
+      end_time: '12:00', 
+      agenda: 'Review Draft Hukum Perjanjian Kerja Sama IKN-Lembaga Donor', 
+      participants: 2, 
+      status: 'CANCELLED_NOSHOW', 
+      meeting_type: 'offline',
+      is_checked_in: false,
+      cancel_reason: 'Rapat dibatalkan otomatis oleh sistem karena tidak ada presensi check-in fisik di ruangan dalam batas toleransi 15 menit.'
+    }
   ];
+
   for (const bk of bookings) {
-    await dbRun(`INSERT INTO bookings (id, room_id, user_id, date, start_time, end_time, agenda, participants, status, meeting_type, surat_terkait) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-      [bk.id, bk.room_id, bk.user_id, bk.date, bk.start_time, bk.end_time, bk.agenda, bk.participants, bk.status, bk.meeting_type, bk.surat_terkait || null]);
+    await dbRun(
+      `INSERT INTO bookings (id, room_id, user_id, date, start_time, end_time, agenda, participants, status, meeting_type, is_checked_in, zoom_meeting_id, zoom_join_url, zoom_passcode, zoom_host_email, surat_terkait, cancel_reason) 
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+      [bk.id, bk.room_id, bk.user_id, bk.date, bk.start_time, bk.end_time, bk.agenda, bk.participants, bk.status, bk.meeting_type, bk.is_checked_in, bk.zoom_meeting_id || null, bk.zoom_join_url || null, bk.zoom_passcode || null, bk.zoom_host_email || null, bk.surat_terkait || null, bk.cancel_reason || null]
+    );
   }
 
-  // API Tokens
-  const tokenSecret = await bcrypt.hash('secret-iknow-2025', 10);
-  await dbRun(`INSERT INTO api_tokens (id, name, client_id, secret_hash, access_level, status, request_count) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-    ['t1', 'IKNOW Application', 'client_iknow_prod', tokenSecret, 'read-write', 'active', 1248]);
-  await dbRun(`INSERT INTO api_tokens (id, name, client_id, secret_hash, access_level, status, request_count) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-    ['t2', 'Dashboard Monitoring', 'client_dashboard_01', tokenSecret, 'read', 'active', 5621]);
-  await dbRun(`INSERT INTO api_tokens (id, name, client_id, secret_hash, access_level, status, request_count) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-    ['t3', 'Test Integration', 'client_test_123', tokenSecret, 'read', 'revoked', 42]);
-
-  // Audit logs
-  const auditLogs = [
-    { id: 'al1', actor_id: 'u-admin1', actor_name: 'Ahmad Fauzi (Admin)', action: 'FORCE_CANCEL', resource: 'Booking #bk1 - Ruang Rapat Eksekutif A', ip: '10.0.1.45', payload_before: null, payload_after: JSON.stringify({ reason: 'Persiapan kunjungan tamu negara mendadak' }) },
-    { id: 'al2', actor_id: 'u-super', actor_name: 'Super Admin', action: 'UPDATE_POLICY', resource: 'Kebijakan Global - Batas durasi booking', ip: '10.0.0.1', payload_before: JSON.stringify({ max_duration_hours: 4 }), payload_after: JSON.stringify({ max_duration_hours: 6 }) },
-    { id: 'al3', actor_id: 'u-admin2', actor_name: 'Sari Dewi (Admin)', action: 'APPROVE_BOOKING', resource: 'Booking #bk3 - Ruang Diskusi Inovasi', ip: '10.0.2.33', payload_before: JSON.stringify({ status: 'pending' }), payload_after: JSON.stringify({ status: 'confirmed' }) },
-    { id: 'al4', actor_id: 'u-super', actor_name: 'Super Admin', action: 'CREATE_ROOM', resource: 'Ruang Focus Work 01', ip: '10.0.0.1', payload_before: null, payload_after: JSON.stringify({ id: 'r4', name: 'Ruang Focus Work 01' }) },
-    { id: 'al5', actor_id: 'u-api1', actor_name: 'API: IKNOW System', action: 'CREATE_BOOKING', resource: 'Booking via API - Ruang Diskusi Inovasi', ip: '172.16.5.20', payload_before: null, payload_after: JSON.stringify({ room: 'r2', date: fmtDate(today) }) },
-    { id: 'al6', actor_id: 'u-super', actor_name: 'Super Admin', action: 'REVOKE_TOKEN', resource: 'API Token: client_test_123 (Read-Only)', ip: '10.0.0.1', payload_before: JSON.stringify({ status: 'active' }), payload_after: JSON.stringify({ status: 'revoked' }) },
-    { id: 'al7', actor_id: 'u-admin3', actor_name: 'Bima Pradana (Admin)', action: 'UPDATE_ROOM', resource: 'Aula Serbaguna Nusantara', ip: '10.0.3.55', payload_before: JSON.stringify({ capacity: 150 }), payload_after: JSON.stringify({ capacity: 200 }) },
+  // Attendees Seeding for Rapat SPBE (bk-ongoing-1)
+  console.log('🌱 Seeding meeting attendees...');
+  const now = new Date();
+  
+  const attendeesOngoing = [
+    { booking_id: 'bk-ongoing-1', user_id: 'u-user1', user_name: 'Budi Santoso, M.Eng.', offsetMinutes: -55 },
+    { booking_id: 'bk-ongoing-1', user_id: 'u-user2', user_name: 'Dewi Rahayu, S.I.P.', offsetMinutes: -50 },
+    { booking_id: 'bk-ongoing-1', user_id: 'u-user3', user_name: 'Eko Prasetyo, S.H.', offsetMinutes: -45 },
+    { booking_id: 'bk-ongoing-1', user_id: 'u-admin1', user_name: 'Ahmad Fauzi, S.Kom.', offsetMinutes: -40 }
   ];
-  for (const al of auditLogs) {
-    await dbRun(`INSERT INTO audit_logs (id, actor_id, actor_name, action, resource, ip, payload_before, payload_after) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [al.id, al.actor_id, al.actor_name, al.action, al.resource, al.ip, al.payload_before, al.payload_after]);
+  for (const att of attendeesOngoing) {
+    const scanTime = new Date(now.getTime() + att.offsetMinutes * 60 * 1000);
+    await dbRun(
+      `INSERT INTO meeting_attendees (id, booking_id, user_id, user_name, scanned_at) VALUES ($1,$2,$3,$4,$5)`,
+      [uuidv4(), att.booking_id, att.user_id, att.user_name, scanTime.toISOString()]
+    );
   }
 
-  // Workspace Desks Seeding for r7
+  // Attendees Seeding for Past Meeting (bk-past-1)
+  const pastDateStr = fmtDate(addDays(today, -3));
+  const scanTime1 = new Date(`${pastDateStr}T09:02:00Z`);
+  const scanTime2 = new Date(`${pastDateStr}T09:05:00Z`);
+  const scanTime3 = new Date(`${pastDateStr}T09:07:00Z`);
+  const scanTime4 = new Date(`${pastDateStr}T09:12:00Z`);
+
+  const attendeesPast = [
+    { booking_id: 'bk-past-1', user_id: 'u-user1', user_name: 'Budi Santoso, M.Eng.', scanTime: scanTime1 },
+    { booking_id: 'bk-past-1', user_id: 'u-user2', user_name: 'Dewi Rahayu, S.I.P.', scanTime: scanTime2 },
+    { booking_id: 'bk-past-1', user_id: 'u-admin1', user_name: 'Ahmad Fauzi, S.Kom.', scanTime: scanTime3 },
+    { booking_id: 'bk-past-1', user_id: 'u-user5', user_name: 'Rian Hidayat, B.Eng.', scanTime: scanTime4 }
+  ];
+  for (const att of attendeesPast) {
+    await dbRun(
+      `INSERT INTO meeting_attendees (id, booking_id, user_id, user_name, scanned_at) VALUES ($1,$2,$3,$4,$5)`,
+      [uuidv4(), att.booking_id, att.user_id, att.user_name, att.scanTime.toISOString()]
+    );
+  }
+
+  // Workspace Desks Seeding for r7 (Ruang Kerja Bersama Level 5)
   console.log('🌱 Seeding workspace desks for r7...');
-  await dbRun(`UPDATE rooms SET total_meja_kerja = 20 WHERE id = 'r7'`);
-  for (let i = 1; i <= 20; i++) {
+  for (let i = 1; i <= 30; i++) {
     const deskId = `Desk-${String(i).padStart(2, '0')}`;
-    const isOccupied = i === 12;
-    const isDisabled = i === 17;
-    const status = isOccupied ? 'OCCUPIED' : isDisabled ? 'DISABLED' : 'VACANT';
-    const assignedUser = isOccupied ? 'u-user1' : null;
+    let status = 'VACANT';
+    let assignedUser = null;
+
+    if (i === 5) {
+      status = 'OCCUPIED';
+      assignedUser = 'u-user1'; // Budi Santoso (primary user)
+    } else if (i === 12) {
+      status = 'OCCUPIED';
+      assignedUser = 'u-user2'; // Dewi Rahayu
+    } else if (i === 18) {
+      status = 'OCCUPIED';
+      assignedUser = 'u-user3'; // Eko Prasetyo
+    } else if (i === 24) {
+      status = 'OCCUPIED';
+      assignedUser = 'u-user4'; // Siti Aminah
+    } else if (i === 10 || i === 20) {
+      status = 'DISABLED'; // Under maintenance
+    }
+
     await dbRun(
       `INSERT INTO workspace_desks (room_id, desk_id, status, assigned_user_id) 
        VALUES ('r7', $1, $2, $3)
@@ -536,11 +734,61 @@ async function seedData() {
     );
   }
 
-  console.log('✅ Seed data inserted successfully.');
-  console.log('\n📋 Demo Credentials:');
-  console.log('  👤 User:        user@oikn.go.id / password123!');
-  console.log('  🔑 Admin:       admin@oikn.go.id / password123!');
-  console.log('  👑 SuperAdmin:  superadmin@oikn.go.id / password123!');
+  // Seating Requests
+  console.log('🌱 Seeding seating requests...');
+  const requests = [
+    { id: 'req-seating-1', room_id: 'r7', desk_id: 'Desk-03', user_id: 'u-user2', status: 'PENDING' },
+    { id: 'req-seating-2', room_id: 'r7', desk_id: 'Desk-14', user_id: 'u-user1', status: 'PENDING' }, // Budi's pending request
+    { id: 'req-seating-3', room_id: 'r7', desk_id: 'Desk-08', user_id: 'u-user5', status: 'APPROVED' },
+    { id: 'req-seating-4', room_id: 'r7', desk_id: 'Desk-21', user_id: 'u-user3', status: 'REJECTED' }
+  ];
+  for (const req of requests) {
+    await dbRun(
+      `INSERT INTO seating_requests (id, room_id, desk_id, user_id, status) VALUES ($1,$2,$3,$4,$5)`,
+      [req.id, req.room_id, req.desk_id, req.user_id, req.status]
+    );
+  }
+
+  // Notifications
+  console.log('🌱 Seeding notifications...');
+  const notifications = [
+    { id: 'notif-1', user_id: 'u-user1', title: 'Reservasi Rapat Dikonfirmasi', message: 'Reservasi Anda untuk "Workshop Penyusunan Peta Rencana Smart City IKN" di Ruang Kolaborasi Nusantara telah dikonfirmasi oleh Sari Dewi.', is_read: false },
+    { id: 'notif-2', user_id: 'u-user1', title: 'Penempatan Meja Kerja Aktif', message: 'Anda telah resmi ditempatkan di Desk-05 di Ruang Kerja Bersama Level 5. Selamat bekerja!', is_read: true },
+    { id: 'notif-3', user_id: 'u-user1', title: 'Peringatan Anti-Ghost Booking', message: 'Reservasi "FGD Teknis GIS" kemarin dibatalkan otomatis oleh sistem karena tidak terdeteksi presensi fisik di ruangan.', is_read: false },
+    { id: 'notif-4', user_id: 'u-admin4', title: 'Pengajuan Pemindahan Meja Baru', message: 'Dewi Rahayu mengajukan pemindahan meja kerja ke Desk-03 di Ruang Kerja Bersama Level 5.', is_read: false }
+  ];
+  for (const notif of notifications) {
+    await dbRun(
+      `INSERT INTO notifications (id, user_id, title, message, is_read) VALUES ($1,$2,$3,$4,$5)`,
+      [notif.id, notif.user_id, notif.title, notif.message, notif.is_read]
+    );
+  }
+
+  // API Tokens
+  const tokenSecret = await bcrypt.hash('secret-iknow-2025', 10);
+  await dbRun(`INSERT INTO api_tokens (id, name, client_id, secret_hash, access_level, status, request_count) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    ['t1', 'IKNOW Core Application', 'client_iknow_prod', tokenSecret, 'read-write', 'active', 1248]);
+  await dbRun(`INSERT INTO api_tokens (id, name, client_id, secret_hash, access_level, status, request_count) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    ['t2', 'Dashboard Hub Monitoring', 'client_dashboard_01', tokenSecret, 'read', 'active', 5621]);
+
+  // Audit Logs
+  console.log('🌱 Seeding audit logs...');
+  const auditLogs = [
+    { id: 'al1', actor_id: 'u-admin1', actor_name: 'Ahmad Fauzi (Admin)', action: 'FORCE_CANCEL', resource: 'Booking #bk-past-2 - Ruang Kolaborasi Nusantara', ip: '10.0.1.45', payload_before: null, payload_after: JSON.stringify({ reason: 'Perubahan jadwal kementerian mitra teknis' }) },
+    { id: 'al2', actor_id: 'u-super', actor_name: 'Super Admin', action: 'UPDATE_POLICY', resource: 'Kebijakan Global - Batas durasi booking', ip: '10.0.0.1', payload_before: JSON.stringify({ max_duration_hours: 4 }), payload_after: JSON.stringify({ max_duration_hours: 6 }) },
+    { id: 'al3', actor_id: 'u-admin4', actor_name: 'Rina Kusuma (Admin)', action: 'APPROVE_SEATING', resource: 'Seating Request #req-seating-3: Desk Desk-08 to Rian Hidayat', ip: '10.0.2.33', payload_before: JSON.stringify({ status: 'PENDING' }), payload_after: JSON.stringify({ status: 'APPROVED' }) },
+    { id: 'al4', actor_id: 'u-super', actor_name: 'Super Admin', action: 'CREATE_ROOM', resource: 'Ruang Kerja Bersama Level 5 (WORKSPACE)', ip: '10.0.0.1', payload_before: null, payload_after: JSON.stringify({ id: 'r7', name: 'Ruang Kerja Bersama Level 5' }) },
+  ];
+  for (const al of auditLogs) {
+    await dbRun(`INSERT INTO audit_logs (id, actor_id, actor_name, action, resource, ip, payload_before, payload_after) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [al.id, al.actor_id, al.actor_name, al.action, al.resource, al.ip, al.payload_before, al.payload_after]);
+  }
+
+  console.log('✅ Premium OIKN Seed data inserted successfully.');
+  console.log('\n📋 Premium Demo Credentials:');
+  console.log('  👤 Regular User: user@oikn.go.id / password123!');
+  console.log('  🔑 Admin Rapat:  admin@oikn.go.id / password123!');
+  console.log('  👑 Super Admin: superadmin@oikn.go.id / password123!');
 }
 
 module.exports = { initSchema, seedData };

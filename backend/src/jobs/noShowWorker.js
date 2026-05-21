@@ -15,8 +15,8 @@ async function processNoShows() {
     );
 
     const expiredBookings = bookings.filter(b => {
-      // Reconstruct start date/time
-      const bookingStart = new Date(`${b.date}T${b.start_time}:00`);
+      // Reconstruct start date/time (appended with Z to parse as UTC)
+      const bookingStart = new Date(`${b.date}T${b.start_time}:00Z`);
       const expirationTime = new Date(bookingStart.getTime() + 15 * 60 * 1000); // 15 mins late
       return now > expirationTime;
     });

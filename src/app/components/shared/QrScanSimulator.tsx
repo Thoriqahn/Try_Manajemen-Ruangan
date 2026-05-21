@@ -31,10 +31,14 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
     if (!currentUser) return;
     setLoading(true);
     try {
-      const res = await bookingService.list({ status: "confirmed" });
-      if (res.success) {
-        setBookings(res.data || []);
-        addLog(`Berhasil memuat ${res.data?.length || 0} booking berstatus CONFIRMED.`);
+      // We want to fetch confirmed OR ongoing bookings (for attendance)
+      const res = await bookingService.list({ status: "confirmed,ongoing" }); // Need to ensure list API supports multiple statuses or we just fetch all and filter client side.
+      // Wait, let's fetch all and filter client side since the API might not support comma separated statuses easily if not implemented.
+      const allRes = await bookingService.list();
+      if (allRes.success && allRes.data) {
+        const validBookings = allRes.data.filter(b => b.status === "confirmed" || b.status === "ongoing");
+        setBookings(validBookings);
+        addLog(`Berhasil memuat ${validBookings.length} booking (CONFIRMED / ONGOING).`);
       }
     } catch (err: any) {
       addLog(`Gagal memuat booking: ${err.message}`);
@@ -50,6 +54,35 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
       loadBookings();
     }
   }, [isOpen]);
+
+  // Listen to external trigger to open the simulator with a specific booking pre-selected
+  useEffect(() => {
+    const handleExternalTrigger = async (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const bookingId = customEvent.detail?.bookingId;
+      setIsOpen(true);
+      
+      if (bookingId) {
+        addLog(`Simulator dipicu secara otomatis untuk Booking ID: ${bookingId}`);
+        try {
+          const res = await bookingService.list();
+          if (res.success && res.data) {
+            const found = res.data.find(b => b.id === bookingId);
+            if (found) {
+              setSelectedBooking(found);
+            } else {
+              addLog(`Peringatan: Booking ID ${bookingId} tidak ditemukan.`);
+            }
+          }
+        } catch (err: any) {
+          addLog(`Gagal memuat detail booking pemicu: ${err.message}`);
+        }
+      }
+    };
+
+    window.addEventListener('menara:trigger-scan-simulator', handleExternalTrigger);
+    return () => window.removeEventListener('menara:trigger-scan-simulator', handleExternalTrigger);
+  }, []);
 
   // Fetch actual qr_token when booking is selected
   useEffect(() => {
@@ -157,7 +190,7 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
               {/* Active Bookings Selector */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  1. Pilih Jadwal Booking Terkonfirmasi (CONFIRMED) Anda
+                  1. Pilih Jadwal Booking Terkonfirmasi / Sedang Berjalan
                 </label>
                 {loading ? (
                   <div className="h-28 flex items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50">
@@ -186,9 +219,9 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
                           <div className="flex justify-between items-start mb-1.5">
                             <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">{b.start_time} - {b.end_time}</span>
                             <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                              isSelected ? "bg-emerald-100 text-emerald-800" : "bg-blue-50 text-blue-700"
+                              b.status === "ongoing" ? "bg-amber-100 text-amber-800" : (isSelected ? "bg-emerald-100 text-emerald-800" : "bg-blue-50 text-blue-700")
                             }`}>
-                              Confirmed
+                              {b.status}
                             </span>
                           </div>
                           <h4 className="text-xs font-bold text-slate-800 truncate">{b.agenda}</h4>
@@ -252,7 +285,10 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2 text-[10px] text-amber-800">
                     <HelpCircle className="text-amber-600 mt-0.5 flex-shrink-0" size={14} />
                     <div className="leading-normal">
-                      <strong>Ketentuan Sistem:</strong> Early check-in diizinkan <strong>10 menit</strong> sebelum jam mulai (jika sesi sebelumnya kosong). Batas keterlambatan adalah <strong>15 menit</strong> setelah jam mulai. Jika lewat 15 menit, booking berstatus CONFIRMED akan dilepaskan secara otomatis oleh Cron Job.
+                      <strong>Ketentuan Sistem (Dual-Mechanism):</strong><br/>
+                      1. Pemindai <strong>PERTAMA</strong> akan mengklaim ruangan (status menjadi Ongoing).<br/>
+                      2. Pemindai <strong>BERIKUTNYA</strong> akan dicatat sebagai Presensi Kehadiran dalam tabel data.<br/>
+                      <em>*Early check-in diizinkan 10 menit sebelum jam mulai. Batas keterlambatan 15 menit.</em>
                     </div>
                   </div>
                 </div>

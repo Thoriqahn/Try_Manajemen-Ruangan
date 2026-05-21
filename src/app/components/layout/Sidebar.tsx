@@ -33,7 +33,7 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
     title: "Menu Utama",
     items: [
       { icon: <Calendar size={18} />, label: "Kalender Ruangan", page: "calendar" },
-      { icon: <LayoutGrid size={18} />, label: "Manajemen Ruang Kerja", page: "workspaces" },
+      { icon: <Building2 size={18} />, label: "Daftar Ruangan", page: "rooms" },
       { icon: <BookOpen size={18} />, label: "Dashboard Saya", page: "my-bookings" },
     ],
   };

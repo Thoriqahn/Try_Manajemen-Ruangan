@@ -20,8 +20,10 @@ export interface Room {
   floor_name?: string;
   admin_name?: string;
   photos?: { id: string; url: string; is_primary: boolean }[];
-  layouts?: { id: string; name: string; capacity: number; photo_url?: string }[];
+  layouts?: { id: string; name: string; capacity: number; photo_url?: string; layout_type?: string }[];
   facilities?: Record<string, number>;
+  jenis_manajemen_ruang?: 'MEETING_ROOM' | 'WORKSPACE';
+  total_meja_kerja?: number;
 }
 
 export interface RoomFilter {

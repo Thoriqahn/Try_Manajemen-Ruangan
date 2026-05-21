@@ -509,15 +509,16 @@ const checkInBooking = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Token QR Code tidak valid untuk ruangan ini' });
     }
 
-    // 2. Find confirmed, not yet checked-in bookings for this user on the current date
-    const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    // 2. Find confirmed or ongoing bookings for this room on the current date
+    const now = new Date();
+    const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
     
     const bookings = await dbAll(
       `SELECT id, room_id, user_id, date, start_time, end_time, status, is_checked_in
        FROM bookings
-       WHERE room_id = $1 AND user_id = $2 AND date = $3 AND status = 'confirmed' AND is_checked_in = FALSE
+       WHERE room_id = $1 AND date = $2 AND status IN ('confirmed', 'ongoing')
        ORDER BY start_time ASC`,
-      [room_id, authenticated_user_id, todayStr]
+      [room_id, todayStr]
     );
 
     if (bookings.length === 0) {
@@ -528,7 +529,6 @@ const checkInBooking = async (req, res, next) => {
     }
 
     // Find the current booking that matches the check-in time windows
-    const now = new Date();
     let targetBooking = null;
     let timeErrorReason = null;
 
@@ -590,43 +590,82 @@ const checkInBooking = async (req, res, next) => {
       });
     }
 
-    // 4. Update the room booking record
+    // 4. Handle Room Claim vs Attendance
     const client = await getClient();
     try {
       await client.query('BEGIN');
 
-      await client.query(
-        `UPDATE bookings
-         SET is_checked_in = TRUE, status = 'ongoing'
-         WHERE id = $1`,
-        [targetBooking.id]
+      let responseMessage = '';
+      let isRoomClaim = false;
+
+      // Ensure user is not already recorded as attendee
+      const existingAttendee = await client.query(
+        'SELECT id FROM meeting_attendees WHERE booking_id = $1 AND user_id = $2',
+        [targetBooking.id, req.user.id]
       );
 
-      // Audit Log check-in event
-      const auditId = uuidv4();
-      const action = 'CHECK_IN';
-      const resource = `Booking #${targetBooking.id} - ${room.name || 'Room'}`;
-      const payloadBefore = JSON.stringify({ is_checked_in: false, status: 'confirmed' });
-      const payloadAfter = JSON.stringify({ is_checked_in: true, status: 'ongoing' });
+      if (existingAttendee.rows.length > 0) {
+        await client.query('ROLLBACK');
+        return res.status(200).json({
+          success: true,
+          message: 'Anda sudah melakukan presensi untuk rapat ini',
+          data: {
+            booking_id: targetBooking.id,
+            room_id: targetBooking.room_id,
+            is_checked_in: true,
+            status: targetBooking.status
+          }
+        });
+      }
 
+      if (!targetBooking.is_checked_in) {
+        // First Scanner: Room Claim
+        isRoomClaim = true;
+        await client.query(
+          `UPDATE bookings
+           SET is_checked_in = TRUE, status = 'ongoing'
+           WHERE id = $1`,
+          [targetBooking.id]
+        );
+
+        // Audit Log for check-in event
+        const auditId = uuidv4();
+        const action = 'CHECK_IN';
+        const resource = `Booking #${targetBooking.id} - ${room.name || 'Room'}`;
+        const payloadBefore = JSON.stringify({ is_checked_in: false, status: 'confirmed' });
+        const payloadAfter = JSON.stringify({ is_checked_in: true, status: 'ongoing' });
+
+        await client.query(
+          `INSERT INTO audit_logs (id, actor_id, actor_name, action, resource, payload_before, payload_after)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [auditId, req.user.id, `${req.user.name} (${req.user.role})`, action, resource, payloadBefore, payloadAfter]
+        );
+
+        responseMessage = 'Check-in ruangan berhasil, Anda tercatat hadir.';
+      } else {
+        // Subsequent Scanner: Attendance
+        responseMessage = 'Presensi kehadiran berhasil dicatat.';
+      }
+
+      // Record Attendance
       await client.query(
-        `INSERT INTO audit_logs (id, actor_id, actor_name, action, resource, payload_before, payload_after)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [auditId, req.user.id, `${req.user.name} (${req.user.role})`, action, resource, payloadBefore, payloadAfter]
+        `INSERT INTO meeting_attendees (booking_id, user_id, user_name)
+         VALUES ($1, $2, $3)`,
+        [targetBooking.id, req.user.id, req.user.name]
       );
 
       await client.query('COMMIT');
 
       return res.status(200).json({
         success: true,
-        message: 'Check-in berhasil dilakukan',
+        message: responseMessage,
         data: {
           booking_id: targetBooking.id,
           room_id: targetBooking.room_id,
           start_time: targetBooking.start_time,
           end_time: targetBooking.end_time,
           is_checked_in: true,
-          status: 'ongoing'
+          status: isRoomClaim ? 'ongoing' : targetBooking.status
         }
       });
     } catch (err) {
@@ -640,4 +679,27 @@ const checkInBooking = async (req, res, next) => {
   }
 };
 
-module.exports = { listBookings, getBooking, createBooking, updateBooking, cancelBooking, approveBooking, rejectBooking, forceCancel, checkInBooking };
+// GET /api/v1/bookings/:id/attendees
+const getBookingAttendees = async (req, res, next) => {
+  try {
+    const attendees = await dbAll(
+      `SELECT id, user_id, user_name, scanned_at 
+       FROM meeting_attendees 
+       WHERE booking_id = $1 
+       ORDER BY scanned_at ASC`,
+      [req.params.id]
+    );
+
+    res.status(200).json({
+      success: true,
+      data: attendees
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { 
+  listBookings, getBooking, createBooking, updateBooking, cancelBooking, 
+  approveBooking, rejectBooking, forceCancel, checkInBooking, getBookingAttendees 
+};

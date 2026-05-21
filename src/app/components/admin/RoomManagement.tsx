@@ -211,14 +211,14 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  {["Ruangan", "Lokasi", "Kapasitas", "Booking", "Status", ...(isSuperAdmin ? ["Admin"] : []), "Aksi"].map(h => (
+                  {["Ruangan", "Lokasi", "Kapasitas", "Fasilitas", "Booking", "Status", ...(isSuperAdmin ? ["Admin"] : []), "Aksi"].map(h => (
                     <th key={h} className={`${h === "Aksi" ? "text-right" : "text-left"} px-5 py-3.5 text-xs text-gray-500 uppercase tracking-wider`} style={{ fontWeight: 600 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={isSuperAdmin ? 7 : 6} className="px-5 py-12 text-center text-sm text-gray-400">Belum ada ruangan. Tambah ruangan baru.</td></tr>
+                  <tr><td colSpan={isSuperAdmin ? 8 : 7} className="px-5 py-12 text-center text-sm text-gray-400">Belum ada ruangan. Tambah ruangan baru.</td></tr>
                 ) : filtered.map(room => {
                   const layouts = room.layouts || [];
                   const maxCap = layouts.length > 0 ? Math.max(...layouts.map(l => l.capacity || 0)) : 0;
@@ -287,6 +287,13 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                                 ? "100 (Zoom)"
                                 : `s.d. ${maxCap || "–"} orang`}
                           </span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="text-xs text-gray-500 max-w-[150px] truncate" title={room.facilities ? Object.entries(room.facilities).map(([k,v]) => `${k} (${v})`).join(", ") : ""}>
+                          {room.facilities && Object.keys(room.facilities).length > 0
+                            ? Object.entries(room.facilities).map(([k,v]) => `${k} (${v})`).join(", ")
+                            : "—"}
                         </div>
                       </td>
                       <td className="px-5 py-4">
@@ -365,6 +372,7 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
     room_type: room?.room_type || "physical",
     jenis_manajemen_ruang: room?.jenis_manajemen_ruang || "MEETING_ROOM",
     total_meja_kerja: room?.total_meja_kerja || 10,
+    facilities: room?.facilities || {},
   });
   const [buildings, setBuildings] = useState<any[]>([]);
   const [floors, setFloors] = useState<any[]>([]);
@@ -460,33 +468,35 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
             <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>1. Informasi Dasar</h4>
             
             <div>
-              <label className="block text-sm text-gray-700 mb-2" style={{ fontWeight: 500 }}>Tipe Ruangan <span className="text-red-500">*</span></label>
-              <div className="grid grid-cols-3 gap-2">
+              <label className="block text-sm text-gray-700 mb-2" style={{ fontWeight: 500 }}>Jenis Manajemen Ruang <span className="text-red-500">*</span></label>
+              <div className="grid grid-cols-2 gap-3">
                 {[
-                  { value: "physical", label: "Ruangan Fisik", desc: "Ruangan rapat di kantor/gedung", activeColor: "border-blue-400 bg-blue-50" },
-                  { value: "hybrid", label: "Ruangan Hybrid", desc: "Ruangan fisik + fasilitas Zoom", activeColor: "border-teal-400 bg-teal-50" },
-                  { value: "digital", label: "Ruangan Digital", desc: "Ruangan virtual berbasis Zoom", activeColor: "border-purple-400 bg-purple-50" },
+                  { value: "MEETING_ROOM", label: "Ruangan Rapat", desc: "Berbasis kalender grid mingguan/jam", activeColor: "border-purple-400 bg-purple-50" },
+                  { value: "WORKSPACE", label: "Ruangan Kerja (Workspace)", desc: "Berbasis alokasi meja individual permanen", activeColor: "border-indigo-400 bg-indigo-50" },
                 ].map(opt => (
-                  <label key={opt.value} className={`p-3 rounded-lg border cursor-pointer transition-all ${form.room_type === opt.value ? opt.activeColor : "border-gray-200 hover:border-gray-300"}`}>
-                    <input type="radio" value={opt.value} checked={form.room_type === opt.value} onChange={e => setForm({ ...form, room_type: e.target.value })} className="sr-only" />
-                    <div className="text-sm text-gray-700 font-semibold">{opt.label}</div>
+                  <label key={opt.value} className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${form.jenis_manajemen_ruang === opt.value ? opt.activeColor : "border-gray-100 hover:border-gray-200 bg-white"}`}>
+                    <input type="radio" name="jenis_manajemen_ruang" value={opt.value} checked={form.jenis_manajemen_ruang === opt.value} onChange={e => {
+                      setForm({ ...form, jenis_manajemen_ruang: e.target.value, room_type: e.target.value === 'WORKSPACE' ? 'physical' : form.room_type === 'digital' && e.target.value === 'WORKSPACE' ? 'physical' : form.room_type });
+                    }} className="sr-only" />
+                    <div className="text-sm text-gray-800 font-semibold">{opt.label}</div>
                     <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
                   </label>
                 ))}
               </div>
             </div>
 
-            {form.room_type !== 'digital' && (
+            {form.jenis_manajemen_ruang === 'MEETING_ROOM' && (
               <div>
-                <label className="block text-sm text-gray-700 mb-2" style={{ fontWeight: 500 }}>Jenis Manajemen Ruang <span className="text-red-500">*</span></label>
-                <div className="grid grid-cols-2 gap-3">
+                <label className="block text-sm text-gray-700 mb-2" style={{ fontWeight: 500 }}>Tipe Ruangan <span className="text-red-500">*</span></label>
+                <div className="grid grid-cols-3 gap-2">
                   {[
-                    { value: "MEETING_ROOM", label: "Ruangan Rapat", desc: "Berbasis kalender grid mingguan/jam", activeColor: "border-purple-400 bg-purple-50" },
-                    { value: "WORKSPACE", label: "Ruangan Kerja (Workspace)", desc: "Berbasis alokasi meja individual permanen", activeColor: "border-indigo-400 bg-indigo-50" },
+                    { value: "physical", label: "Ruangan Fisik", desc: "Ruangan rapat di kantor/gedung", activeColor: "border-blue-400 bg-blue-50" },
+                    { value: "hybrid", label: "Ruangan Hybrid", desc: "Ruangan fisik + fasilitas Zoom", activeColor: "border-teal-400 bg-teal-50" },
+                    { value: "digital", label: "Ruangan Digital", desc: "Ruangan virtual berbasis Zoom", activeColor: "border-purple-400 bg-purple-50" },
                   ].map(opt => (
-                    <label key={opt.value} className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${form.jenis_manajemen_ruang === opt.value ? opt.activeColor : "border-gray-100 hover:border-gray-200 bg-white"}`}>
-                      <input type="radio" name="jenis_manajemen_ruang" value={opt.value} checked={form.jenis_manajemen_ruang === opt.value} onChange={e => setForm({ ...form, jenis_manajemen_ruang: e.target.value })} className="sr-only" />
-                      <div className="text-sm text-gray-800 font-semibold">{opt.label}</div>
+                    <label key={opt.value} className={`p-3 rounded-lg border cursor-pointer transition-all ${form.room_type === opt.value ? opt.activeColor : "border-gray-200 hover:border-gray-300"}`}>
+                      <input type="radio" value={opt.value} checked={form.room_type === opt.value} onChange={e => setForm({ ...form, room_type: e.target.value })} className="sr-only" />
+                      <div className="text-sm text-gray-700 font-semibold">{opt.label}</div>
                       <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
                     </label>
                   ))}
@@ -597,52 +607,105 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
             </div>
           )}
 
-          <div className="space-y-3">
-            <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>3. Kebijakan & Jam Operasional</h4>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-              <div>
-                <div className="text-sm text-gray-700" style={{ fontWeight: 500 }}>Batasi Jam Operasional</div>
-                <div className="text-xs text-gray-400 mt-0.5">Jika OFF, ruangan tersedia 24 jam</div>
-              </div>
-              <button type="button" onClick={() => setForm({ ...form, operational_enabled: !form.operational_enabled })}
-                className={`w-11 h-6 rounded-full relative transition-all ${form.operational_enabled ? "bg-blue-500" : "bg-gray-300"}`}>
-                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.operational_enabled ? "translate-x-5" : "translate-x-0.5"}`} />
-              </button>
-            </div>
-            {form.operational_enabled && (
+          {form.room_type !== 'digital' && (
+            <div className="space-y-3">
+              <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>{form.jenis_manajemen_ruang === 'WORKSPACE' ? '2' : '3'}. Fasilitas Ruangan</h4>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Jam Mulai</label><input type="time" value={form.operational_start} onChange={e => setForm({ ...form, operational_start: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" /></div>
-                <div><label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Jam Selesai</label><input type="time" value={form.operational_end} onChange={e => setForm({ ...form, operational_end: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" /></div>
-              </div>
-            )}
-            <div>
-              <label className="block text-sm text-gray-700 mb-2" style={{ fontWeight: 500 }}>Mekanisme Persetujuan <span className="text-red-500">*</span></label>
-              <div className="grid grid-cols-2 gap-2">
-                {[{ value: "instant", label: "Instant Booking", desc: "Langsung terkonfirmasi" }, { value: "manual", label: "Butuh Approval", desc: "Perlu validasi Admin" }].map(opt => (
-                  <label key={opt.value} className={`p-3 rounded-lg border cursor-pointer transition-all ${form.approval_type === opt.value ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
-                    <input type="radio" value={opt.value} checked={form.approval_type === opt.value} onChange={e => setForm({ ...form, approval_type: e.target.value })} className="sr-only" />
-                    <div className="text-sm text-gray-700 font-semibold">{opt.label}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
-                  </label>
-                ))}
+                {["Proyektor", "Papan Tulis", "TV / Smart Screen", "AC", "Sound System", "Kursi Tambahan", "CCTV", "WiFi Kecepatan Tinggi"].map(fac => {
+                  const isChecked = !!form.facilities[fac];
+                  const count = form.facilities[fac] || 0;
+                  return (
+                    <div key={fac} className={`flex items-center justify-between p-2.5 border rounded-lg transition-colors ${isChecked ? 'border-blue-200 bg-blue-50/30' : 'border-gray-100 hover:border-gray-200 bg-white'}`}>
+                      <label className="flex items-center gap-2.5 cursor-pointer flex-1">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                          checked={isChecked} 
+                          onChange={e => {
+                            const newFac = { ...form.facilities };
+                            if (e.target.checked) newFac[fac] = 1;
+                            else delete newFac[fac];
+                            setForm({ ...form, facilities: newFac });
+                          }} 
+                        />
+                        <span className={`text-sm ${isChecked ? 'text-blue-900 font-medium' : 'text-gray-600'}`}>{fac}</span>
+                      </label>
+                      {isChecked && (
+                        <div className="flex items-center gap-1.5 animate-in fade-in zoom-in duration-200">
+                          <input 
+                            type="number" 
+                            min={1} 
+                            max={999}
+                            value={count} 
+                            onChange={e => {
+                              const val = parseInt(e.target.value);
+                              const newFac = { ...form.facilities };
+                              if (val > 0) newFac[fac] = val;
+                              else newFac[fac] = 1;
+                              setForm({ ...form, facilities: newFac });
+                            }}
+                            className="w-14 px-1.5 py-1 text-sm border border-blue-200 rounded text-center outline-none focus:border-blue-400 bg-white" 
+                          />
+                          <span className="text-xs text-blue-600 font-medium mr-1">unit</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
-            <div>
-              <label className="block text-sm text-gray-700 mb-2" style={{ fontWeight: 500 }}>Status Awal</label>
-              <div className="grid grid-cols-2 gap-2">
-                {[{ value: "active", label: "Aktif", desc: "Langsung tayang di kalender" }, { value: "inactive", label: "Draft", desc: "Disembunyikan dari booking" }].map(opt => (
-                  <label key={opt.value} className={`p-3 rounded-lg border cursor-pointer transition-all ${form.status === opt.value ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
-                    <input type="radio" value={opt.value} checked={form.status === opt.value} onChange={e => setForm({ ...form, status: e.target.value })} className="sr-only" />
-                    <div className="text-sm text-gray-700 font-semibold">{opt.label}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
-                  </label>
-                ))}
+          )}
+
+          {form.jenis_manajemen_ruang !== 'WORKSPACE' && (
+            <div className="space-y-3">
+              <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>4. Kebijakan & Jam Operasional</h4>
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                <div>
+                  <div className="text-sm text-gray-700" style={{ fontWeight: 500 }}>Batasi Jam Operasional</div>
+                  <div className="text-xs text-gray-400 mt-0.5">Jika OFF, ruangan tersedia 24 jam</div>
+                </div>
+                <button type="button" onClick={() => setForm({ ...form, operational_enabled: !form.operational_enabled })}
+                  className={`w-11 h-6 rounded-full relative transition-all ${form.operational_enabled ? "bg-blue-500" : "bg-gray-300"}`}>
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.operational_enabled ? "translate-x-5" : "translate-x-0.5"}`} />
+                </button>
+              </div>
+              {form.operational_enabled && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Jam Mulai</label><input type="time" value={form.operational_start} onChange={e => setForm({ ...form, operational_start: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" /></div>
+                  <div><label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Jam Selesai</label><input type="time" value={form.operational_end} onChange={e => setForm({ ...form, operational_end: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" /></div>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm text-gray-700 mb-2" style={{ fontWeight: 500 }}>Mekanisme Persetujuan <span className="text-red-500">*</span></label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[{ value: "instant", label: "Instant Booking", desc: "Langsung terkonfirmasi" }, { value: "manual", label: "Butuh Approval", desc: "Perlu validasi Admin" }].map(opt => (
+                    <label key={opt.value} className={`p-3 rounded-lg border cursor-pointer transition-all ${form.approval_type === opt.value ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
+                      <input type="radio" value={opt.value} checked={form.approval_type === opt.value} onChange={e => setForm({ ...form, approval_type: e.target.value })} className="sr-only" />
+                      <div className="text-sm text-gray-700 font-semibold">{opt.label}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-700 mb-2" style={{ fontWeight: 500 }}>Status Awal</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[{ value: "active", label: "Aktif", desc: "Langsung tayang di kalender" }, { value: "inactive", label: "Draft", desc: "Disembunyikan dari booking" }].map(opt => (
+                    <label key={opt.value} className={`p-3 rounded-lg border cursor-pointer transition-all ${form.status === opt.value ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
+                      <input type="radio" value={opt.value} checked={form.status === opt.value} onChange={e => setForm({ ...form, status: e.target.value })} className="sr-only" />
+                      <div className="text-sm text-gray-700 font-semibold">{opt.label}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <div className="space-y-3">
-            <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>4. Foto Ruangan</h4>
+            <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>
+              {form.jenis_manajemen_ruang === 'WORKSPACE' ? '3' : '5'}. Foto Ruangan
+            </h4>
             <div>
               <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>
                 Upload Foto {form.room_type !== 'digital' ? "(Min. 3, Maks. 10)" : "(Opsional, Maks. 10)"} {!room && form.room_type !== 'digital' && <span className="text-red-500">*</span>}
