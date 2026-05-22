@@ -91,6 +91,18 @@ const createRoom = async (req, res, next) => {
       restrict_hours = false, hours_start, hours_end, layouts = [], facilities = [], room_type = 'physical',
       jenis_manajemen_ruang = 'MEETING_ROOM', total_meja_kerja = null } = req.body;
 
+    // Normalize facilities early: accept either object map or array
+    let facilitiesInput = [];
+    try {
+      if (Array.isArray(facilities)) {
+        facilitiesInput = facilities;
+      } else if (facilities && typeof facilities === 'object') {
+        facilitiesInput = Object.entries(facilities).map(([k, v]) => ({ type: k, quantity: Number(v) }));
+      }
+    } catch (e) {
+      facilitiesInput = [];
+    }
+
     if (room_type === 'physical' || room_type === 'hybrid') {
       if (!name || !building_id || !floor_id) {
         return res.status(400).json({ success: false, message: 'Nama ruangan, gedung, dan lantai wajib diisi' });
@@ -137,10 +149,16 @@ const createRoom = async (req, res, next) => {
         [uuidv4(), roomId, layout.type || layout.layout_type, layout.capacity]);
     }
 
-    // Insert facilities
-    for (const fac of facilities) {
+    // Insert facilities (accept either array of objects or object map)
+    let finalFacilities = [];
+    if (Array.isArray(facilities)) {
+      finalFacilities = facilities;
+    } else if (facilities && typeof facilities === 'object') {
+      finalFacilities = Object.entries(facilities).map(([k, v]) => ({ type: k, quantity: Number(v) }));
+    }
+    for (const fac of finalFacilities) {
       await dbRun(`INSERT INTO room_facilities (id, room_id, facility_type, quantity) VALUES ($1,$2,$3,$4)`,
-        [uuidv4(), roomId, fac.type, fac.quantity]);
+        [uuidv4(), roomId, fac.type || fac.facility_type, fac.quantity || fac.qty || 0]);
     }
 
     // Auto-assign to admin if superadmin set admin_id
@@ -245,12 +263,17 @@ const updateRoom = async (req, res, next) => {
       }
     }
 
-    // Update facilities if provided
-    if (facilities && facilities.length > 0) {
+    // Update facilities if provided (accept array or object)
+    let updatedFacilities = [];
+    if (facilities) {
+      if (Array.isArray(facilities)) updatedFacilities = facilities;
+      else if (typeof facilities === 'object') updatedFacilities = Object.entries(facilities).map(([k, v]) => ({ type: k, quantity: Number(v) }));
+    }
+    if (updatedFacilities.length > 0) {
       await dbRun('UPDATE room_facilities SET deleted_at=NOW() WHERE room_id=$1 AND deleted_at IS NULL', [id]);
-      for (const f of facilities) {
+      for (const f of updatedFacilities) {
         await dbRun(`INSERT INTO room_facilities (id, room_id, facility_type, quantity) VALUES ($1,$2,$3,$4)`,
-          [uuidv4(), id, f.type, f.quantity]);
+          [uuidv4(), id, f.type || f.facility_type, f.quantity || f.qty || 0]);
       }
     }
 

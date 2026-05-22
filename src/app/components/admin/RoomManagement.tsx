@@ -33,7 +33,18 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
         search: search || undefined,
         admin_id: filterAdmin || undefined
       });
-      setRooms(res.data || []);
+      const normal = (res.data || []).map((r: any) => {
+        const facs = r.facilities;
+        if (Array.isArray(facs)) {
+          const obj: Record<string, number> = {};
+          for (const f of facs) {
+            obj[f.facility_type || f.type || f.name || f.facilityType] = f.quantity || f.qty || 0;
+          }
+          return { ...r, facilities: obj };
+        }
+        return { ...r, facilities: r.facilities || {} };
+      });
+      setRooms(normal);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -399,6 +410,13 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
     }
   }, [form.building_id]);
 
+  // Clear selected photos when switching to digital room type
+  useEffect(() => {
+    if (form.room_type === 'digital') {
+      setPhotos([]);
+    }
+  }, [form.room_type]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!room && form.room_type !== 'digital' && photos.length < 3) {
@@ -429,6 +447,11 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
       } else { 
         const res = await roomService.create(payload);
         roomId = res.data?.id || res.id || res.data?.data?.id; // fallback logic just in case
+      }
+
+      // Convert facilities object -> array expected by backend
+      if (payload.facilities && typeof payload.facilities === 'object' && !Array.isArray(payload.facilities)) {
+        payload.facilities = Object.entries(payload.facilities).map(([key, val]) => ({ type: key, quantity: Number(val) }));
       }
 
       if (photos.length > 0 && roomId) {
@@ -702,44 +725,46 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
             </div>
           )}
 
-          <div className="space-y-3">
-            <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>
-              {form.jenis_manajemen_ruang === 'WORKSPACE' ? '3' : '5'}. Foto Ruangan
-            </h4>
-            <div>
-              <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>
-                Upload Foto {form.room_type !== 'digital' ? "(Min. 3, Maks. 10)" : "(Opsional, Maks. 10)"} {!room && form.room_type !== 'digital' && <span className="text-red-500">*</span>}
-              </label>
-              <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
-                <input type="file" multiple accept="image/*" onChange={(e) => {
-                  const files = Array.from(e.target.files || []);
-                  if (photos.length + files.length > 10) {
-                    alert("Maksimal 10 foto diperbolehkan");
-                    return;
-                  }
-                  setPhotos([...photos, ...files]);
-                }} className="hidden" id="photo-upload" />
-                <label htmlFor="photo-upload" className="cursor-pointer flex flex-col items-center">
-                  <ImagePlus size={24} className="text-gray-400 mb-2" />
-                  <span className="text-sm text-blue-600 font-medium">Klik untuk unggah foto</span>
-                  <span className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</span>
+          {form.room_type !== 'digital' && (
+            <div className="space-y-3">
+              <h4 className="text-sm text-gray-700 pb-2 border-b border-gray-100" style={{ fontWeight: 600 }}>
+                {form.jenis_manajemen_ruang === 'WORKSPACE' ? '3' : '5'}. Foto Ruangan
+              </h4>
+              <div>
+                <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>
+                  Upload Foto {form.room_type !== 'digital' ? "(Min. 3, Maks. 10)" : "(Opsional, Maks. 10)"} {!room && form.room_type !== 'digital' && <span className="text-red-500">*</span>}
                 </label>
-              </div>
-              {photos.length > 0 && (
-                <div className="grid grid-cols-5 gap-2 mt-3">
-                  {photos.map((p, i) => (
-                    <div key={i} className="relative aspect-square rounded-lg border border-gray-200 overflow-hidden group">
-                      <img src={URL.createObjectURL(p)} alt="" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => setPhotos(photos.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
+                <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
+                  <input type="file" multiple accept="image/*" onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (photos.length + files.length > 10) {
+                      alert("Maksimal 10 foto diperbolehkan");
+                      return;
+                    }
+                    setPhotos([...photos, ...files]);
+                  }} className="hidden" id="photo-upload" />
+                  <label htmlFor="photo-upload" className="cursor-pointer flex flex-col items-center">
+                    <ImagePlus size={24} className="text-gray-400 mb-2" />
+                    <span className="text-sm text-blue-600 font-medium">Klik untuk unggah foto</span>
+                    <span className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</span>
+                  </label>
                 </div>
-              )}
-              {!room && form.room_type !== 'digital' && photos.length > 0 && photos.length < 3 && <p className="text-xs text-red-500 mt-2">Pilih minimal {3 - photos.length} foto lagi</p>}
+                {photos.length > 0 && (
+                  <div className="grid grid-cols-5 gap-2 mt-3">
+                    {photos.map((p, i) => (
+                      <div key={i} className="relative aspect-square rounded-lg border border-gray-200 overflow-hidden group">
+                        <img src={URL.createObjectURL(p)} alt="" className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => setPhotos(photos.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!room && form.room_type !== 'digital' && photos.length > 0 && photos.length < 3 && <p className="text-xs text-red-500 mt-2">Pilih minimal {3 - photos.length} foto lagi</p>}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="px-6 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Batal</button>
