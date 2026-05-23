@@ -18,7 +18,7 @@ const IKN_CENTER: [number, number] = [-0.973019, 116.703227];
 const getImageUrl = (url: string | null | undefined) => {
   if (!url) return undefined;
   if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
-  return `http://localhost:5000${url.startsWith('/') ? url : '/' + url}`;
+  return url.startsWith('/') ? url : '/' + url;
 };
 
 export function BuildingManagement({ onNavigate }: { onNavigate?: (p: string) => void }) {

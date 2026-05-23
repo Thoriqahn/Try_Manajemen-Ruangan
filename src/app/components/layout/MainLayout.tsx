@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, Bell, Search } from "lucide-react";
+import { Menu, Bell, Search, Calendar, Building2, BookOpen, QrCode } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { bookingService } from "../../services/bookingService";
 
@@ -28,7 +28,10 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
 
     const fetchNotifications = async () => {
       try {
-        const res = await bookingService.list({ limit: 15 });
+        const res = await bookingService.list({ 
+          limit: 15,
+          managed_only: role === 'admin' ? "true" : undefined
+        });
         const list = res.data || [];
         
         const items = list.map((b: any) => {
@@ -131,8 +134,8 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
         {/* Topbar */}
         <header className="bg-white border-b border-gray-200 px-4 lg:px-6 h-14 flex items-center gap-4 flex-shrink-0 z-30">
           <button
-            onClick={() => { setMobileOpen(!mobileOpen); if (window.innerWidth >= 1024) setSidebarCollapsed(!sidebarCollapsed); }}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            onClick={() => { if (window.innerWidth >= 1024) { setSidebarCollapsed(!sidebarCollapsed); } else { setMobileOpen(!mobileOpen); } }}
+            className="text-gray-500 hover:text-gray-700 transition-colors hidden lg:block"
           >
             <Menu size={20} />
           </button>
@@ -203,9 +206,40 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto pb-16 lg:pb-0">
           {children}
         </main>
+      </div>
+
+      {/* Bottom Navigation (Mobile Only) */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 flex items-center justify-around h-16 pb-safe px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        <button onClick={() => onNavigate("calendar")} className={`flex flex-col items-center gap-1 p-2 ${currentPage === "calendar" ? "text-[#1E3A5F]" : "text-gray-400"}`}>
+          <Calendar size={20} />
+          <span className="text-[10px] font-bold">Kalender</span>
+        </button>
+        <button onClick={() => onNavigate("rooms")} className={`flex flex-col items-center gap-1 p-2 ${currentPage === "rooms" ? "text-[#1E3A5F]" : "text-gray-400"}`}>
+          <Building2 size={20} />
+          <span className="text-[10px] font-bold">Ruangan</span>
+        </button>
+
+        {/* Center QR Scan Button */}
+        <div className="relative -top-5">
+          <button 
+            onClick={() => window.dispatchEvent(new CustomEvent('menara:trigger-scan-simulator'))} 
+            className="w-14 h-14 bg-gradient-to-tr from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-500/40 hover:scale-105 active:scale-95 transition-transform border-4 border-gray-50"
+          >
+            <QrCode size={24} />
+          </button>
+        </div>
+
+        <button onClick={() => onNavigate("my-bookings")} className={`flex flex-col items-center gap-1 p-2 ${currentPage === "my-bookings" ? "text-[#1E3A5F]" : "text-gray-400"}`}>
+          <BookOpen size={20} />
+          <span className="text-[10px] font-bold">Booking</span>
+        </button>
+        <button onClick={() => setMobileOpen(true)} className="flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-[#1E3A5F]">
+          <Menu size={20} />
+          <span className="text-[10px] font-bold">Menu</span>
+        </button>
       </div>
     </div>
   );

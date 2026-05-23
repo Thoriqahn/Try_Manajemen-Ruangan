@@ -92,15 +92,31 @@ const listBookings = async (req, res, next) => {
     const params = [];
     let paramIdx = 1;
 
-    // Scope by role
-    if (req.user.role === 'user') {
+    // Scope by role and query params
+    const { managed_only, own_only } = req.query;
+
+    if (own_only === 'true' || req.user.role === 'user') {
       sql += ` AND b.user_id = $${paramIdx++}`; params.push(req.user.id);
-    } else if (req.user.role === 'admin') {
+    } else if (req.user.role === 'admin' && managed_only === 'true') {
       sql += ` AND r.id IN (SELECT room_id FROM room_assignments WHERE user_id = $${paramIdx++})`;
       params.push(req.user.id);
+    } else if (req.user.role === 'superadmin' && admin_id) {
+      sql += ` AND r.id IN (SELECT room_id FROM room_assignments WHERE user_id = $${paramIdx++})`;
+      params.push(admin_id);
     }
 
-    if (status) { sql += ` AND b.status = $${paramIdx++}`; params.push(status); }
+    if (status) {
+      const statuses = status.split(',').map(s => s.trim());
+      if (statuses.length > 1) {
+        const placeholders = statuses.map((_, i) => `$${paramIdx + i}`).join(',');
+        sql += ` AND b.status IN (${placeholders})`;
+        params.push(...statuses);
+        paramIdx += statuses.length;
+      } else {
+        sql += ` AND b.status = $${paramIdx++}`;
+        params.push(status);
+      }
+    }
     if (room_id) { sql += ` AND b.room_id = $${paramIdx++}`; params.push(room_id); }
     if (date_from) { sql += ` AND b.date >= $${paramIdx++}`; params.push(date_from); }
     if (date_to) { sql += ` AND b.date <= $${paramIdx++}`; params.push(date_to); }
@@ -492,22 +508,49 @@ const forceCancel = async (req, res, next) => {
 // POST /api/v1/bookings/check-in
 const checkInBooking = async (req, res, next) => {
   try {
-    const { room_id, scanned_qr_token } = req.body;
-    const authenticated_user_id = req.user.id;
+    const { room_id, scanned_qr_token, simulate_user_id } = req.body;
+    
+    let targetUserId = req.user.id;
+    let targetUserName = req.user.name;
+
+    if (simulate_user_id && req.user.role === 'superadmin') {
+      const simulatedUser = await dbGet('SELECT id, name FROM users WHERE id = $1', [simulate_user_id]);
+      if (simulatedUser) {
+        targetUserId = simulatedUser.id;
+        targetUserName = simulatedUser.name;
+      }
+    }
+
 
     // 1. Verify QR Token Matches
-    const room = await dbGet(
-      'SELECT id, name, qr_token FROM rooms WHERE id = $1 AND deleted_at IS NULL',
-      [room_id]
-    );
-
-    if (!room) {
-      return res.status(404).json({ success: false, message: 'Ruangan tidak ditemukan' });
+    let room;
+    if (room_id) {
+      room = await dbGet(
+        'SELECT id, name, qr_token FROM rooms WHERE id = $1 AND deleted_at IS NULL',
+        [room_id]
+      );
+      if (!room) {
+        return res.status(404).json({ success: false, message: 'Ruangan tidak ditemukan' });
+      }
+      if (room.qr_token !== scanned_qr_token) {
+        return res.status(403).json({ success: false, message: 'Token QR Code tidak valid untuk ruangan ini' });
+      }
+    } else {
+      try {
+        room = await dbGet(
+          'SELECT id, name, qr_token FROM rooms WHERE (qr_token::text = $1 OR id = $1) AND deleted_at IS NULL',
+          [scanned_qr_token]
+        );
+      } catch (dbErr) {
+        // If it throws an error (e.g. invalid input syntax for type uuid), it means it's not a recognized QR token
+        return res.status(404).json({ success: false, message: 'QR Code tidak dikenali atau format tidak valid' });
+      }
+      if (!room) {
+        return res.status(404).json({ success: false, message: 'QR Code tidak dikenali atau ruangan tidak ditemukan' });
+      }
     }
-
-    if (room.qr_token !== scanned_qr_token) {
-      return res.status(403).json({ success: false, message: 'Token QR Code tidak valid untuk ruangan ini' });
-    }
+    
+    const actualRoomId = room.id;
 
     // 2. Find confirmed or ongoing bookings for this room on the current date
     const now = new Date();
@@ -518,7 +561,7 @@ const checkInBooking = async (req, res, next) => {
        FROM bookings
        WHERE room_id = $1 AND date = $2 AND status IN ('confirmed', 'ongoing')
        ORDER BY start_time ASC`,
-      [room_id, todayStr]
+      [actualRoomId, todayStr]
     );
 
     if (bookings.length === 0) {
@@ -557,7 +600,7 @@ const checkInBooking = async (req, res, next) => {
                AND status IN ('confirmed', 'ongoing', 'completed')
                AND end_time > $4 AND end_time <= $5
              LIMIT 1`,
-            [room_id, b.date, b.id, tenMinsAgoTimeStr, b.start_time]
+            [actualRoomId, b.date, b.id, tenMinsAgoTimeStr, b.start_time]
           );
 
           if (precedingBooking) {
@@ -601,7 +644,7 @@ const checkInBooking = async (req, res, next) => {
       // Ensure user is not already recorded as attendee
       const existingAttendee = await client.query(
         'SELECT id FROM meeting_attendees WHERE booking_id = $1 AND user_id = $2',
-        [targetBooking.id, req.user.id]
+        [targetBooking.id, targetUserId]
       );
 
       if (existingAttendee.rows.length > 0) {
@@ -638,7 +681,7 @@ const checkInBooking = async (req, res, next) => {
         await client.query(
           `INSERT INTO audit_logs (id, actor_id, actor_name, action, resource, payload_before, payload_after)
            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [auditId, req.user.id, `${req.user.name} (${req.user.role})`, action, resource, payloadBefore, payloadAfter]
+          [auditId, targetUserId, `${targetUserName} (Simulated)`, action, resource, payloadBefore, payloadAfter]
         );
 
         responseMessage = 'Check-in ruangan berhasil, Anda tercatat hadir.';
@@ -651,7 +694,7 @@ const checkInBooking = async (req, res, next) => {
       await client.query(
         `INSERT INTO meeting_attendees (booking_id, user_id, user_name)
          VALUES ($1, $2, $3)`,
-        [targetBooking.id, req.user.id, req.user.name]
+        [targetBooking.id, targetUserId, targetUserName]
       );
 
       await client.query('COMMIT');

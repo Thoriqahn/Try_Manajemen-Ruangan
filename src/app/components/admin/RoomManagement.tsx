@@ -6,7 +6,7 @@ import { buildingService, userService } from "../../services/index";
 const getImageUrl = (url: string | null | undefined) => {
   if (!url) return undefined;
   if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
-  return `http://localhost:5000${url.startsWith('/') ? url : '/' + url}`;
+  return url.startsWith('/') ? url : '/' + url;
 };
 
 interface RoomManagementProps {
@@ -24,6 +24,7 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
   const [toggling, setToggling] = useState<string | null>(null);
   const [selectedAdminFilter, setSelectedAdminFilter] = useState("");
   const [adminList, setAdminList] = useState<any[]>([]);
+  const [selectedRoomView, setSelectedRoomView] = useState<any>(null);
 
   const load = async (adminFilterValue?: string) => {
     setLoading(true);
@@ -31,7 +32,8 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
       const filterAdmin = adminFilterValue !== undefined ? adminFilterValue : selectedAdminFilter;
       const res = await roomService.list({ 
         search: search || undefined,
-        admin_id: filterAdmin || undefined
+        admin_id: filterAdmin || undefined,
+        managed_only: "true"
       });
       const normal = (res.data || []).map((r: any) => {
         const facs = r.facilities;
@@ -235,7 +237,7 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                   const maxCap = layouts.length > 0 ? Math.max(...layouts.map(l => l.capacity || 0)) : 0;
                   const jmr = room.jenis_manajemen_ruang || "MEETING_ROOM";
                   return (
-                    <tr key={room.id} className={`hover:bg-gray-50 transition-colors ${room.status === "inactive" ? "opacity-60" : ""}`}>
+                    <tr key={room.id} onClick={() => setSelectedRoomView(room)} className={`hover:bg-gray-50 transition-colors cursor-pointer ${room.status === "inactive" ? "opacity-60" : ""}`}>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
@@ -301,9 +303,15 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                         </div>
                       </td>
                       <td className="px-5 py-4">
-                        <div className="text-xs text-gray-500 max-w-[150px] truncate" title={room.facilities ? Object.entries(room.facilities).map(([k,v]) => `${k} (${v})`).join(", ") : ""}>
+                        <div className="text-xs text-gray-500 max-w-[150px] truncate" title={room.facilities ? Object.entries(room.facilities).map(([k,v]) => {
+                          const formatted = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                          return `${formatted} (${v})`;
+                        }).join(", ") : ""}>
                           {room.facilities && Object.keys(room.facilities).length > 0
-                            ? Object.entries(room.facilities).map(([k,v]) => `${k} (${v})`).join(", ")
+                            ? Object.entries(room.facilities).map(([k,v]) => {
+                                const formatted = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                                return `${formatted} (${v})`;
+                              }).join(", ")
                             : "—"}
                         </div>
                       </td>
@@ -319,15 +327,15 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                         </span>
                       </td>
                       {isSuperAdmin && <td className="px-5 py-4 text-sm text-gray-600">{room.admin_name || "–"}</td>}
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-2 justify-end">
                           {room.room_type !== 'digital' && (
-                            <button onClick={() => downloadQRCode(room)} className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg" title="Unduh QR Code Pintu">
+                            <button onClick={(e) => { e.stopPropagation(); downloadQRCode(room); }} className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg" title="Unduh QR Code Pintu">
                               <QrCode size={15} />
                             </button>
                           )}
-                          <button onClick={() => { setEditRoom(room); setShowForm(true); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit"><Edit2 size={15} /></button>
-                          <button onClick={() => setDisableModal(room.id)} disabled={toggling === room.id}
+                          <button onClick={(e) => { e.stopPropagation(); setEditRoom(room); setShowForm(true); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit"><Edit2 size={15} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); setDisableModal(room.id); }} disabled={toggling === room.id}
                             className={`p-1.5 rounded-lg transition-all ${room.status === "inactive" ? "text-green-500 hover:bg-green-50" : "text-gray-400 hover:text-red-500 hover:bg-red-50"}`} title={room.status === "inactive" ? "Aktifkan" : "Nonaktifkan"}>
                             <Power size={15} />
                           </button>

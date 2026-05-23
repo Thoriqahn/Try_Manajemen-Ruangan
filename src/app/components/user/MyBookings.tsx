@@ -11,6 +11,7 @@ import { buildingService } from "../../services/index";
 import { roomService, Room } from "../../services/roomService";
 import { UserStore } from "../../services/apiClient";
 import { toast } from "sonner";
+import { QRCodeSVG } from 'qrcode.react';
 
 interface MyBookingsProps {
   onNavigate: (page: string, data?: any) => void;
@@ -163,6 +164,8 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
   const [cancelModal, setCancelModal] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
 
+  // QR Scanner States
+
   // Attendees States
   const [attendeesModal, setAttendeesModal] = useState<string | null>(null);
   const [attendeesList, setAttendeesList] = useState<any[]>([]);
@@ -195,7 +198,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const res = await bookingService.list();
+      const res = await bookingService.list({ own_only: "true" });
       if (res.success && res.data && res.data.length > 0) {
         setBookings(res.data);
       } else {
@@ -803,19 +806,21 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                         {activeTab === "ongoing" && booking.meeting_type !== "online" && (
                           <button
                             onClick={() => {
-                              window.dispatchEvent(new CustomEvent('menara:trigger-scan-simulator', { 
-                                detail: { bookingId: booking.id } 
-                              }));
+                              if (booking.is_checked_in) {
+                                toast.success("Anda sudah melakukan check-in untuk rapat ini.");
+                              } else {
+                                window.dispatchEvent(new CustomEvent('menara:trigger-scan-simulator', { detail: { bookingId: booking.id } }));
+                              }
                             }}
                             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 ${
                               booking.is_checked_in
                                 ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200"
                                 : "bg-gradient-to-tr from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white hover:shadow-md hover:-translate-y-0.5"
                             }`}
-                            title={booking.is_checked_in ? "Scan QR untuk Presensi Kehadiran" : "Scan QR untuk Klaim Ruang Rapat"}
+                            title={booking.is_checked_in ? "Sudah Check-In" : "Scan QR untuk Presensi"}
                           >
                             <QrCode size={13} />
-                            <span>{booking.is_checked_in ? "Presensi QR" : "Check In"}</span>
+                            <span>{booking.is_checked_in ? "Sudah Check-In" : "Scan QR Presensi"}</span>
                           </button>
                         )}
 
@@ -1207,6 +1212,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
           </div>
         </div>
       )}
+
 
     </div>
   );

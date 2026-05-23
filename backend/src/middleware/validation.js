@@ -54,10 +54,10 @@ const validateRelocation = [
 // Check-in validation
 const validateCheckIn = [
   body('room_id')
+    .optional({ checkFalsy: true })
     .isString()
     .trim()
-    .notEmpty()
-    .withMessage('room_id wajib diisi dan harus berupa string'),
+    .withMessage('room_id harus berupa string jika diisi'),
   body('scanned_qr_token')
     .isString()
     .trim()

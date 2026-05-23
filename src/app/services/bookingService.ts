@@ -94,8 +94,8 @@ export const bookingService = {
     return api.post(`/bookings/${id}/force-cancel`, { reason });
   },
 
-  async checkIn(roomId: string, scannedQrToken: string) {
-    return api.post('/bookings/check-in', { room_id: roomId, scanned_qr_token: scannedQrToken });
+  async checkIn(roomId: string | undefined, scannedQrToken: string, simulateUserId?: string) {
+    return api.post('/bookings/check-in', { room_id: roomId, scanned_qr_token: scannedQrToken, simulate_user_id: simulateUserId });
   },
 
   async getAttendees(bookingId: string) {

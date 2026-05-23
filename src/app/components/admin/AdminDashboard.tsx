@@ -23,12 +23,15 @@ export function AdminDashboard({ onNavigate, isSuperAdmin = false }: AdminDashbo
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [adminList, setAdminList] = useState<any[]>([]);
+  const [selectedAdminFilter, setSelectedAdminFilter] = useState("");
 
   const fetchStats = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await statsService.admin();
+      const { statsService } = await import("../../services/index");
+      const res = await statsService.admin(selectedAdminFilter || undefined);
       if (res.success) setStats(res.data);
     } catch (err: any) {
       setError("Gagal memuat statistik");
@@ -37,7 +40,15 @@ export function AdminDashboard({ onNavigate, isSuperAdmin = false }: AdminDashbo
     }
   };
 
-  useEffect(() => { fetchStats(); }, []);
+  useEffect(() => {
+    if (isSuperAdmin) {
+      import("../../services/index").then(({ userService }) => {
+        userService.list({ role: "admin" }).then(res => setAdminList(res.data || []));
+      });
+    }
+  }, [isSuperAdmin]);
+
+  useEffect(() => { fetchStats(); }, [selectedAdminFilter]);
 
   const statCards = stats ? [
     { icon: <Calendar size={20} className="text-blue-500" />, label: "Booking Minggu Ini", value: stats.weeklyBookings, bg: "bg-blue-50" },
@@ -51,15 +62,20 @@ export function AdminDashboard({ onNavigate, isSuperAdmin = false }: AdminDashbo
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-gray-800" style={{ fontWeight: 700 }}>Dashboard Operasional</h2>
-          <p className="text-sm text-gray-500">Data real-time · Ruangan yang Anda kelola</p>
+          <p className="text-sm text-gray-500">Data real-time · {selectedAdminFilter ? "Ruangan terfilter" : "Ruangan yang Anda kelola"}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={fetchStats} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Refresh">
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
           </button>
           {isSuperAdmin && (
-            <select className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white text-gray-600">
-              <option>Semua Admin Ruangan</option>
+            <select 
+              value={selectedAdminFilter}
+              onChange={e => setSelectedAdminFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white text-gray-600"
+            >
+              <option value="">Semua Admin Ruangan</option>
+              {adminList.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           )}
         </div>

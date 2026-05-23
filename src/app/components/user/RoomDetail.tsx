@@ -8,7 +8,45 @@ import { toast } from "sonner";
 const getImageUrl = (url: string | null | undefined) => {
   if (!url) return undefined;
   if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
-  return `http://localhost:5000${url.startsWith('/') ? url : '/' + url}`;
+  return url.startsWith('/') ? url : '/' + url;
+};
+
+const getDynamicSlots = (room: any, isOption = false) => {
+  try {
+    const slots: string[] = [];
+    // Database returns hours_start / hours_end, handle fallback if null
+    const startStr = room?.hours_start || room?.operational_start || "00:00:00";
+    let endStr = room?.hours_end || room?.operational_end;
+    if (!endStr) endStr = isOption ? "23:59:00" : "23:30:00";
+
+    const start = startStr.substring(0, 5);
+    const end = endStr.substring(0, 5);
+
+    let [currH, currM] = start.split(":").map(Number);
+    const [endH, endM] = end.split(":").map(Number);
+    
+    if (isNaN(currH) || isNaN(currM) || isNaN(endH) || isNaN(endM)) {
+      return ["08:00", "08:30", "09:00", "09:30"];
+    }
+
+    while (currH < endH || (currH === endH && currM <= endM)) {
+      slots.push(`${String(currH).padStart(2, "0")}:${String(currM).padStart(2, "0")}`);
+      currM += 30;
+      if (currM >= 60) {
+        currH++;
+        currM -= 60;
+      }
+    }
+    
+    if (isOption && endStr) {
+      const finalEnd = endStr.substring(0, 5);
+      if (!slots.includes(finalEnd)) slots.push(finalEnd);
+    }
+    
+    return slots.length > 0 ? slots : ["08:00", "09:00"];
+  } catch (err) {
+    return ["08:00", "09:00", "10:00"];
+  }
 };
 
 interface RoomDetailProps {
@@ -84,14 +122,20 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
     fetchAvailability();
   }, [currentWeekOffset]);
 
+  const parseMins = (timeStr: string) => {
+    if (!timeStr) return 0;
+    const parts = timeStr.split(":");
+    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+  };
+
   const isBooked = (date: string, time: string) => {
     const day = availability.find(d => d.date === date);
     if (!day) return false;
     if (day.isBlackout) return true; // Blackout slots cannot be booked
     return day.bookings?.some((b: any) => {
-      const slotMins = parseInt(time.split(":")[0]) * 60 + parseInt(time.split(":")[1]);
-      const startMins = parseInt(b.startTime.split(":")[0]) * 60 + parseInt(b.startTime.split(":")[1]);
-      const endMins = parseInt(b.endTime.split(":")[0]) * 60 + parseInt(b.endTime.split(":")[1]);
+      const slotMins = parseMins(time);
+      const startMins = parseMins(b.startTime || b.start_time);
+      const endMins = parseMins(b.endTime || b.end_time);
       return slotMins >= startMins && slotMins < endMins;
     }) || false;
   };
@@ -100,9 +144,9 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
     const day = availability.find(d => d.date === date);
     if (!day) return null;
     return day.bookings?.find((b: any) => {
-      const slotMins = parseInt(time.split(":")[0]) * 60 + parseInt(time.split(":")[1]);
-      const startMins = parseInt(b.startTime.split(":")[0]) * 60 + parseInt(b.startTime.split(":")[1]);
-      const endMins = parseInt(b.endTime.split(":")[0]) * 60 + parseInt(b.endTime.split(":")[1]);
+      const slotMins = parseMins(time);
+      const startMins = parseMins(b.startTime || b.start_time);
+      const endMins = parseMins(b.endTime || b.end_time);
       return slotMins >= startMins && slotMins < endMins;
     }) || null;
   };
@@ -112,7 +156,8 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
     return day?.isBlackout || false;
   };
 
-  const timeSlots = ["07:00","07:30","08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00"];
+  const timeSlots = getDynamicSlots(room, false);
+  const timeOptions = getDynamicSlots(room, true);
 
   const isSlotInDragRange = (date: string, time: string) => {
     if (!isDragging || !dragStart || !dragEnd || date !== dragStart.date) return false;
@@ -138,12 +183,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
     if (minIdx === maxIdx) return "30 Mins";
     if (currIndex === minIdx) return `Mulai (${timeSlots[minIdx]})`;
     if (currIndex === maxIdx) {
-      const timeOptions = [
-        "07:00","07:30","08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30",
-        "12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30",
-        "17:00","17:30","18:00"
-      ];
-      const endVal = timeOptions[maxIdx + 1] || "17:30";
+      const endVal = timeOptions[maxIdx + 1] || timeOptions[timeOptions.length - 1];
       return `Selesai (${endVal})`;
     }
     return "·";
@@ -175,14 +215,9 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
     }
 
     const startTime = selectedTimes[0];
-    const timeOptions = [
-      "07:00","07:30","08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30",
-      "12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30",
-      "17:00","17:30","18:00"
-    ];
     const startIdxInOptions = timeOptions.indexOf(startTime);
     const selectedLen = selectedTimes.length;
-    const endTime = timeOptions[startIdxInOptions + selectedLen] || "17:30";
+    const endTime = timeOptions[startIdxInOptions + selectedLen] || timeOptions[timeOptions.length - 1];
 
     setSelectedSlot({ date: dragStart.date, time: startTime, endTime });
     setShowBookingModal(true);
@@ -661,7 +696,7 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  const timeOptions = ["07:00","07:30","08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00"];
+  const timeOptions = getDynamicSlots(room, true);
   const endOptions = timeOptions.filter(t => t > form.startTime);
 
   const handleSubmit = async () => {

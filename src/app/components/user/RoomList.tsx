@@ -9,7 +9,7 @@ import { buildingService } from "../../services/index";
 const getImageUrl = (url: string | null | undefined) => {
   if (!url) return undefined;
   if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
-  return `http://localhost:5000${url.startsWith('/') ? url : '/' + url}`;
+  return url.startsWith('/') ? url : '/' + url;
 };
 
 interface RoomListProps {

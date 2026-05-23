@@ -441,7 +441,7 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
     try {
       const [roomsRes, bookingsRes] = await Promise.all([
         roomService.list({ status: "active" }),
-        bookingService.list({ limit: 100 }),
+        bookingService.list({ limit: 100, own_only: "true" }),
       ]);
       setRooms(roomsRes.data || []);
       setMyBookings(bookingsRes.data || []);

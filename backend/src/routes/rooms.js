@@ -23,12 +23,82 @@ const upload = multer({
   }
 });
 
+/**
+ * @openapi
+ * /api/rooms:
+ *   get:
+ *     summary: GET /
+ *     tags: [Rooms]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
 router.get('/', optionalAuth, ctrl.listRooms);
+/**
+ * @openapi
+ * /api/rooms/{id}:
+ *   get:
+ *     summary: GET /:id
+ *     tags: [Rooms]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
 router.get('/:id', optionalAuth, ctrl.getRoom);
+/**
+ * @openapi
+ * /api/rooms/{id}/availability:
+ *   get:
+ *     summary: GET /:id/availability
+ *     tags: [Rooms]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
 router.get('/:id/availability', optionalAuth, ctrl.getAvailability);
+/**
+ * @openapi
+ * /api/rooms:
+ *   post:
+ *     summary: POST /
+ *     tags: [Rooms]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
 router.post('/', authGuard, roleGuard('admin', 'superadmin'), ctrl.createRoom);
+/**
+ * @openapi
+ * /api/rooms/{id}:
+ *   put:
+ *     summary: PUT /:id
+ *     tags: [Rooms]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
 router.put('/:id', authGuard, roleGuard('admin', 'superadmin'), ctrl.updateRoom);
+/**
+ * @openapi
+ * /api/rooms/{id}:
+ *   delete:
+ *     summary: DELETE /:id
+ *     tags: [Rooms]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
 router.delete('/:id', authGuard, roleGuard('admin', 'superadmin'), ctrl.deleteRoom);
+/**
+ * @openapi
+ * /api/rooms/{id}/upload:
+ *   post:
+ *     summary: POST /:id/upload
+ *     tags: [Rooms]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
 router.post('/:id/upload', authGuard, roleGuard('admin', 'superadmin'), upload.single('photo'), ctrl.uploadPhoto);
 
 module.exports = router;

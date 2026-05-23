@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { QrCode, X, CheckCircle, AlertTriangle, Play, HelpCircle, Copy, Check } from "lucide-react";
-import { bookingService, Booking } from "../../services/bookingService";
+import { QrCode, X, AlertTriangle, Play, Copy, Check, Camera } from "lucide-react";
+import { bookingService, Booking, Attendee } from "../../services/bookingService";
 import { roomService } from "../../services/roomService";
-import { UserStore } from "../../services/apiClient";
+import { UserStore, api } from "../../services/apiClient";
 import { toast } from "sonner";
+import { Scanner } from '@yudiel/react-qr-scanner';
 
 interface QrScanSimulatorProps {
   onCheckInSuccess?: () => void;
@@ -19,6 +20,11 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
   const [submitting, setSubmitting] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+  
+  const [users, setUsers] = useState<{id: string, name: string, role: string}[]>([]);
+  const [simulatedUserId, setSimulatedUserId] = useState<string>("");
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [activeTab, setActiveTab] = useState<"camera" | "manual" | "attendees">("camera");
 
   const currentUser = UserStore.get();
 
@@ -31,14 +37,22 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
     if (!currentUser) return;
     setLoading(true);
     try {
-      // We want to fetch confirmed OR ongoing bookings (for attendance)
-      const res = await bookingService.list({ status: "confirmed,ongoing" }); // Need to ensure list API supports multiple statuses or we just fetch all and filter client side.
-      // Wait, let's fetch all and filter client side since the API might not support comma separated statuses easily if not implemented.
-      const allRes = await bookingService.list();
+      const allRes = await bookingService.list({ own_only: "true" });
       if (allRes.success && allRes.data) {
         const validBookings = allRes.data.filter(b => b.status === "confirmed" || b.status === "ongoing");
         setBookings(validBookings);
         addLog(`Berhasil memuat ${validBookings.length} booking (CONFIRMED / ONGOING).`);
+      }
+
+      if (currentUser.role === 'superadmin' && users.length === 0) {
+        try {
+          const usersRes = await api.get<{data: {id: string, name: string, role: string}[]}>('/users');
+          if (usersRes.success && usersRes.data) {
+             setUsers(usersRes.data);
+          }
+        } catch (e) {
+          addLog("Gagal mengambil daftar pengguna");
+        }
       }
     } catch (err: any) {
       addLog(`Gagal memuat booking: ${err.message}`);
@@ -46,6 +60,24 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
       setLoading(false);
     }
   };
+
+  const loadAttendees = async () => {
+    if (!selectedBooking) return;
+    try {
+      const res = await bookingService.getAttendees(selectedBooking.id);
+      if (res.success && res.data) {
+        setAttendees(res.data);
+      }
+    } catch (err: any) {
+      addLog(`Gagal memuat data presensi: ${err.message}`);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedBooking && activeTab === "attendees") {
+      loadAttendees();
+    }
+  }, [selectedBooking, activeTab]);
 
   useEffect(() => {
     if (isOpen) {
@@ -65,7 +97,7 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
       if (bookingId) {
         addLog(`Simulator dipicu secara otomatis untuk Booking ID: ${bookingId}`);
         try {
-          const res = await bookingService.list();
+          const res = await bookingService.list({ own_only: "true" });
           if (res.success && res.data) {
             const found = res.data.find(b => b.id === bookingId);
             if (found) {
@@ -119,16 +151,15 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
     addLog(`Payload: { room_id: "${selectedBooking.room_id}", scanned_qr_token: "${qrTokenInput}" }`);
 
     try {
-      const res = await bookingService.checkIn(selectedBooking.room_id, qrTokenInput);
+      const res = await bookingService.checkIn(selectedBooking.room_id, qrTokenInput, simulatedUserId || undefined);
       if (res.success) {
         toast.success("Check-In Berhasil!");
         addLog(`✅ SERVER SUCCESS: ${res.message || "Check-in berhasil dilakukan"}`);
         addLog(`   Data Booking ID: ${res.data?.booking_id}`);
         addLog(`   Status Booking berubah menjadi: ${res.data?.status}`);
         
-        // Refresh bookings and trigger success callback
         loadBookings();
-        setSelectedBooking(null);
+        loadAttendees();
         if (onCheckInSuccess) onCheckInSuccess();
       }
     } catch (err: any) {
@@ -136,6 +167,48 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
       addLog(`❌ SERVER ERROR (HTTP ${err.status || 400}): ${err.message || "Check-in gagal"}`);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCameraScan = async (result: any) => {
+    if (result && result.length > 0 && !submitting) {
+      const token = result[0].rawValue;
+      setSubmitting(true);
+      addLog(`Membaca QR Token dari Kamera: ${token.slice(0, 8)}...`);
+
+      try {
+        const res = await bookingService.checkIn(undefined, token, simulatedUserId || undefined);
+        if (res.success) {
+          toast.success("Check-In via Kamera Berhasil!");
+          addLog(`✅ SUCCESS: ${res.message}`);
+          loadBookings();
+          
+          if (res.data?.booking_id) {
+            // Find the booking in the list or just fetch attendees for this ID directly
+            const matchedBooking = bookings.find(b => b.id === res.data.booking_id);
+            if (matchedBooking) setSelectedBooking(matchedBooking);
+            
+            // Immediately load attendees for the newly checked-in booking
+            try {
+              const attRes = await bookingService.getAttendees(res.data.booking_id);
+              setAttendees(attRes.data);
+            } catch (err) { }
+            
+            // Automatically switch to attendees tab to show the meeting and attendance list
+            setActiveTab("attendees");
+          } else if (selectedBooking) {
+            loadAttendees();
+            setActiveTab("attendees");
+          }
+
+          if (onCheckInSuccess) onCheckInSuccess();
+        }
+      } catch (err: any) {
+        toast.error(err.message || "QR Code tidak valid.");
+        addLog(`❌ ERROR: ${err.message}`);
+      } finally {
+        setTimeout(() => setSubmitting(false), 2000); // Debounce scans
+      }
     }
   };
 
@@ -149,15 +222,15 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
 
   return (
     <>
-      {/* Floating Action Button */}
+      {/* Floating Action Button (Desktop Only) */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 p-4 bg-gradient-to-tr from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center gap-2 group"
-        title="Simulasikan Scan QR Code Pintu"
+        className="hidden lg:flex fixed bottom-6 right-6 z-50 px-6 py-4 bg-gradient-to-tr from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgb(16,185,129,0.4)] hover:-translate-y-1 active:scale-95 transition-all items-center gap-3 animate-bounce shadow-emerald-500/50"
+        title="Check-In QR Code Pintu"
       >
-        <QrCode size={22} className="group-hover:rotate-12 transition-transform" />
-        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 ease-out whitespace-nowrap text-xs font-bold uppercase tracking-wider">
-          Simulasi QR Check-In
+        <QrCode size={24} className="animate-pulse" />
+        <span className="text-sm font-bold uppercase tracking-wider">
+          Tap QR Check-In
         </span>
       </button>
 
@@ -173,8 +246,8 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
                   <QrCode size={20} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm tracking-wide">Pintu QR Code Check-In Simulator</h3>
-                  <p className="text-[10px] text-slate-400">Diagnosis & simulasi kedisiplinan kehadiran fisik secara real-time</p>
+                  <h3 className="font-bold text-sm tracking-wide">Pintu QR Code Check-In</h3>
+                  <p className="text-[10px] text-slate-400">Panel pencatatan kehadiran fisik secara real-time</p>
                 </div>
               </div>
               <button
@@ -187,12 +260,35 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
 
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Active Bookings Selector */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  1. Pilih Jadwal Booking Terkonfirmasi / Sedang Berjalan
-                </label>
-                {loading ? (
+              {/* Tabs for Scanner & Attendance */}
+              <div className="flex border-b border-slate-200">
+                <button
+                  onClick={() => setActiveTab("camera")}
+                  className={`px-4 py-2 text-xs font-bold flex items-center gap-1.5 ${activeTab === "camera" ? "text-emerald-600 border-b-2 border-emerald-600" : "text-slate-400 hover:text-slate-600"}`}
+                >
+                  <Camera size={14} /> Pindai Kamera
+                </button>
+                <button
+                  onClick={() => setActiveTab("manual")}
+                  className={`px-4 py-2 text-xs font-bold ${activeTab === "manual" ? "text-emerald-600 border-b-2 border-emerald-600" : "text-slate-400 hover:text-slate-600"}`}
+                >
+                  Input Manual / Simulasi
+                </button>
+                <button
+                  onClick={() => setActiveTab("attendees")}
+                  className={`px-4 py-2 text-xs font-bold ${activeTab === "attendees" ? "text-emerald-600 border-b-2 border-emerald-600" : "text-slate-400 hover:text-slate-600"}`}
+                >
+                  Daftar Kehadiran ({attendees.length})
+                </button>
+              </div>
+
+              {/* Active Bookings Selector (Hidden on Camera Tab) */}
+              {activeTab !== "camera" && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    {activeTab === "manual" ? "1. Pilih Jadwal Booking Terkonfirmasi / Sedang Berjalan" : "Pilih Jadwal untuk Melihat Daftar Kehadiran"}
+                  </label>
+                  {loading ? (
                   <div className="h-28 flex items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50">
                     <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
                   </div>
@@ -232,18 +328,69 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
                       );
                     })}
                   </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
-              {/* QR Token Input */}
-              {selectedBooking && (
+              {/* Camera Scanner View */}
+              {activeTab === "camera" && (
                 <div className="space-y-4 p-4 rounded-2xl border border-slate-200 bg-slate-50/50">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-600 uppercase">
-                      2. Input Scanned QR Code Token
+                      Pindai QR Code Ruangan
                     </label>
                     <p className="text-[10px] text-slate-400 leading-normal">
-                      Simulasikan pembacaan QR Code. Anda dapat memasukkan kode secara manual untuk menguji validasi, atau menyalin token asli pintu ruangan di bawah ini.
+                      Arahkan kamera perangkat Anda ke QR Code yang ada di depan pintu ruangan. 
+                      Anda tidak perlu memilih jadwal secara manual; sistem akan otomatis mendeteksi jadwal aktif Anda di ruangan tersebut.
+                    </p>
+                  </div>
+
+                  {currentUser?.role === 'superadmin' && (
+                    <div className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-xl text-xs mt-2">
+                      <span className="text-slate-500">Check-In Atas Nama:</span>
+                      <select 
+                        value={simulatedUserId} 
+                        onChange={(e) => setSimulatedUserId(e.target.value)}
+                        className="px-2 py-1 border border-slate-200 rounded outline-none text-slate-700 bg-slate-50 max-w-[200px]"
+                      >
+                        <option value="">( Diri Sendiri )</option>
+                        {users.map(u => (
+                          <option key={u.id} value={u.id}>{u.name} - {u.role}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl overflow-hidden border-2 border-dashed border-gray-300 relative aspect-square max-w-sm mx-auto bg-black flex items-center justify-center">
+                    {submitting ? (
+                      <div className="flex flex-col items-center justify-center text-white">
+                        <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3" />
+                        <span className="text-xs font-bold">Memproses...</span>
+                      </div>
+                    ) : (
+                      <Scanner
+                        onScan={handleCameraScan}
+                        onError={(err: unknown) => {
+                          const errMessage = err instanceof Error ? err.message : String(err);
+                          if (!errMessage.includes('No barcode or QR code detected')) {
+                            console.error(errMessage);
+                          }
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* QR Token Input */}
+              {selectedBooking && activeTab === "manual" && (
+                <div className="space-y-4 p-4 rounded-2xl border border-slate-200 bg-slate-50/50">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-600 uppercase">
+                      2. Input Scanned QR Code Token & Pengguna
+                    </label>
+                    <p className="text-[10px] text-slate-400 leading-normal">
+                      Lakukan pencatatan Check-In kehadiran. Anda dapat memasukkan kode secara manual untuk menguji validasi, atau menyalin token asli pintu ruangan di bawah ini.
                     </p>
                   </div>
 
@@ -264,6 +411,22 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
                     </div>
                   </div>
 
+                  {currentUser?.role === 'superadmin' && (
+                    <div className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-xl text-xs mt-2">
+                      <span className="text-slate-500">Check-In Atas Nama:</span>
+                      <select 
+                        value={simulatedUserId} 
+                        onChange={(e) => setSimulatedUserId(e.target.value)}
+                        className="px-2 py-1 border border-slate-200 rounded outline-none text-slate-700 bg-slate-50 max-w-[200px]"
+                      >
+                        <option value="">( Diri Sendiri )</option>
+                        {users.map(u => (
+                          <option key={u.id} value={u.id}>{u.name} - {u.role}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -278,7 +441,7 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
                       className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 flex-shrink-0"
                     >
                       <Play size={14} />
-                      {submitting ? "Checking In..." : "Simulasi Tap"}
+                      {submitting ? "Checking In..." : "Proses Check-In"}
                     </button>
                   </div>
 
@@ -291,6 +454,47 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
                       <em>*Early check-in diizinkan 10 menit sebelum jam mulai. Batas keterlambatan 15 menit.</em>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Attendance List */}
+              {selectedBooking && activeTab === "attendees" && (
+                <div className="space-y-4 p-4 rounded-2xl border border-slate-200 bg-slate-50/50">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-600 uppercase">
+                      Daftar Hadir ({attendees.length})
+                    </label>
+                    <p className="text-[10px] text-slate-400 leading-normal">
+                      Berikut adalah daftar pengguna yang telah berhasil melakukan check-in pada sesi rapat ini.
+                    </p>
+                  </div>
+                  
+                  {attendees.length === 0 ? (
+                    <div className="p-4 text-center border border-dashed border-slate-200 rounded-xl bg-white text-xs text-slate-400">
+                      Belum ada presensi yang masuk.
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 border-b border-slate-100 text-slate-500">
+                          <tr>
+                            <th className="px-4 py-2 font-medium">Nama Peserta</th>
+                            <th className="px-4 py-2 font-medium">Waktu Check-In</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {attendees.map(att => (
+                            <tr key={att.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
+                              <td className="px-4 py-2.5 font-medium text-slate-700">{att.user_name}</td>
+                              <td className="px-4 py-2.5 text-slate-500 font-mono">
+                                {new Date(att.scanned_at).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
 

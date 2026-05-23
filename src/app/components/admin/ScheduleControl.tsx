@@ -3,38 +3,35 @@ import { AlertTriangle, Trash2, Calendar, MapPin, Clock, Users, RefreshCw } from
 import { bookingService, Booking } from "../../services/bookingService";
 import { TokenStore } from "../../services/apiClient";
 
-export function ScheduleControl() {
+export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [forceCancelModal, setForceCancelModal] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [confirmStep, setConfirmStep] = useState<1 | 2>(1);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedAdminFilter, setSelectedAdminFilter] = useState("");
+  const [adminList, setAdminList] = useState<any[]>([]);
+  const [selectedBookingView, setSelectedBookingView] = useState<any>(null);
 
   const load = async () => {
     setLoading(true);
     try {
-      const res = await bookingService.list({ status: "confirmed,ongoing", limit: 50 });
+      const res = await bookingService.list({ status: "confirmed,ongoing", limit: 50, admin_id: selectedAdminFilter || undefined, managed_only: "true" });
       setBookings(res.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (isSuperAdmin) {
+      import("../../services/index").then(({ userService }) => {
+        userService.list({ role: "admin" }).then(res => setAdminList(res.data || []));
+      });
+    }
+  }, [isSuperAdmin]);
 
-  const handleForceCancel = async () => {
-    if (confirmStep === 1) { setConfirmStep(2); return; }
-    if (!forceCancelModal || cancelReason.length < 10) return;
-    setSubmitting(true);
-    try {
-      await bookingService.forceCancel(forceCancelModal, cancelReason);
-      setBookings(prev => prev.filter(b => b.id !== forceCancelModal));
-    } catch (e: any) { alert(e.message || "Gagal membatalkan"); }
-    setSubmitting(false);
-    setForceCancelModal(null);
-    setCancelReason("");
-    setConfirmStep(1);
-  };
+  useEffect(() => { load(); }, [selectedAdminFilter]);
 
   const statusColor: Record<string, string> = {
     confirmed: "bg-blue-100 text-blue-700",
@@ -48,14 +45,28 @@ export function ScheduleControl() {
 
   return (
     <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex-1">
           <h2 className="text-gray-800" style={{ fontWeight: 700 }}>Jadwal Aktif</h2>
           <p className="text-sm text-gray-500">Pantau dan kelola jadwal booking aktif di area tugas Anda</p>
         </div>
-        <button onClick={load} className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          {isSuperAdmin && (
+            <select
+              value={selectedAdminFilter}
+              onChange={(e) => setSelectedAdminFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 outline-none focus:border-blue-400 min-w-[200px]"
+            >
+              <option value="">Semua Admin Ruangan</option>
+              {adminList.map((admin) => (
+                <option key={admin.id} value={admin.id}>{admin.name}</option>
+              ))}
+            </select>
+          )}
+          <button onClick={load} className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 flex-shrink-0">
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+          </button>
+        </div>
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
@@ -77,9 +88,9 @@ export function ScheduleControl() {
             </div>
           ) : (
             bookings.map(booking => (
-              <div key={booking.id} className="bg-white border border-gray-200 rounded-xl p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
+              <div key={booking.id} onClick={() => setSelectedBookingView(booking)} className="bg-white border border-gray-200 p-4 rounded-xl hover:border-blue-300 transition-colors cursor-pointer">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2 mb-2">
                       <span className={`px-2.5 py-0.5 rounded-full text-xs ${statusColor[booking.status] || "bg-gray-100 text-gray-600"}`} style={{ fontWeight: 500 }}>
                         {booking.status === "ongoing" && <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse" />}
@@ -95,7 +106,7 @@ export function ScheduleControl() {
                       {booking.participants && <div className="flex items-center gap-1.5"><Users size={12} className="text-gray-400" /><span>{booking.participants} peserta</span></div>}
                     </div>
                   </div>
-                  <button onClick={() => { setForceCancelModal(booking.id); setConfirmStep(1); }}
+                  <button onClick={(e) => { e.stopPropagation(); setForceCancelModal(booking.id); setConfirmStep(1); }}
                     className="flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors flex-shrink-0">
                     <Trash2 size={14} /> Batalkan Paksa
                   </button>
@@ -151,6 +162,142 @@ export function ScheduleControl() {
           </div>
         </div>
       )}
+
+      {/* Modal Detail Booking */}
+      {selectedBookingView && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedBookingView(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <h3 className="font-bold text-gray-800">Detail Peminjaman Ruangan</h3>
+              <button onClick={() => setSelectedBookingView(null)} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500">
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-6 max-h-[70vh] overflow-y-auto space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">{selectedBookingView.agenda}</h2>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColor[selectedBookingView.status] || "bg-gray-100 text-gray-700"}`}>
+                    {statusLabel[selectedBookingView.status] || selectedBookingView.status}
+                  </span>
+                  <span className="text-sm text-gray-500">• {selectedBookingView.user_name}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Informasi Waktu & Tempat</h4>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <div className="flex items-center gap-2">
+                      <MapPin size={16} className="text-blue-500 flex-shrink-0" />
+                      <span className="font-medium">{selectedBookingView.room_name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar size={16} className="text-blue-500 flex-shrink-0" />
+                      <span>{selectedBookingView.date}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock size={16} className="text-blue-500 flex-shrink-0" />
+                      <span>{selectedBookingView.start_time} - {selectedBookingView.end_time}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Kebutuhan Rapat</h4>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <div className="flex items-center gap-2">
+                      <Users size={16} className="text-blue-500 flex-shrink-0" />
+                      <span>{selectedBookingView.participants || 0} Peserta</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-blue-500 font-bold mt-0.5">•</span>
+                      <span>Layout: <span className="font-medium">{selectedBookingView.layout_type || "Standard"}</span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {selectedBookingView.facilities && Object.keys(selectedBookingView.facilities).length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-800 mb-3 border-b pb-2">Tambahan Fasilitas</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(selectedBookingView.facilities).map(([k, v]) => {
+                      const formatted = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                      return (
+                        <span key={k} className="px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700 font-medium">
+                          {formatted} <span className="text-blue-600 opacity-70">({v as number})</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {selectedBookingView.snacks && selectedBookingView.snacks.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-800 mb-3 border-b pb-2">Pesanan Konsumsi</h4>
+                  <div className="flex flex-col gap-2">
+                    {selectedBookingView.snacks.map((s: any, idx: number) => (
+                      <div key={idx} className="flex justify-between items-center p-3 bg-orange-50 border border-orange-100 rounded-lg">
+                        <span className="text-sm text-orange-900 font-medium">{s.type === 'snack' ? 'Snack Box' : s.type === 'meal' ? 'Makan Siang' : 'Kopi/Teh'}</span>
+                        <span className="text-xs px-2 py-1 bg-white rounded text-orange-700 font-bold">{s.quantity} porsi</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedBookingView.surat_terkait && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-800 mb-2 border-b pb-2">Dokumen Surat Terkait</h4>
+                  <div className="flex items-start gap-2 p-3 bg-gray-50 border border-gray-200 rounded-t-lg">
+                    <FileText size={18} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700 font-medium">{selectedBookingView.surat_terkait}</span>
+                  </div>
+                  <div className="border border-t-0 border-gray-200 rounded-b-lg overflow-hidden h-[400px]">
+                    <iframe 
+                      src={selectedBookingView.surat_terkait.endsWith('.pdf') ? selectedBookingView.surat_terkait : '/dummy-surat.pdf'} 
+                      className="w-full h-full"
+                      title="PDF Reader"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {selectedBookingView.notes && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-800 mb-2 border-b pb-2">Catatan Tambahan</h4>
+                  <p className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg italic">
+                    "{selectedBookingView.notes}"
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+              <button 
+                onClick={() => setSelectedBookingView(null)} 
+                className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100"
+              >
+                Tutup
+              </button>
+              <button 
+                onClick={() => {
+                  setForceCancelModal(selectedBookingView.id);
+                  setConfirmStep(1);
+                  setSelectedBookingView(null);
+                }}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 flex items-center gap-1.5"
+              >
+                <Trash2 size={16} /> Batalkan Paksa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

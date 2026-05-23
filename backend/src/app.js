@@ -14,13 +14,7 @@ const app = express();
 
 // ─── CORS ───────────────────────────────────────────────────────────────────
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:3000',
-    'http://localhost:4173',
-  ],
+  origin: true, // Allow all origins for local testing
   credentials: true,
 }));
 
@@ -111,8 +105,8 @@ async function start() {
     await initSchema();
     await seedData();
     const { startNoShowWorker } = require('./jobs/noShowWorker');
-    app.listen(PORT, () => {
-      console.log(`\n🚀 Menara API Server running on http://localhost:${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`\n🚀 Menara API Server running on http://0.0.0.0:${PORT}`);
       console.log(`📚 API Docs: http://localhost:${PORT}/api/docs`);
       console.log(`❤️  Health: http://localhost:${PORT}/api/health\n`);
       startNoShowWorker();

@@ -22,11 +22,71 @@ const upload = multer({
   }
 });
 
+/**
+ * @openapi
+ * /api/buildings:
+ *   get:
+ *     summary: GET /
+ *     tags: [Buildings]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
 router.get('/', ctrl.listBuildings);
+/**
+ * @openapi
+ * /api/buildings:
+ *   post:
+ *     summary: POST /
+ *     tags: [Buildings]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
 router.post('/', authGuard, roleGuard('superadmin'), upload.single('image'), ctrl.createBuilding);
+/**
+ * @openapi
+ * /api/buildings/{id}:
+ *   put:
+ *     summary: PUT /:id
+ *     tags: [Buildings]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
 router.put('/:id', authGuard, roleGuard('superadmin'), upload.single('image'), ctrl.updateBuilding);
+/**
+ * @openapi
+ * /api/buildings/{id}:
+ *   delete:
+ *     summary: DELETE /:id
+ *     tags: [Buildings]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
 router.delete('/:id', authGuard, roleGuard('superadmin'), ctrl.deleteBuilding);
+/**
+ * @openapi
+ * /api/buildings/{id}/floors:
+ *   get:
+ *     summary: GET /:id/floors
+ *     tags: [Buildings]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
 router.get('/:id/floors', ctrl.listFloors);
+/**
+ * @openapi
+ * /api/buildings/{id}/floors:
+ *   post:
+ *     summary: POST /:id/floors
+ *     tags: [Buildings]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
 router.post('/:id/floors', authGuard, roleGuard('superadmin'), ctrl.createFloor);
 
 module.exports = router;

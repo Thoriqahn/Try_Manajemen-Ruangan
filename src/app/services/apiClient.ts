@@ -3,7 +3,7 @@
  * Central fetch wrapper with JWT auth, token refresh, and error handling.
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const BASE_URL = '/api';
 
 // ─── Token Storage ────────────────────────────────────────────────────────────
 export const TokenStore = {

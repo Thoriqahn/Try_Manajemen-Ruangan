@@ -53,8 +53,9 @@ const listRooms = async (req, res, next) => {
     if (approval_type) { sql += ` AND r.approval_type = $${paramIdx++}`; params.push(approval_type); }
     if (search) { sql += ` AND r.name ILIKE $${paramIdx++}`; params.push(`%${search}%`); }
 
-    // Scope for admin (only their assigned rooms)
-    if (req.user && req.user.role === 'admin') {
+    // Scope for admin: only show their assigned rooms if managed_only is requested
+    const { managed_only } = req.query;
+    if (req.user && req.user.role === 'admin' && managed_only === 'true') {
       sql += ` AND r.id IN (SELECT room_id FROM room_assignments WHERE user_id = $${paramIdx++})`;
       params.push(req.user.id);
     } else if (req.user && req.user.role === 'superadmin' && admin_id) {
@@ -91,6 +92,9 @@ const createRoom = async (req, res, next) => {
       restrict_hours = false, hours_start, hours_end, layouts = [], facilities = [], room_type = 'physical',
       jenis_manajemen_ruang = 'MEETING_ROOM', total_meja_kerja = null } = req.body;
 
+    // Debug: log raw facilities shape
+    console.log('[DEBUG] createRoom - raw facilities:', facilities, 'type:', typeof facilities);
+
     // Normalize facilities early: accept either object map or array
     let facilitiesInput = [];
     try {
@@ -102,6 +106,8 @@ const createRoom = async (req, res, next) => {
     } catch (e) {
       facilitiesInput = [];
     }
+    // Overwrite req.body.facilities with normalized array so other code can iterate safely
+    req.body.facilities = facilitiesInput;
 
     if (room_type === 'physical' || room_type === 'hybrid') {
       if (!name || !building_id || !floor_id) {
@@ -144,18 +150,16 @@ const createRoom = async (req, res, next) => {
          ? [{ type: 'Virtual (Zoom)', capacity: 100 }]
          : layouts);
 
-    for (const layout of finalLayouts) {
+    const layoutsToInsert = Array.isArray(finalLayouts) ? finalLayouts : (finalLayouts ? [finalLayouts] : []);
+    console.log('[DEBUG] finalLayouts -> isArray:', Array.isArray(finalLayouts));
+    for (const layout of layoutsToInsert) {
       await dbRun(`INSERT INTO room_layouts (id, room_id, layout_type, capacity) VALUES ($1,$2,$3,$4)`,
         [uuidv4(), roomId, layout.type || layout.layout_type, layout.capacity]);
     }
 
-    // Insert facilities (accept either array of objects or object map)
-    let finalFacilities = [];
-    if (Array.isArray(facilities)) {
-      finalFacilities = facilities;
-    } else if (facilities && typeof facilities === 'object') {
-      finalFacilities = Object.entries(facilities).map(([k, v]) => ({ type: k, quantity: Number(v) }));
-    }
+    // Insert facilities (use normalized facilitiesInput)
+    const finalFacilities = Array.isArray(facilitiesInput) ? facilitiesInput : (facilitiesInput ? [facilitiesInput] : []);
+    console.log('[DEBUG] facilitiesInput ->', facilitiesInput, 'finalFacilities isArray:', Array.isArray(finalFacilities));
     for (const fac of finalFacilities) {
       await dbRun(`INSERT INTO room_facilities (id, room_id, facility_type, quantity) VALUES ($1,$2,$3,$4)`,
         [uuidv4(), roomId, fac.type || fac.facility_type, fac.quantity || fac.qty || 0]);
