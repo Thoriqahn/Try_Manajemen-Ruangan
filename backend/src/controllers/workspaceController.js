@@ -11,7 +11,8 @@ const getWorkspaceLayout = async (req, res, next) => {
   try {
     // 1. Verify if room exists and is of type WORKSPACE
     const room = await dbGet(
-      'SELECT id, name, jenis_manajemen_ruang FROM rooms WHERE id = $1 AND deleted_at IS NULL',
+      `SELECT r.id, r.name, r.jenis_manajemen_ruang, r.image_url
+       FROM rooms r WHERE r.id = $1 AND r.deleted_at IS NULL`,
       [room_id]
     );
 
@@ -28,6 +29,23 @@ const getWorkspaceLayout = async (req, res, next) => {
         message: 'Ruangan ini bukan jenis WORKSPACE'
       });
     }
+
+    // Fetch all photos for the room
+    const photos = await dbAll(
+      `SELECT url FROM room_photos WHERE room_id = $1 AND deleted_at IS NULL ORDER BY is_primary DESC, created_at ASC`,
+      [room_id]
+    );
+    
+    // Fallback to room.image_url if no photos found in room_photos
+    const room_photos = photos.length > 0 
+      ? photos.map(p => p.url) 
+      : (room.image_url ? [room.image_url] : []);
+
+    // Fetch facilities
+    const facilities = await dbAll(
+      `SELECT facility_type, quantity FROM room_facilities WHERE room_id = $1 AND deleted_at IS NULL`,
+      [room_id]
+    );
 
     // 2. Fetch desk layouts with optimized query under <200ms
     const desks = await dbAll(
@@ -46,6 +64,8 @@ const getWorkspaceLayout = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       room_name: room.name,
+      room_photos,
+      facilities,
       desks
     });
   } catch (err) {
@@ -60,15 +80,6 @@ const getWorkspaceLayout = async (req, res, next) => {
 const submitSeatingRequest = async (req, res, next) => {
   const { room_id, desk_id } = req.body;
   const userId = req.user.id;
-
-  // Strict check that ONLY user role can request
-  const rawRole = req.user.rawRole || req.user.role;
-  if (rawRole !== 'USER') {
-    return res.status(403).json({
-      success: false,
-      message: 'Akses ditolak: hanya role USER yang diizinkan mengajukan pemesanan meja'
-    });
-  }
 
   const client = await getClient();
 
@@ -645,7 +656,7 @@ const getMyDeskAssignment = async (req, res, next) => {
   const userId = req.user.id;
 
   try {
-    // 1. Get user's current occupied desk (with complete location metadata)
+    // 1. Get user's current occupied desk (with complete location metadata and photo)
     const currentDesk = await dbGet(
       `SELECT 
         wd.desk_id,
@@ -653,7 +664,8 @@ const getMyDeskAssignment = async (req, res, next) => {
         wd.room_id,
         r.name AS room_name,
         f.name AS floor_name,
-        b.name AS building_name
+        b.name AS building_name,
+        r.image_url AS room_photo
       FROM workspace_desks wd
       JOIN rooms r ON wd.room_id = r.id
       LEFT JOIN floors f ON r.floor_id = f.id
@@ -673,7 +685,8 @@ const getMyDeskAssignment = async (req, res, next) => {
         sr.created_at,
         r.name AS room_name,
         f.name AS floor_name,
-        b.name AS building_name
+        b.name AS building_name,
+        r.image_url AS room_photo
       FROM seating_requests sr
       JOIN rooms r ON sr.room_id = r.id
       LEFT JOIN floors f ON r.floor_id = f.id
@@ -684,11 +697,39 @@ const getMyDeskAssignment = async (req, res, next) => {
       [userId]
     );
 
+    // 3. Get user's most recent resolved seating request (if any)
+    const resolvedRequest = await dbGet(
+      `SELECT 
+        sr.id AS request_id,
+        sr.room_id,
+        sr.desk_id,
+        sr.status,
+        sr.created_at,
+        r.name AS room_name,
+        f.name AS floor_name,
+        b.name AS building_name,
+        r.image_url AS room_photo,
+        (SELECT (payload_after::jsonb)->>'rationale' 
+         FROM audit_logs 
+         WHERE action = 'REJECT_SEATING' 
+           AND resource LIKE '%' || sr.id || '%' 
+         ORDER BY created_at DESC LIMIT 1) AS rationale
+      FROM seating_requests sr
+      JOIN rooms r ON sr.room_id = r.id
+      LEFT JOIN floors f ON r.floor_id = f.id
+      LEFT JOIN buildings b ON r.building_id = b.id
+      WHERE sr.user_id = $1 AND sr.status IN ('REJECTED', 'APPROVED')
+      ORDER BY sr.created_at DESC
+      LIMIT 1`,
+      [userId]
+    );
+
     return res.status(200).json({
       success: true,
       data: {
         assigned_desk: currentDesk || null,
-        pending_request: pendingRequest || null
+        pending_request: pendingRequest || null,
+        resolved_request: resolvedRequest || null
       }
     });
   } catch (err) {

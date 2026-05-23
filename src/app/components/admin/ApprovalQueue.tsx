@@ -302,7 +302,27 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
       )}
 
       {/* Modal Detail Approval */}
-      {selectedApprovalBooking && (
+      {selectedApprovalBooking && (() => {
+        const getNormalizedFacilities = (facs: any) => {
+          if (!facs) return {};
+          if (typeof facs === 'string') { try { facs = JSON.parse(facs); } catch(e) { return {}; } }
+          if (Array.isArray(facs)) {
+            const obj: Record<string, number> = {};
+            for (const f of facs) { obj[f.facility_type || f.type || f.name] = f.quantity || f.qty || 0; }
+            return obj;
+          }
+          return facs;
+        };
+        const getNormalizedSnacks = (snacks: any) => {
+          if (!snacks) return [];
+          if (typeof snacks === 'string') { try { return JSON.parse(snacks); } catch(e) { return []; } }
+          if (Array.isArray(snacks)) return snacks;
+          return [];
+        };
+        const normalizedFacilities = getNormalizedFacilities(selectedApprovalBooking.facilities);
+        const normalizedSnacks = getNormalizedSnacks(selectedApprovalBooking.snacks);
+
+        return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedApprovalBooking(null)}>
           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
@@ -371,11 +391,11 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
                 </div>
               )}
 
-              {selectedApprovalBooking.facilities && Object.keys(selectedApprovalBooking.facilities).length > 0 && (
+              {normalizedFacilities && Object.keys(normalizedFacilities).length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold text-gray-800 mb-3 border-b pb-2">Permintaan Fasilitas Tambahan</h4>
                   <div className="flex flex-wrap gap-2">
-                    {Object.entries(selectedApprovalBooking.facilities).map(([k, v]) => {
+                    {Object.entries(normalizedFacilities).map(([k, v]) => {
                       const formatted = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
                       return (
                         <span key={k} className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700 font-medium">
@@ -387,11 +407,14 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
                 </div>
               )}
 
-              {selectedApprovalBooking.snacks && selectedApprovalBooking.snacks.length > 0 && (
+              {/* FEATURE: Pesanan Konsumsi (Snacks)
+                  Status: Not Implemented in Backend/User UI
+                  Prepared for next development phase where users can order catering. */}
+              {normalizedSnacks && normalizedSnacks.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold text-gray-800 mb-3 border-b pb-2">Pesanan Konsumsi</h4>
                   <div className="flex flex-col gap-2">
-                    {selectedApprovalBooking.snacks.map((s: any, idx: number) => (
+                    {normalizedSnacks.map((s: any, idx: number) => (
                       <div key={idx} className="flex justify-between items-center p-3 bg-orange-50 border border-orange-100 rounded-lg">
                         <span className="text-sm text-orange-900 font-medium">{s.type === 'snack' ? 'Snack Box' : s.type === 'meal' ? 'Makan Siang' : 'Kopi/Teh'}</span>
                         <span className="text-xs px-2 py-1 bg-white rounded text-orange-700 font-bold">{s.quantity} porsi</span>
@@ -445,7 +468,8 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
     </div>
   );

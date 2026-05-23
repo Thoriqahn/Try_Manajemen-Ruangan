@@ -164,7 +164,27 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
       )}
 
       {/* Modal Detail Booking */}
-      {selectedBookingView && (
+      {selectedBookingView && (() => {
+        const getNormalizedFacilities = (facs: any) => {
+          if (!facs) return {};
+          if (typeof facs === 'string') { try { facs = JSON.parse(facs); } catch(e) { return {}; } }
+          if (Array.isArray(facs)) {
+            const obj: Record<string, number> = {};
+            for (const f of facs) { obj[f.facility_type || f.type || f.name] = f.quantity || f.qty || 0; }
+            return obj;
+          }
+          return facs;
+        };
+        const getNormalizedSnacks = (snacks: any) => {
+          if (!snacks) return [];
+          if (typeof snacks === 'string') { try { return JSON.parse(snacks); } catch(e) { return []; } }
+          if (Array.isArray(snacks)) return snacks;
+          return [];
+        };
+        const normalizedFacilities = getNormalizedFacilities(selectedBookingView.facilities);
+        const normalizedSnacks = getNormalizedSnacks(selectedBookingView.snacks);
+
+        return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedBookingView(null)}>
           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
@@ -219,11 +239,11 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
                 </div>
               </div>
 
-              {selectedBookingView.facilities && Object.keys(selectedBookingView.facilities).length > 0 && (
+              {normalizedFacilities && Object.keys(normalizedFacilities).length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold text-gray-800 mb-3 border-b pb-2">Tambahan Fasilitas</h4>
                   <div className="flex flex-wrap gap-2">
-                    {Object.entries(selectedBookingView.facilities).map(([k, v]) => {
+                    {Object.entries(normalizedFacilities).map(([k, v]) => {
                       const formatted = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
                       return (
                         <span key={k} className="px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700 font-medium">
@@ -235,11 +255,14 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
                 </div>
               )}
 
-              {selectedBookingView.snacks && selectedBookingView.snacks.length > 0 && (
+              {/* FEATURE: Pesanan Konsumsi (Snacks)
+                  Status: Not Implemented in Backend/User UI
+                  Prepared for next development phase where users can order catering. */}
+              {normalizedSnacks && normalizedSnacks.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold text-gray-800 mb-3 border-b pb-2">Pesanan Konsumsi</h4>
                   <div className="flex flex-col gap-2">
-                    {selectedBookingView.snacks.map((s: any, idx: number) => (
+                    {normalizedSnacks.map((s: any, idx: number) => (
                       <div key={idx} className="flex justify-between items-center p-3 bg-orange-50 border border-orange-100 rounded-lg">
                         <span className="text-sm text-orange-900 font-medium">{s.type === 'snack' ? 'Snack Box' : s.type === 'meal' ? 'Makan Siang' : 'Kopi/Teh'}</span>
                         <span className="text-xs px-2 py-1 bg-white rounded text-orange-700 font-bold">{s.quantity} porsi</span>
@@ -296,7 +319,8 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
     </div>
   );

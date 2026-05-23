@@ -10,6 +10,8 @@ export interface DeskNode {
 export interface WorkspaceLayoutResponse {
   success: boolean;
   room_name: string;
+  room_photos?: string[];
+  facilities?: { facility_type: string, quantity: number }[];
   desks: DeskNode[];
 }
 
@@ -68,6 +70,7 @@ export interface AssignedDesk {
   room_name: string;
   floor_name: string;
   building_name: string;
+  room_photo?: string;
 }
 
 export interface PendingRequest {
@@ -79,6 +82,7 @@ export interface PendingRequest {
   room_name: string;
   floor_name: string;
   building_name: string;
+  room_photo?: string;
 }
 
 export interface MySeatingResponse {
@@ -86,6 +90,7 @@ export interface MySeatingResponse {
   data: {
     assigned_desk: AssignedDesk | null;
     pending_request: PendingRequest | null;
+    resolved_request: (PendingRequest & { rationale?: string }) | null;
   };
 }
 

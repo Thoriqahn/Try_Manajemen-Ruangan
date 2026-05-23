@@ -47,7 +47,7 @@ router.get('/:room_id/layout', authGuard, checkRawRole('USER', 'ADMIN_KERJA', 'S
  *       200:
  *         description: Success response
  */
-router.post('/assignments/request', authGuard, checkRawRole('USER'), validateSeatingRequest, ctrl.submitSeatingRequest);
+router.post('/assignments/request', authGuard, checkRawRole('USER', 'ADMIN_KERJA', 'SUPERADMIN'), validateSeatingRequest, ctrl.submitSeatingRequest);
 
 /**
  * Endpoint 3: Administrative Override Relocation

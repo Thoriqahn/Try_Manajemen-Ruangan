@@ -372,6 +372,111 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
       })()}
 
       {showForm && <RoomFormModal room={editRoom} isSuperAdmin={isSuperAdmin} onClose={() => { setShowForm(false); setEditRoom(null); load(); }} />}
+
+      {/* Room Detail View Modal */}
+      {selectedRoomView && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200" onClick={() => setSelectedRoomView(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="relative h-48 sm:h-64 flex-shrink-0 bg-gray-100">
+              {selectedRoomView.image_url ? (
+                <img src={getImageUrl(selectedRoomView.image_url)} alt={selectedRoomView.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                  <ImagePlus size={48} className="mb-2 opacity-50" />
+                  <span>Tidak ada foto</span>
+                </div>
+              )}
+              <button onClick={() => setSelectedRoomView(null)} className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm transition-all">
+                <X size={18} />
+              </button>
+              <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20 shadow-lg">
+                <span className={`text-xs font-bold uppercase tracking-wider ${selectedRoomView.jenis_manajemen_ruang === "WORKSPACE" ? "text-indigo-600" : "text-purple-600"}`}>
+                  {selectedRoomView.jenis_manajemen_ruang === "WORKSPACE" ? "WORKSPACE SEATING" : "MEETING ROOM"}
+                </span>
+              </div>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-2xl text-gray-800 mb-2" style={{ fontWeight: 700 }}>{selectedRoomView.name}</h2>
+                  <div className="flex items-center gap-3 text-sm text-gray-500">
+                    <span className="flex items-center gap-1"><MapPin size={14} /> {selectedRoomView.floor_name || "Lantai tidak diketahui"}, {selectedRoomView.building_name || "Gedung tidak diketahui"}</span>
+                    <span className="flex items-center gap-1"><Users size={14} /> {selectedRoomView.jenis_manajemen_ruang === 'WORKSPACE' ? `${selectedRoomView.total_meja_kerja || 0} Meja` : `Kapasitas s.d. ${Math.max(...(selectedRoomView.layouts?.map((l: any) => l.capacity || 0) || [0]))} orang`}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => { setEditRoom(selectedRoomView); setShowForm(true); setSelectedRoomView(null); }} className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors" title="Edit Ruangan">
+                    <Edit2 size={18} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2">Deskripsi Ruangan</h4>
+                    <p className="text-sm text-gray-700 leading-relaxed">{selectedRoomView.description || "Tidak ada deskripsi."}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2">Admin Ruangan</h4>
+                    <p className="text-sm text-gray-700">{selectedRoomView.admin_name || selectedRoomView.admin_id || "Tidak ada admin."}</p>
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4 space-y-4 border border-gray-100">
+                  <div>
+                    <h4 className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2">Jam Operasional</h4>
+                    <p className="text-sm text-gray-700 font-medium">
+                      {selectedRoomView.restrict_hours ? `${selectedRoomView.hours_start} - ${selectedRoomView.hours_end}` : "24 Jam (Tidak dibatasi)"}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2">Mekanisme Approval</h4>
+                    <span className={`inline-flex px-2 py-1 text-xs rounded-md font-medium ${selectedRoomView.approval_type === "instant" ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"}`}>
+                      {selectedRoomView.approval_type === "instant" ? "Instant Booking" : "Manual (Butuh Persetujuan)"}
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2">Tipe Ruangan</h4>
+                    <span className="inline-flex px-2 py-1 text-xs rounded-md font-medium bg-gray-200 text-gray-700">
+                      {selectedRoomView.room_type === 'digital' ? "Digital (Zoom)" : selectedRoomView.room_type === 'hybrid' ? "Hybrid" : "Fisik (Offline)"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {selectedRoomView.jenis_manajemen_ruang !== 'WORKSPACE' && selectedRoomView.layouts && selectedRoomView.layouts.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-3">Tipe Layout & Kapasitas</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedRoomView.layouts.map((l: any, i: number) => (
+                      <div key={i} className="px-3 py-2 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-between min-w-[140px]">
+                        <span className="text-sm text-indigo-900 font-medium">{l.layout_type || l.name}</span>
+                        <span className="text-xs text-indigo-600 bg-white px-2 py-0.5 rounded-md font-bold">{l.capacity} pax</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedRoomView.facilities && Object.keys(selectedRoomView.facilities).length > 0 && (
+                <div>
+                  <h4 className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-3">Fasilitas Tersedia</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {Object.entries(selectedRoomView.facilities).map(([k, v]) => (
+                      <div key={k} className="flex items-center gap-2 text-sm text-gray-700 bg-white border border-gray-200 px-3 py-2 rounded-lg">
+                        <Check size={14} className="text-green-500" />
+                        <span className="flex-1 capitalize">{k.replace(/_/g, ' ')}</span>
+                        <span className="font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded text-xs">x{v as number}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -397,6 +502,9 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
   const [floors, setFloors] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
   const [photos, setPhotos] = useState<File[]>([]);
+  const [existingPhotos, setExistingPhotos] = useState<any[]>(
+    room?.photos || (room?.image_url ? [{ id: 'primary', url: room.image_url }] : [])
+  );
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [layouts, setLayouts] = useState<{type: string, capacity: number}[]>(
     room?.layouts?.length ? room.layouts.map((l: any) => ({ type: l.layout_type || l.type || l.name, capacity: l.capacity })) : [{ type: "Boardroom", capacity: 10 }]
@@ -404,6 +512,19 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (room?.id) {
+      roomService.get(room.id).then(res => {
+        const fullRoom = res.data || res;
+        if (fullRoom.photos && fullRoom.photos.length > 0) {
+          setExistingPhotos(fullRoom.photos);
+        } else if (fullRoom.image_url) {
+          setExistingPhotos([{ id: 'primary', url: fullRoom.image_url }]);
+        }
+      }).catch(e => console.error("Gagal memuat detail ruangan:", e));
+    }
+  }, [room?.id]);
 
   useEffect(() => {
     buildingService.list().then((d: any) => setBuildings(d.data || [])).catch(() => {});
@@ -745,7 +866,7 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
                 <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
                   <input type="file" multiple accept="image/*" onChange={(e) => {
                     const files = Array.from(e.target.files || []);
-                    if (photos.length + files.length > 10) {
+                    if (existingPhotos.length + photos.length + files.length > 10) {
                       alert("Maksimal 10 foto diperbolehkan");
                       return;
                     }
@@ -757,11 +878,22 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
                     <span className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</span>
                   </label>
                 </div>
-                {photos.length > 0 && (
+                
+                {(existingPhotos.length > 0 || photos.length > 0) && (
                   <div className="grid grid-cols-5 gap-2 mt-3">
+                    {/* Render Existing Photos */}
+                    {existingPhotos.map((p, i) => (
+                      <div key={`existing-${i}`} className="relative aspect-square rounded-lg border border-gray-200 overflow-hidden group">
+                        <img src={getImageUrl(p.url)} alt="Foto Ruangan" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-[10px] text-white font-medium bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">Tersimpan</span>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Render New Photos */}
                     {photos.map((p, i) => (
-                      <div key={i} className="relative aspect-square rounded-lg border border-gray-200 overflow-hidden group">
-                        <img src={URL.createObjectURL(p)} alt="" className="w-full h-full object-cover" />
+                      <div key={`new-${i}`} className="relative aspect-square rounded-lg border border-gray-200 overflow-hidden group">
+                        <img src={URL.createObjectURL(p)} alt="Foto Ruangan" className="w-full h-full object-cover" />
                         <button type="button" onClick={() => setPhotos(photos.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <X size={12} />
                         </button>

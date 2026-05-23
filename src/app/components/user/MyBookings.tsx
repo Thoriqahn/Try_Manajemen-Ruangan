@@ -3,7 +3,7 @@ import {
   Search, Calendar, MapPin, Clock, AlertTriangle, Video, ExternalLink, 
   Armchair, ArrowRight, CheckCircle2, Sparkles, X, Building, Check, 
   CheckSquare, Info, Map, User, UserCheck, HelpCircle, BarChart2, ShieldAlert,
-  QrCode
+  QrCode, Camera, ChevronLeft, ChevronRight, XCircle
 } from "lucide-react";
 import { bookingService } from "../../services/bookingService";
 import { workspaceService, AssignedDesk, PendingRequest, DeskNode } from "../../services/workspaceService";
@@ -175,6 +175,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
   const [seatingLoading, setSeatingLoading] = useState(true);
   const [assignedDesk, setAssignedDesk] = useState<AssignedDesk | null>(null);
   const [pendingRequest, setPendingRequest] = useState<PendingRequest | null>(null);
+  const [resolvedRequest, setResolvedRequest] = useState<(PendingRequest & { rationale?: string }) | null>(null);
 
   // Relocation Modal States
   const [isSeatingModalOpen, setIsSeatingModalOpen] = useState(false);
@@ -186,8 +187,11 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
   const [modalFloor, setModalFloor] = useState("");
   const [modalRoom, setModalRoom] = useState("");
   
-  const [modalLayout, setModalLayout] = useState<DeskNode[]>([]);
   const [modalRoomName, setModalRoomName] = useState("");
+  const [modalRoomPhotos, setModalRoomPhotos] = useState<string[]>([]);
+  const [modalFacilities, setModalFacilities] = useState<{facility_type: string, quantity: number}[]>([]);
+  const [modalPhotoIndex, setModalPhotoIndex] = useState(0);
+  const [modalLayout, setModalLayout] = useState<DeskNode[]>([]);
   const [modalLoadingLayout, setModalLoadingLayout] = useState(false);
   const [modalSelectedDesk, setModalSelectedDesk] = useState<DeskNode | null>(null);
   const [modalRationale, setModalRationale] = useState("");
@@ -199,14 +203,14 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
     setLoading(true);
     try {
       const res = await bookingService.list({ own_only: "true" });
-      if (res.success && res.data && res.data.length > 0) {
+      if (res.success && res.data) {
         setBookings(res.data);
       } else {
-        setBookings(mockBookings);
+        setBookings([]);
       }
     } catch (err) {
       console.error("Failed to fetch bookings:", err);
-      setBookings(mockBookings);
+      setBookings([]);
     } finally {
       setLoading(false);
     }
@@ -220,15 +224,18 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
         if (res.data.assigned_desk) {
           setAssignedDesk(res.data.assigned_desk);
         } else {
-          setAssignedDesk(defaultMockDesk);
+          setAssignedDesk(null);
         }
         setPendingRequest(res.data.pending_request);
+        setResolvedRequest(res.data.resolved_request || null);
       } else {
-        setAssignedDesk(defaultMockDesk);
+        setAssignedDesk(null);
+        setPendingRequest(null);
+        setResolvedRequest(null);
       }
     } catch (err) {
       console.error("Gagal mengambil data penempatan meja:", err);
-      setAssignedDesk(defaultMockDesk);
+      setAssignedDesk(null);
     } finally {
       setSeatingLoading(false);
     }
@@ -325,6 +332,9 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
       if (res.success) {
         setModalLayout(res.desks || []);
         setModalRoomName(res.room_name || "");
+        setModalRoomPhotos(res.room_photos || []);
+        setModalFacilities(res.facilities || []);
+        setModalPhotoIndex(0);
       }
     } catch (err: any) {
       toast.error(err.message || "Gagal memuat denah meja.");
@@ -540,7 +550,16 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
       </div>
 
       {/* Seating Assignment Card Section */}
-      <div className="bg-gradient-to-br from-[#0F2042] via-[#1E3A60] to-[#254A7B] text-white rounded-3xl p-6 shadow-xl border border-blue-900/30 relative overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] group">
+      <div 
+        className="text-white rounded-3xl p-6 shadow-xl border border-blue-900/30 relative overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] group"
+        style={{
+          background: assignedDesk?.room_photo 
+            ? `linear-gradient(to right, rgba(15,32,66,1) 40%, rgba(30,58,96,0.6) 100%), url(${assignedDesk.room_photo.startsWith('http') ? assignedDesk.room_photo : `http://127.0.0.1:5000${assignedDesk.room_photo}`})`
+            : 'linear-gradient(to bottom right, #0F2042, #1E3A60, #254A7B)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'right center'
+        }}
+      >
         {/* Glow decoration */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl -mr-20 -mt-20 group-hover:bg-blue-400/20 transition-all duration-500" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl -ml-16 -mb-16" />
@@ -572,10 +591,26 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                   <MapPin size={14} className="text-blue-300 flex-shrink-0" />
                   <span>{assignedDesk.floor_name} · {assignedDesk.room_name}</span>
                 </p>
-                <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-blue-100/80">
+                <div className="mt-4 flex flex-wrap gap-x-4 gap-y-3 text-xs text-blue-100/80 items-center">
                   <span className="flex items-center gap-1.5"><CheckCircle2 size={12} className="text-green-400" /> Alokasi Kerja Dinas Aktif</span>
                   <span className="flex items-center gap-1.5"><Sparkles size={12} className="text-yellow-300" /> Fasilitas Premium Bersama</span>
+                  {!pendingRequest && (
+                    <button
+                      onClick={() => setIsSeatingModalOpen(true)}
+                      className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/40 text-blue-100 hover:text-white border border-blue-400/30 rounded-lg text-[10px] font-bold transition-all shadow-sm flex items-center gap-1 ml-2"
+                    >
+                      Ganti Tempat Duduk
+                      <ArrowRight size={10} />
+                    </button>
+                  )}
                 </div>
+              </div>
+            ) : pendingRequest ? (
+              <div>
+                <h3 className="text-lg font-bold text-amber-300">Pengajuan Sedang Diproses</h3>
+                <p className="text-sm text-blue-200 mt-1">
+                  Pengajuan penempatan meja Anda di <strong className="text-white">{pendingRequest.room_name}</strong> sedang menanti persetujuan Admin.
+                </p>
               </div>
             ) : (
               <div>
@@ -591,32 +626,30 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
             {assignedDesk ? (
               <div className="flex items-center gap-4">
                 <div className="text-right hidden sm:block">
-                  <span className="text-[10px] text-blue-300 font-semibold uppercase tracking-wider block">ID Kursi Anda</span>
+                  <span className="text-[10px] text-blue-300 font-semibold uppercase tracking-wider block">
+                    ID Kursi Anda
+                  </span>
                   <span className="text-3xl font-extrabold text-white tracking-wider block filter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
                     {assignedDesk.desk_id}
                   </span>
                 </div>
                 <div className="sm:hidden text-left bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl">
-                  <span className="text-[9px] text-blue-300 font-bold block uppercase">Meja</span>
+                  <span className="text-[9px] text-blue-300 font-bold block uppercase">
+                    Meja
+                  </span>
                   <span className="text-lg font-black text-white">{assignedDesk.desk_id}</span>
                 </div>
-                
-                <button
-                  onClick={() => setIsSeatingModalOpen(true)}
-                  className="px-5 py-3 bg-white hover:bg-blue-50 text-blue-900 rounded-2xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:shadow-xl hover:scale-105 active:scale-95 group/btn"
-                >
-                  Ganti Tempat Duduk
-                  <ArrowRight size={13} className="text-blue-800 transition-transform group-hover/btn:translate-x-1" />
-                </button>
               </div>
             ) : (
-              <button
-                onClick={() => setIsSeatingModalOpen(true)}
-                className="px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:shadow-xl hover:scale-105 active:scale-95 group/btn"
-              >
-                Ajukan Penempatan Meja Kerja Baru
-                <ArrowRight size={13} className="transition-transform group-hover/btn:translate-x-1" />
-              </button>
+              !pendingRequest && (
+                <button
+                  onClick={() => setIsSeatingModalOpen(true)}
+                  className="px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:shadow-xl hover:scale-105 active:scale-95 group/btn"
+                >
+                  Ajukan Penempatan Meja Kerja Baru
+                  <ArrowRight size={13} className="transition-transform group-hover/btn:translate-x-1" />
+                </button>
+              )
             )}
           </div>
         </div>
@@ -628,6 +661,41 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
             <div className="text-xs text-amber-200">
               Permintaan relokasi Anda ke meja <strong className="text-white underline">{pendingRequest.desk_id}</strong> di <strong className="text-white">{pendingRequest.room_name}</strong> diajukan pada {new Date(pendingRequest.created_at).toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' })} sedang dalam antrean peninjauan oleh Admin.
             </div>
+          </div>
+        )}
+
+        {/* Resolved seating request alert (Approved or Rejected) */}
+        {!seatingLoading && resolvedRequest && !pendingRequest && (
+          <div className={`mt-5 border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 ${
+            resolvedRequest.status === 'APPROVED' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'
+          }`}>
+            {resolvedRequest.status === 'APPROVED' ? (
+              <CheckCircle2 className="text-emerald-400 flex-shrink-0" size={18} />
+            ) : (
+              <XCircle className="text-red-400 flex-shrink-0" size={18} />
+            )}
+            
+            <div className={`text-xs flex-1 ${resolvedRequest.status === 'APPROVED' ? 'text-emerald-200' : 'text-red-200'}`}>
+              Pengajuan Anda untuk meja kerja <strong className="text-white underline">{resolvedRequest.desk_id}</strong> di <strong className="text-white">{resolvedRequest.room_name}</strong> telah <strong className={resolvedRequest.status === 'APPROVED' ? 'text-emerald-300' : 'text-red-300'}>{resolvedRequest.status === 'APPROVED' ? 'DISETUJUI' : 'DITOLAK'}</strong> oleh Admin.
+              
+              {resolvedRequest.status === 'REJECTED' && resolvedRequest.rationale && (
+                <div className="mt-1 bg-red-900/30 p-2 rounded-lg border border-red-500/10">
+                  <span className="font-bold block text-[10px] text-red-300 mb-0.5 uppercase tracking-wide">Alasan Penolakan:</span>
+                  <span className="text-white/90 italic">{resolvedRequest.rationale}</span>
+                </div>
+              )}
+            </div>
+            
+            <button 
+              onClick={() => setResolvedRequest(null)}
+              className={`px-3 py-1.5 text-[10px] font-bold border rounded-lg transition-colors ml-auto sm:ml-0 whitespace-nowrap ${
+                resolvedRequest.status === 'APPROVED' 
+                  ? 'text-emerald-300 hover:text-white border-emerald-400/30 hover:bg-emerald-500/20' 
+                  : 'text-red-300 hover:text-white border-red-400/30 hover:bg-red-500/20'
+              }`}
+            >
+              Tutup Peringatan
+            </button>
           </div>
         )}
       </div>
@@ -968,6 +1036,56 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                 
                 {/* Visual Layout Map */}
                 <div className="lg:col-span-3 border border-gray-150 rounded-2xl p-4 bg-slate-50/50 flex flex-col min-h-[300px]">
+                  
+                  {modalRoomPhotos.length > 0 && (
+                    <div className="w-full h-40 mb-4 rounded-xl overflow-hidden relative border border-gray-200 group">
+                      <img 
+                        src={modalRoomPhotos[modalPhotoIndex].startsWith('http') ? modalRoomPhotos[modalPhotoIndex] : `http://127.0.0.1:5000${modalRoomPhotos[modalPhotoIndex]}`} 
+                        alt={`${modalRoomName} - Foto ${modalPhotoIndex + 1}`} 
+                        className="w-full h-full object-cover transition-all duration-300" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-3">
+                        <span className="text-white text-xs font-bold flex items-center gap-1.5"><Camera size={14}/> Foto Ruangan ({modalPhotoIndex + 1}/{modalRoomPhotos.length})</span>
+                      </div>
+                      
+                      {modalRoomPhotos.length > 1 && (
+                        <>
+                          <button 
+                            onClick={(e) => { e.preventDefault(); setModalPhotoIndex(prev => prev === 0 ? modalRoomPhotos.length - 1 : prev - 1); }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300"
+                          >
+                            <ChevronLeft size={18} />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.preventDefault(); setModalPhotoIndex(prev => prev === modalRoomPhotos.length - 1 ? 0 : prev + 1); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300"
+                          >
+                            <ChevronRight size={18} />
+                          </button>
+                          
+                          {/* Indicators */}
+                          <div className="absolute bottom-3 right-3 flex gap-1">
+                            {modalRoomPhotos.map((_, idx) => (
+                              <div key={idx} className={`w-1.5 h-1.5 rounded-full ${idx === modalPhotoIndex ? 'bg-white' : 'bg-white/40'}`} />
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {modalFacilities.length > 0 && (
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      {modalFacilities.map((f, idx) => (
+                        <div key={idx} className="px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-[10px] font-bold text-gray-600 flex items-center gap-1.5 shadow-sm">
+                          <Sparkles size={11} className="text-blue-500"/>
+                          {f.facility_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md ml-1">{f.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
                     <div>
                       <h4 className="text-xs font-bold text-gray-700">{modalRoomName || "Visual Floor Plan"}</h4>

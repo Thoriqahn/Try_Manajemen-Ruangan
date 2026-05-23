@@ -32,9 +32,10 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
   const userNav: NavGroup = {
     title: "Menu Utama",
     items: [
+      { icon: <BookOpen size={18} />, label: "Dashboard Saya", page: "my-bookings" },
       { icon: <Calendar size={18} />, label: "Kalender Ruangan", page: "calendar" },
       { icon: <Building2 size={18} />, label: "Daftar Ruangan", page: "rooms" },
-      { icon: <BookOpen size={18} />, label: "Dashboard Saya", page: "my-bookings" },
+
     ],
   };
 
@@ -81,11 +82,10 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
     return (
       <button
         onClick={() => onNavigate(item.page)}
-        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group ${
-          isActive
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group ${isActive
             ? "bg-white text-[#1E3A5F] shadow-sm"
             : "text-white/70 hover:text-white hover:bg-white/10"
-        }`}
+          }`}
       >
         <span className={isActive ? "text-[#1E3A5F]" : "text-white/60 group-hover:text-white"}>{item.icon}</span>
         {!collapsed && (

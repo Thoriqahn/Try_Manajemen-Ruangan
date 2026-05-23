@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Menu, Bell, Search, Calendar, Building2, BookOpen, QrCode } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { bookingService } from "../../services/bookingService";
+import { workspaceService } from "../../services/workspaceService";
 
 interface MainLayoutProps {
   role: "user" | "admin" | "superadmin";
@@ -84,10 +85,60 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
           };
         });
 
-        setNotifications(items);
+        let workspaceItems: any[] = [];
+        try {
+          if (role !== "user" && (currentUser.rawRole === 'ADMIN_KERJA' || currentUser.rawRole === 'SUPERADMIN' || role === 'superadmin')) {
+            const wRes = await workspaceService.getRequests();
+            const wList = (wRes as any).data || wRes || [];
+            const arr = Array.isArray(wList) ? wList : (wList.data || []);
+            workspaceItems = arr.filter((req: any) => req.status === 'PENDING').map((r: any) => ({
+              id: r.request_id || r.id,
+              text: `Permintaan penempatan meja baru dari ${r.user_name || 'seseorang'} di ${r.room_name || 'ruangan'} menunggu persetujuan.`,
+              type: "info",
+              date: r.created_at ? new Date(r.created_at).toLocaleDateString() : "",
+              time: "",
+              status: "pending",
+              createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now()
+            }));
+          } else if (role === "user") {
+            const wRes = await workspaceService.getMySeating();
+            const pr = wRes.data?.pending_request;
+            if (pr) {
+              workspaceItems.push({
+                id: pr.request_id,
+                text: `Pengajuan penempatan meja kerja Anda di ${pr.room_name} sedang menunggu persetujuan Admin.`,
+                type: "warning",
+                date: pr.created_at ? new Date(pr.created_at).toLocaleDateString() : "",
+                time: "",
+                status: "pending",
+                createdAt: pr.created_at ? new Date(pr.created_at).getTime() : Date.now()
+              });
+            }
+            const rr = wRes.data?.resolved_request;
+            if (rr) {
+              workspaceItems.push({
+                id: rr.request_id + "-resolved",
+                text: `Pengajuan penempatan meja kerja Anda di ${rr.room_name} telah ${rr.status === 'APPROVED' ? 'DISETUJUI' : 'DITOLAK'} oleh Admin.`,
+                type: rr.status === 'APPROVED' ? "success" : "error",
+                date: rr.created_at ? new Date(rr.created_at).toLocaleDateString() : "",
+                time: "",
+                status: rr.status.toLowerCase(),
+                createdAt: rr.created_at ? new Date(rr.created_at).getTime() + 1000 : Date.now()
+              });
+            }
+          }
+        } catch (e) {
+          console.warn("Gagal memuat notifikasi workspace:", e);
+        }
+
+        const combinedItems = [...items, ...workspaceItems]
+          .sort((a, b) => b.createdAt - a.createdAt)
+          .slice(0, 15);
+
+        setNotifications(combinedItems);
         
-        // Calculate unread count (e.g. number of pending or newly updated bookings)
-        const unread = items.filter((n: any) => n.status === "pending" || n.type === "success").length;
+        // Calculate unread count
+        const unread = combinedItems.filter((n: any) => n.status === "pending" || n.type === "success" || n.status === "rejected").length;
         setUnreadCount(unread);
       } catch (err) {
         console.error("Failed to load notifications:", err);
