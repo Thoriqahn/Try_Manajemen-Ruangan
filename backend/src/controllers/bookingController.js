@@ -662,6 +662,15 @@ const checkInBooking = async (req, res, next) => {
       }
 
       if (!targetBooking.is_checked_in) {
+        // Ensure only the booking owner can perform the first check-in (Room Claim)
+        if (targetUserId !== targetBooking.user_id) {
+          await client.query('ROLLBACK');
+          return res.status(403).json({
+            success: false,
+            message: 'Ruangan ini sudah dibooking oleh pengguna lain. Hanya pembuat reservasi yang dapat melakukan klaim/check-in pertama.'
+          });
+        }
+
         // First Scanner: Room Claim
         isRoomClaim = true;
         await client.query(
