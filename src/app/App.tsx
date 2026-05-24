@@ -116,10 +116,13 @@ export default function App() {
 
   if (initializing) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0F2144] to-[#1E3A5F] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin" />
-          <p className="text-white text-sm">Memuat Menara...</p>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center transition-colors duration-300">
+        <div className="flex flex-col items-center gap-5 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-8 rounded-[2rem] border border-white dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)]">
+          <div className="relative flex items-center justify-center">
+            <div className="absolute inset-0 bg-indigo-500 dark:bg-emerald-500 rounded-full blur-md opacity-20 animate-pulse"></div>
+            <div className="w-12 h-12 border-[3px] border-indigo-100 dark:border-emerald-900/50 border-t-indigo-600 dark:border-t-emerald-500 rounded-full animate-spin relative z-10" />
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 font-medium text-sm tracking-wide">Memuat Menara...</p>
         </div>
       </div>
     );

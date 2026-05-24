@@ -237,12 +237,12 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
   };
 
   const statusColor: Record<string, string> = {
-    confirmed: "bg-blue-100 text-blue-700",
+    confirmed: "bg-blue-100 dark:bg-blue-500/20 dark:bg-blue-500/30 text-blue-700 dark:text-blue-300",
     pending: "bg-yellow-100 text-yellow-700",
-    ongoing: "bg-green-100 text-green-700",
-    cancelled: "bg-red-100 text-red-700",
-    completed: "bg-gray-100 text-gray-600",
-    rejected: "bg-red-100 text-red-700",
+    ongoing: "bg-green-100 dark:bg-green-500/20 dark:bg-green-500/30 text-green-700 dark:text-green-400",
+    cancelled: "bg-red-100 dark:bg-red-500/20 dark:bg-red-500/30 text-red-700 dark:text-red-400",
+    completed: "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300",
+    rejected: "bg-red-100 dark:bg-red-500/20 dark:bg-red-500/30 text-red-700 dark:text-red-400",
   };
 
   const statusLabel: Record<string, string> = {
@@ -261,7 +261,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
   if (!room) {
     return (
       <div className="flex flex-col items-center justify-center h-full py-20 gap-3">
-        <p className="text-gray-500">Ruangan tidak ditemukan.</p>
+        <p className="text-gray-500 transition-colors dark:text-slate-400">Ruangan tidak ditemukan.</p>
         <button onClick={() => onNavigate("rooms")} className="px-4 py-2 bg-[#1E3A5F] text-white rounded-lg text-sm">
           Kembali ke Daftar
         </button>
@@ -287,7 +287,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
           : <div className="w-full h-full bg-gradient-to-br from-[#1E3A5F] to-[#0F2144]" />}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         <button onClick={() => onNavigate("rooms")}
-          className="absolute top-4 left-4 bg-white/90 hover:bg-white text-gray-700 rounded-lg p-2 flex items-center gap-1.5 text-sm shadow">
+          className="absolute top-4 left-4 bg-white/90 hover:bg-white text-gray-700 rounded-lg p-2 flex items-center gap-1.5 text-sm shadow transition-colors dark:bg-slate-900 dark:text-slate-200">
           <ArrowLeft size={16} /> Kembali
         </button>
         <div className="absolute bottom-4 left-4 right-4">
@@ -295,7 +295,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
           <div className="flex items-center gap-2 mt-1.5">
             <MapPin size={14} className="text-white/80" />
             <span className="text-white/90 text-sm">{room.room_type === 'digital' ? "Virtual Rapat · Zoom" : room.room_type === 'hybrid' ? `Hybrid · ${room.floor_name} · ${room.building_name}` : `${room.floor_name} · ${room.building_name}`}</span>
-            <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${room.status === "active" ? "bg-green-500/90 text-white" : "bg-gray-500/90 text-white"}`} style={{ fontWeight: 500 }}>
+            <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${room.status === "active" ? "bg-green-50 dark:bg-green-900/20/90 text-white" : "bg-gray-50 dark:bg-slate-8000/90 text-white"}`} style={{ fontWeight: 500 }}>
               {room.status === "active" ? "Aktif" : "Nonaktif"}
             </span>
           </div>
@@ -303,28 +303,28 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
       </div>
 
       {/* Quick stats */}
-      <div className="bg-white border-b border-gray-200 px-6 py-1 grid grid-cols-2 sm:grid-cols-4 gap-4 flex-shrink-0 items-center">
+      <div className="bg-white border-b border-gray-200 px-6 py-1 grid grid-cols-2 sm:grid-cols-4 gap-4 flex-shrink-0 items-center transition-colors dark:bg-slate-900 dark:border-slate-700">
         {[
-          { icon: <Users size={18} className="text-blue-500" />, label: "Kapasitas", value: room.room_type === 'digital' ? "s.d. 100 orang" : layouts.length > 0 ? `s.d. ${Math.max(...layouts.map((l: any) => l.capacity || 0))} orang` : "–" },
-          { icon: <Clock size={18} className="text-purple-500" />, label: "Operasional", value: room.operational_start ? `${room.operational_start} – ${room.operational_end}` : "24 Jam" },
-          { icon: <Calendar size={18} className="text-green-500" />, label: "Sistem Booking", value: room.approval_type === "instant" ? "Instan" : "Perlu Approval" },
-          { icon: <Monitor size={18} className="text-orange-500" />, label: room.room_type === 'digital' ? "Platform" : room.room_type === 'hybrid' ? "Mode" : "Layout", value: room.room_type === 'digital' ? "Zoom Premium" : room.room_type === 'hybrid' ? "Fisik + Zoom" : `${layouts.length} tipe` },
+          { icon: <Users size={18} className="text-blue-500 transition-colors duration-300 dark:text-blue-400" />, label: "Kapasitas", value: room.room_type === 'digital' ? "s.d. 100 orang" : layouts.length > 0 ? `s.d. ${Math.max(...layouts.map((l: any) => l.capacity || 0))} orang` : "–" },
+          { icon: <Clock size={18} className="text-purple-500 transition-colors duration-300 dark:text-purple-400" />, label: "Operasional", value: room.operational_start ? `${room.operational_start} – ${room.operational_end}` : "24 Jam" },
+          { icon: <Calendar size={18} className="text-green-500 transition-colors duration-300 dark:text-green-400" />, label: "Sistem Booking", value: room.approval_type === "instant" ? "Instan" : "Perlu Approval" },
+          { icon: <Monitor size={18} className="text-orange-500 transition-colors duration-300 dark:text-orange-400" />, label: room.room_type === 'digital' ? "Platform" : room.room_type === 'hybrid' ? "Mode" : "Layout", value: room.room_type === 'digital' ? "Zoom Premium" : room.room_type === 'hybrid' ? "Fisik + Zoom" : `${layouts.length} tipe` },
         ].map((s, i) => (
           <div key={i} className="flex items-center gap-3 py-1">
-            <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100">{s.icon}</div>
+            <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100 transition-colors dark:bg-slate-800 dark:border-slate-800">{s.icon}</div>
             <div>
-              <div className="text-xs text-gray-400">{s.label}</div>
-              <div className="text-sm text-gray-700" style={{ fontWeight: 500 }}>{s.value}</div>
+              <div className="text-xs text-gray-400 transition-colors dark:text-slate-500">{s.label}</div>
+              <div className="text-sm text-gray-700 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>{s.value}</div>
             </div>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 px-6 flex gap-6 flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 px-6 flex gap-6 flex-shrink-0 transition-colors dark:bg-slate-900 dark:border-slate-700">
         {(["info", "schedule", "history"] as const).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`py-3.5 text-sm border-b-2 transition-all ${activeTab === tab ? "border-[#1E3A5F] text-[#1E3A5F]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+            className={`py-3.5 text-sm border-b-2 transition-all ${activeTab === tab ? "border-[#1E3A5F] text-[#1E3A5F]" : "border-transparent text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:text-slate-300"}`}
             style={{ fontWeight: activeTab === tab ? 600 : 400 }}>
             {tab === "info" ? "Informasi Ruangan" : tab === "schedule" ? "Jadwal Mingguan" : "Riwayat Booking"}
           </button>
@@ -332,85 +332,85 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto bg-gray-50">
+      <div className="flex-1 overflow-auto bg-gray-50 transition-colors dark:bg-slate-800">
         {activeTab === "info" && (
           <div className="p-6 space-y-6">
             
             {/* Carousel Galeri Foto */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Galeri Foto Ruangan</h3>
+            <div className="bg-white rounded-xl border border-gray-200 p-5 transition-colors dark:bg-slate-900 dark:border-slate-700">
+              <h3 className="text-gray-700 mb-3 transition-colors dark:text-slate-200" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Galeri Foto Ruangan</h3>
               {photos.length > 0 ? (
                 <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
                   {photos.map((p: any, i: number) => (
                     <div key={p.id || i} 
-                         className="w-64 h-40 sm:w-72 sm:h-48 rounded-xl overflow-hidden border border-gray-200 flex-shrink-0 snap-center relative group cursor-pointer"
+                         className="w-64 h-40 sm:w-72 sm:h-48 rounded-xl overflow-hidden border border-gray-200 flex-shrink-0 snap-center relative group cursor-pointer transition-colors dark:border-slate-700"
                          onClick={() => setSelectedPhoto(p.url)}>
                       <img src={getImageUrl(p.url)} alt={`Foto ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                        <svg className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+                        <svg className="w-10 h-10 text-white transition-opacity drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : room.room_type === 'hybrid' ? (
-                <div className="bg-gradient-to-r from-teal-50 to-indigo-50 border border-teal-200 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-4 text-left">
-                  <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center flex-shrink-0 text-teal-700 font-bold text-sm border border-teal-200">
+                <div className="bg-gradient-to-r from-teal-50 to-indigo-50 border border-teal-200 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-4 text-left transition-colors dark:border-teal-800/50">
+                  <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center flex-shrink-0 text-teal-700 font-bold text-sm border border-teal-200 transition-colors dark:bg-slate-900 dark:text-teal-400 dark:border-teal-800/50">
                     Hybrid
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-teal-950">Ruangan Hybrid (Fisik + Zoom)</h4>
-                    <p className="text-xs text-teal-700 mt-1 leading-relaxed">
+                    <h4 className="text-sm font-semibold text-teal-950 transition-colors dark:text-teal-100">Ruangan Hybrid (Fisik + Zoom)</h4>
+                    <p className="text-xs text-teal-700 mt-1 leading-relaxed transition-colors duration-300 dark:text-teal-400">
                       Ruangan fisik yang dilengkapi integrasi Zoom Premium. Saat Anda memesan, ruangan fisik akan diamankan dan tautan Zoom akan dibuat secara otomatis.
                     </p>
                   </div>
                 </div>
               ) : room.room_type === 'digital' ? (
                 <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-4 text-left">
-                  <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center flex-shrink-0 text-purple-600 font-bold text-sm border border-purple-100">
+                  <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center flex-shrink-0 text-purple-600 font-bold text-sm border border-purple-100 transition-colors dark:bg-slate-900 dark:text-purple-400">
                     Zoom
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-purple-950">Ruangan Rapat Digital Premium</h4>
-                    <p className="text-xs text-purple-700 mt-1 leading-relaxed">
+                    <h4 className="text-sm font-semibold text-purple-950 transition-colors dark:text-purple-100">Ruangan Rapat Digital Premium</h4>
+                    <p className="text-xs text-purple-700 mt-1 leading-relaxed transition-colors duration-300 dark:text-purple-400">
                       Ruangan rapat virtual didukung oleh lisensi Zoom Premium. Seluruh tautan rapat dibuat secara unik, aman dengan passcode, dan mendukung kualitas audio-video definisi tinggi (HD).
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="bg-gray-50 border border-gray-100 rounded-lg p-6 flex flex-col items-center justify-center text-center">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <div className="bg-gray-50 border border-gray-100 rounded-lg p-6 flex flex-col items-center justify-center text-center transition-colors dark:bg-slate-800 dark:border-slate-800">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2 transition-colors duration-300 dark:bg-slate-800">
+                    <svg className="w-6 h-6 text-gray-400 transition-colors dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                   </div>
-                  <p className="text-sm text-gray-500 font-medium">Belum ada foto galeri</p>
-                  <p className="text-xs text-gray-400 mt-1">Admin belum mengunggah foto tambahan untuk ruangan ini.</p>
+                  <p className="text-sm text-gray-500 font-medium transition-colors dark:text-slate-400">Belum ada foto galeri</p>
+                  <p className="text-xs text-gray-400 mt-1 transition-colors dark:text-slate-500">Admin belum mengunggah foto tambahan untuk ruangan ini.</p>
                 </div>
               )}
             </div>
 
             <div className="flex flex-col md:flex-row gap-6">
               {room.description && (
-                <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1">
-                  <h3 className="text-gray-700 mb-2" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Deskripsi</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{room.description}</p>
+                <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1 transition-colors dark:bg-slate-900 dark:border-slate-700">
+                  <h3 className="text-gray-700 mb-2 transition-colors dark:text-slate-200" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Deskripsi</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed transition-colors dark:text-slate-400">{room.description}</p>
                 </div>
               )}
               {room.room_type === 'hybrid' ? (
                 <>
                   {layouts.length > 0 && (
-                    <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1">
-                      <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Layout & Kapasitas (Fisik)</h3>
+                    <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1 transition-colors dark:bg-slate-900 dark:border-slate-700">
+                      <h3 className="text-gray-700 mb-3 transition-colors dark:text-slate-200" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Layout & Kapasitas (Fisik)</h3>
                       <div className="space-y-2">
                         {layouts.map((l: any) => (
                           <div key={l.id || l.layout_type} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                            <span className="text-sm text-gray-600">{l.layout_type}</span>
+                            <span className="text-sm text-gray-600 transition-colors dark:text-slate-300">{l.layout_type}</span>
                             <span className="text-sm" style={{ fontWeight: 500 }}>{l.capacity} orang</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
-                  <div className="bg-white rounded-xl border border-teal-200 p-5 flex-1">
-                    <h3 className="text-teal-800 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Integrasi Zoom Premium</h3>
+                  <div className="bg-white rounded-xl border border-teal-200 p-5 flex-1 transition-colors dark:bg-slate-900 dark:border-teal-800/50">
+                    <h3 className="text-teal-800 mb-3 transition-colors duration-300 dark:text-teal-300" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Integrasi Zoom Premium</h3>
                     <div className="space-y-2">
                       {[
                         { label: "Kapasitas Virtual", val: "s.d. 100 Partisipan" },
@@ -419,16 +419,16 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                         { label: "Fitur", val: "Breakout Rooms, Screen Share, Recording" }
                       ].map((item, idx) => (
                         <div key={idx} className="flex items-center justify-between py-2 border-b border-teal-50 last:border-0">
-                          <span className="text-sm text-gray-600">{item.label}</span>
-                          <span className="text-sm text-teal-700" style={{ fontWeight: 600 }}>{item.val}</span>
+                          <span className="text-sm text-gray-600 transition-colors dark:text-slate-300">{item.label}</span>
+                          <span className="text-sm text-teal-700 transition-colors duration-300 dark:text-teal-400" style={{ fontWeight: 600 }}>{item.val}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 </>
               ) : room.room_type === 'digital' ? (
-                <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1">
-                  <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Spesifikasi Virtual</h3>
+                <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1 transition-colors dark:bg-slate-900 dark:border-slate-700">
+                  <h3 className="text-gray-700 mb-3 transition-colors dark:text-slate-200" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Spesifikasi Virtual</h3>
                   <div className="space-y-2">
                     {[
                       { label: "Kapasitas Rapat", val: "Maksimal 100 Partisipan" },
@@ -437,7 +437,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                       { label: "Fitur Rapat", val: "Breakout Rooms, Screen Share, Cloud Recording" }
                     ].map((item, idx) => (
                       <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                        <span className="text-sm text-gray-600">{item.label}</span>
+                        <span className="text-sm text-gray-600 transition-colors dark:text-slate-300">{item.label}</span>
                         <span className="text-sm text-[#1E3A5F]" style={{ fontWeight: 600 }}>{item.val}</span>
                       </div>
                     ))}
@@ -445,12 +445,12 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                 </div>
               ) : (
                 layouts.length > 0 && (
-                  <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1">
-                    <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Layout & Kapasitas</h3>
+                  <div className="bg-white rounded-xl border border-gray-200 p-5 flex-1 transition-colors dark:bg-slate-900 dark:border-slate-700">
+                    <h3 className="text-gray-700 mb-3 transition-colors dark:text-slate-200" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Layout & Kapasitas</h3>
                     <div className="space-y-2">
                       {layouts.map((l: any) => (
                         <div key={l.id || l.layout_type} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                          <span className="text-sm text-gray-600">{l.layout_type}</span>
+                          <span className="text-sm text-gray-600 transition-colors dark:text-slate-300">{l.layout_type}</span>
                           <span className="text-sm" style={{ fontWeight: 500 }}>{l.capacity} orang</span>
                         </div>
                       ))}
@@ -460,17 +460,17 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
               )}
             </div>
             {room.room_type !== 'digital' && Object.keys(facilities).length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <h3 className="text-gray-700 mb-3" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Fasilitas</h3>
+              <div className="bg-white rounded-xl border border-gray-200 p-5 transition-colors dark:bg-slate-900 dark:border-slate-700">
+                <h3 className="text-gray-700 mb-3 transition-colors dark:text-slate-200" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Fasilitas</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {Object.entries(facilities).filter(([, v]) => (v as number) > 0).map(([key, val]) => (
-                    <div key={key} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500 flex-shrink-0">
+                    <div key={key} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 transition-colors dark:bg-slate-800 dark:border-slate-800">
+                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500 flex-shrink-0 transition-colors dark:bg-blue-900/20 dark:text-blue-400">
                         {facilityIcons[key]?.icon || <Monitor size={16} />}
                       </div>
                       <div>
-                        <div className="text-xs text-gray-400">{facilityIcons[key]?.label || key}</div>
-                        <div className="text-sm text-gray-700" style={{ fontWeight: 500 }}>{String(val)} unit</div>
+                        <div className="text-xs text-gray-400 transition-colors dark:text-slate-500">{facilityIcons[key]?.label || key}</div>
+                        <div className="text-sm text-gray-700 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>{String(val)} unit</div>
                       </div>
                     </div>
                   ))}
@@ -482,16 +482,16 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
 
         {activeTab === "schedule" && (
           <div className="p-6">
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden transition-colors dark:bg-slate-900 dark:border-slate-700">
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between transition-colors dark:border-slate-800">
                 <div>
-                  <h3 className="text-gray-700" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Jadwal Mingguan</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Tarik/drag rentang waktu kosong untuk membooking</p>
+                  <h3 className="text-gray-700 transition-colors dark:text-slate-200" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Jadwal Mingguan</h3>
+                  <p className="text-xs text-gray-400 mt-0.5 transition-colors dark:text-slate-500">Tarik/drag rentang waktu kosong untuk membooking</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setCurrentWeekOffset(o => o - 1)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400">‹</button>
-                  <button onClick={() => setCurrentWeekOffset(0)} className="px-2 py-1 text-xs bg-gray-100 rounded-lg text-gray-600">Minggu Ini</button>
-                  <button onClick={() => setCurrentWeekOffset(o => o + 1)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400">›</button>
+                  <button onClick={() => setCurrentWeekOffset(o => o - 1)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors dark:bg-slate-800 dark:text-slate-500">‹</button>
+                  <button onClick={() => setCurrentWeekOffset(0)} className="px-2 py-1 text-xs bg-gray-100 rounded-lg text-gray-600 transition-colors dark:bg-slate-800 dark:text-slate-300">Minggu Ini</button>
+                  <button onClick={() => setCurrentWeekOffset(o => o + 1)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors dark:bg-slate-800 dark:text-slate-500">›</button>
                 </div>
               </div>
               <div 
@@ -500,28 +500,30 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                 onMouseLeave={() => { if (isDragging) setIsDragging(false); }}
               >
                 <div style={{ minWidth: "600px" }}>
-                  <div className="grid border-b border-gray-200" style={{ gridTemplateColumns: "80px repeat(5, 1fr)" }}>
+                  <div className="grid border-b border-gray-200 transition-colors dark:border-slate-700" style={{ gridTemplateColumns: "80px repeat(5, 1fr)" }}>
                     <div className="p-3" />
                     {weekDays.map(d => (
-                      <div key={d.full} className="p-3 text-center border-l border-gray-100">
-                        <div className="text-xs text-gray-400" style={{ fontWeight: 500 }}>{d.label}</div>
-                        <div className="text-sm text-gray-700" style={{ fontWeight: 600 }}>{d.date}</div>
+                      <div key={d.full} className="p-3 text-center border-l border-gray-100 transition-colors dark:border-slate-800">
+                        <div className="text-xs text-gray-400 transition-colors dark:text-slate-500" style={{ fontWeight: 500 }}>{d.label}</div>
+                        <div className="text-sm text-gray-700 transition-colors dark:text-slate-200" style={{ fontWeight: 600 }}>{d.date}</div>
                       </div>
                     ))}
                   </div>
                   {timeSlots.map(time => (
                     <div key={time} className="grid border-b border-gray-50" style={{ gridTemplateColumns: "80px repeat(5, 1fr)" }}>
-                      <div className="px-3 py-2 text-xs text-gray-400 text-right" style={{ fontWeight: 500 }}>{time}</div>
+                      <div className="px-3 py-2 text-xs text-gray-400 text-right transition-colors dark:text-slate-500" style={{ fontWeight: 500 }}>{time}</div>
                       {weekDays.map(d => {
+                        const isPastDay = d.full < new Date().toISOString().split("T")[0];
                         const booked = isBooked(d.full, time);
+                        const disabled = isPastDay || booked;
                         const isInDrag = isSlotInDragRange(d.full, time);
                         const dragLabel = getDragLabel(d.full, time);
                         return (
                           <div
                             key={d.full}
-                            className="border-l border-gray-100 h-10 relative"
+                            className="border-l border-gray-100 h-10 relative transition-colors dark:border-slate-800"
                             onMouseDown={(e) => {
-                              if (!booked) {
+                              if (!disabled) {
                                 e.preventDefault(); // Prevent text/ghost dragging in browser
                                 setIsDragging(true);
                                 setDragStart({ date: d.full, time });
@@ -545,14 +547,14 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                           >
                             {booked ? (
                               isBlackoutDate(d.full) ? (
-                                <div className="absolute inset-0.5 rounded bg-gray-100 border border-gray-200 text-gray-400 text-[10px] font-medium flex items-center justify-center shadow-sm select-none">Libur/Tutup</div>
+                                <div className="absolute inset-0.5 rounded bg-gray-100 border border-gray-200 text-gray-400 text-[10px] font-medium flex items-center justify-center shadow-sm select-none transition-colors dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700">Libur/Tutup</div>
                               ) : (() => {
                                 const booking = getBookingForSlot(d.full, time);
                                 return (
                                   <div
                                     className={`absolute inset-0.5 rounded flex items-center justify-center overflow-hidden border shadow-sm select-none ${
                                       booking?.status === "pending"
-                                        ? "bg-amber-500 border-amber-600 text-white"
+                                        ? "bg-amber-50 dark:bg-amber-900/20 border-amber-600 text-white"
                                         : booking?.status === "ongoing"
                                         ? "bg-emerald-600 border-emerald-700 text-white"
                                         : "bg-[#1E3A5F] border-[#132742] text-white"
@@ -568,12 +570,16 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                                   </div>
                                 );
                               })()
+                            ) : isPastDay ? (
+                              <div className="absolute inset-0.5 rounded flex items-center justify-center border border-gray-100 bg-gray-50/50 text-gray-300 cursor-not-allowed transition-colors select-none dark:bg-slate-900/50 dark:text-slate-600 dark:border-slate-800">
+                                <span className="text-[10px]" style={{ fontWeight: 600 }}>-</span>
+                              </div>
                             ) : (
                               <div
                                 className={`absolute inset-0.5 rounded transition-all cursor-pointer flex items-center justify-center border text-center px-1 ${
                                   isInDrag
-                                    ? "bg-amber-100 border-amber-400 text-amber-800 font-semibold shadow-md scale-[1.01] z-10 animate-pulse"
-                                    : "hover:bg-green-50 border-transparent hover:border-green-200 text-transparent hover:text-green-600"
+                                    ? "bg-amber-100 dark:bg-amber-500/20 dark:bg-amber-500/30 border-amber-400 text-amber-800 dark:text-amber-300 font-semibold shadow-md scale-[1.01] z-10 animate-pulse"
+                                    : "hover:bg-green-50 dark:bg-green-500/10 dark:bg-green-500/20 dark:bg-green-500/30 dark:hover:bg-green-900/20 border-transparent hover:border-green-200 dark:border-green-500/30 dark:hover:border-green-800/50 text-transparent hover:text-green-600 dark:text-green-400 dark:hover:text-green-400"
                                 }`}
                               >
                                 <span className="text-[10px]" style={{ fontWeight: 600 }}>
@@ -593,12 +599,12 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                   ))}
                 </div>
               </div>
-              <div className="p-4 border-t border-gray-100 flex flex-wrap gap-4 text-xs text-gray-500 bg-gray-50/50">
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-500" /><span>⏳ Menunggu Persetujuan</span></div>
+              <div className="p-4 border-t border-gray-100 flex flex-wrap gap-4 text-xs text-gray-500 bg-gray-50/50 transition-colors dark:text-slate-400 dark:border-slate-800">
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-50 transition-colors dark:bg-amber-900/20" /><span>⏳ Menunggu Persetujuan</span></div>
                 <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#1E3A5F]" /><span>✅ Disetujui (Terkonfirmasi)</span></div>
                 <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-emerald-600" /><span>⚡ Sedang Berjalan</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-100 border border-amber-400" /><span>Pilihan Anda (Proses Request)</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-white border border-gray-200" /><span>Tersedia</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-100 border border-amber-400 transition-colors duration-300 dark:bg-amber-500/30" /><span>Pilihan Anda (Proses Request)</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-white border border-gray-200 transition-colors dark:bg-slate-900 dark:border-slate-700" /><span>Tersedia</span></div>
               </div>
             </div>
           </div>
@@ -607,15 +613,15 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
         {activeTab === "history" && (
           <div className="p-6 space-y-3">
             {bookings.length === 0
-              ? <div className="text-center py-12"><Calendar size={32} className="text-gray-300 mx-auto mb-3" /><p className="text-gray-400 text-sm">Belum ada riwayat booking</p></div>
+              ? <div className="text-center py-12"><Calendar size={32} className="text-gray-300 mx-auto mb-3" /><p className="text-gray-400 text-sm transition-colors dark:text-slate-500">Belum ada riwayat booking</p></div>
               : bookings.map(b => (
-                <div key={b.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between">
+                <div key={b.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between transition-colors dark:bg-slate-900 dark:border-slate-700">
                   <div>
-                    <div className="text-sm text-gray-800" style={{ fontWeight: 500 }}>{b.agenda}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{b.date} · {b.start_time} – {b.end_time}</div>
-                    <div className="text-xs text-gray-400">{b.user_name}</div>
+                    <div className="text-sm text-gray-800 transition-colors dark:text-slate-100" style={{ fontWeight: 500 }}>{b.agenda}</div>
+                    <div className="text-xs text-gray-400 mt-0.5 transition-colors dark:text-slate-500">{b.date} · {b.start_time} – {b.end_time}</div>
+                    <div className="text-xs text-gray-400 transition-colors dark:text-slate-500">{b.user_name}</div>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs ${statusColor[b.status] || "bg-gray-100 text-gray-600"}`} style={{ fontWeight: 500 }}>
+                  <span className={`px-2.5 py-1 rounded-full text-xs ${statusColor[b.status] || "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300"}`} style={{ fontWeight: 500 }}>
                     {statusLabel[b.status] || b.status}
                   </span>
                 </div>
@@ -626,7 +632,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
 
       {/* Sticky CTA */}
       {room.status === "active" && (
-        <div className="bg-white border-t border-gray-200 px-6 py-4 flex-shrink-0">
+        <div className="bg-white border-t border-gray-200 px-6 py-4 flex-shrink-0 transition-colors dark:bg-slate-900 dark:border-slate-700">
           <button onClick={() => { setSelectedSlot(null); setShowBookingModal(true); fetchAvailability(); }}
             className="w-full py-3 bg-[#1E3A5F] text-white rounded-xl text-sm hover:bg-[#0F2144] transition-all" style={{ fontWeight: 500 }}>
             Booking Ruangan Ini
@@ -722,20 +728,20 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
   if (success) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl w-full max-w-sm text-center p-8 shadow-2xl">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white rounded-2xl w-full max-w-sm text-center p-8 shadow-2xl transition-colors dark:bg-slate-900">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-300 dark:bg-green-500/30">
+            <svg className="w-8 h-8 text-green-500 transition-colors duration-300 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h3 className="text-gray-800 mb-2" style={{ fontWeight: 700 }}>
+          <h3 className="text-gray-800 mb-2 transition-colors dark:text-slate-100" style={{ fontWeight: 700 }}>
             {room.approval_type === "instant" ? "Booking Berhasil!" : "Permohonan Terkirim!"}
           </h3>
-          <p className="text-sm text-gray-500 mb-2">
+          <p className="text-sm text-gray-500 mb-2 transition-colors dark:text-slate-400">
             {room.approval_type === "instant" ? "Booking Anda telah dikonfirmasi." : "Menunggu persetujuan Admin."}
           </p>
           {(form.meetingType === "online" || form.meetingType === "hybrid") && (
-            <p className="text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2 mb-4">
+            <p className="text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2 mb-4 transition-colors dark:bg-blue-900/20 dark:text-blue-400">
               🔗 Link Zoom akan tersedia setelah booking disetujui. Cek halaman "Booking Saya".
             </p>
           )}
@@ -753,31 +759,31 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-gray-100 flex-shrink-0">
-          <h3 className="text-gray-800" style={{ fontWeight: 600 }}>Booking Ruangan</h3>
-          <p className="text-sm text-gray-500 mt-0.5">{room.name}</p>
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] flex flex-col transition-colors dark:bg-slate-900">
+        <div className="p-6 border-b border-gray-100 flex-shrink-0 transition-colors dark:border-slate-800">
+          <h3 className="text-gray-800 transition-colors dark:text-slate-100" style={{ fontWeight: 600 }}>Booking Ruangan</h3>
+          <p className="text-sm text-gray-500 mt-0.5 transition-colors dark:text-slate-400">{room.name}</p>
         </div>
         <div className="p-6 space-y-4 overflow-y-auto flex-1">
-          {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-xs text-red-700">{error}</div>}
+          {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-xs text-red-700 transition-colors duration-300 dark:bg-red-500/30 dark:text-red-400 dark:border-red-500/30">{error}</div>}
 
           {/* Meeting Type Selector */}
           {room.room_type === "digital" ? (
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-start gap-3">
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-start gap-3 transition-colors dark:bg-purple-900/20 dark:border-purple-800/50">
               <span className="text-2xl mt-0.5">💻</span>
               <div>
-                <div className="text-sm font-semibold text-purple-900">Ruangan Rapat Digital (Zoom)</div>
-                <p className="text-xs text-purple-700 mt-0.5">
+                <div className="text-sm font-semibold text-purple-900 transition-colors dark:text-purple-100">Ruangan Rapat Digital (Zoom)</div>
+                <p className="text-xs text-purple-700 mt-0.5 transition-colors duration-300 dark:text-purple-400">
                   Tipe rapat otomatis dikonfigurasi secara <strong>Online</strong>. Link Zoom Premium yang unik akan dibuat secara otomatis setelah pemesanan disetujui.
                 </p>
               </div>
             </div>
           ) : room.room_type === "hybrid" ? (
-            <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 flex items-start gap-3">
+            <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 flex items-start gap-3 transition-colors dark:bg-teal-900/20 dark:border-teal-800/50">
               <span className="text-2xl mt-0.5">🔄</span>
               <div>
-                <div className="text-sm font-semibold text-teal-900">Ruangan Hybrid (Fisik + Zoom)</div>
-                <p className="text-xs text-teal-700 mt-0.5">
+                <div className="text-sm font-semibold text-teal-900 transition-colors dark:text-teal-100">Ruangan Hybrid (Fisik + Zoom)</div>
+                <p className="text-xs text-teal-700 mt-0.5 transition-colors duration-300 dark:text-teal-400">
                   Tipe rapat dikunci ke <strong>Hybrid</strong>. Ruangan fisik <strong>{room.name}</strong> akan diamankan, dan link Zoom Premium yang unik akan dibuat secara otomatis.
                 </p>
               </div>
@@ -785,7 +791,7 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
           ) : (
             <>
               <div>
-                <label className="block text-sm text-gray-700 mb-2" style={{ fontWeight: 500 }}>Tipe Rapat <span className="text-red-500">*</span></label>
+                <label className="block text-sm text-gray-700 mb-2 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>Tipe Rapat <span className="text-red-500 transition-colors duration-300 dark:text-red-400">*</span></label>
                 <div className="grid grid-cols-3 gap-2">
                   {meetingTypeOptions.map(opt => (
                     <button key={opt.value} type="button"
@@ -793,25 +799,25 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
                       className={`p-3 rounded-xl border-2 text-center transition-all ${
                         form.meetingType === opt.value
                           ? "border-[#1E3A5F] bg-[#1E3A5F]/5 shadow-sm"
-                          : "border-gray-200 hover:border-gray-300 bg-white"
+                          : "border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900"
                       }`}
                     >
                       <div className="text-xl mb-1">{opt.icon}</div>
-                      <div className="text-xs text-gray-700" style={{ fontWeight: form.meetingType === opt.value ? 600 : 400 }}>{opt.label}</div>
-                      <div className="text-[10px] text-gray-400 mt-0.5">{opt.desc}</div>
+                      <div className="text-xs text-gray-700 transition-colors dark:text-slate-200" style={{ fontWeight: form.meetingType === opt.value ? 600 : 400 }}>{opt.label}</div>
+                      <div className="text-[10px] text-gray-400 mt-0.5 transition-colors dark:text-slate-500">{opt.desc}</div>
                     </button>
                   ))}
                 </div>
               </div>
 
               {form.meetingType === "online" && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-xs text-blue-700">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-xs text-blue-700 transition-colors dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800/50">
                   💻 Rapat online tidak memerlukan ruangan fisik. Link Zoom akan dibuat otomatis setelah booking disetujui.
                 </div>
               )}
 
               {form.meetingType === "hybrid" && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2.5 text-xs text-purple-700">
+                <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2.5 text-xs text-purple-700 transition-colors dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800/50">
                   🔄 Rapat hybrid menggunakan ruangan <strong>{room.name}</strong> + Link Zoom otomatis.
                 </div>
               )}
@@ -819,45 +825,45 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
           )}
 
           <div>
-            <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Tanggal <span className="text-red-500">*</span></label>
-            <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" />
+            <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>Tanggal <span className="text-red-500 transition-colors duration-300 dark:text-red-400">*</span></label>
+            <input type="date" min={new Date().toISOString().split("T")[0]} value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
+              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none transition-all dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Mulai <span className="text-red-500">*</span></label>
+              <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>Mulai <span className="text-red-500 transition-colors duration-300 dark:text-red-400">*</span></label>
               <select value={form.startTime} onChange={e => setForm({ ...form, startTime: e.target.value, endTime: "" })}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50">
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 transition-colors dark:bg-slate-800 dark:border-slate-700">
                 <option value="">Pilih waktu</option>
                 {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Selesai <span className="text-red-500">*</span></label>
+              <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>Selesai <span className="text-red-500 transition-colors duration-300 dark:text-red-400">*</span></label>
               <select value={form.endTime} onChange={e => setForm({ ...form, endTime: e.target.value })} disabled={!form.startTime}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 disabled:opacity-50">
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 disabled:opacity-50 transition-colors dark:bg-slate-800 dark:border-slate-700">
                 <option value="">Pilih waktu</option>
                 {endOptions.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Agenda Rapat <span className="text-red-500">*</span></label>
+            <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>Agenda Rapat <span className="text-red-500 transition-colors duration-300 dark:text-red-400">*</span></label>
             <input type="text" value={form.agenda} onChange={e => setForm({ ...form, agenda: e.target.value })}
               placeholder="Contoh: Rapat Evaluasi Bulanan"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" />
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 transition-colors dark:bg-slate-800 dark:border-slate-700" />
           </div>
           <div>
-            <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Jumlah Peserta</label>
+            <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>Jumlah Peserta</label>
             <input type="number" value={form.participants} onChange={e => setForm({ ...form, participants: e.target.value })}
               placeholder="Jumlah peserta" min={1}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50" />
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 transition-colors dark:bg-slate-800 dark:border-slate-700" />
           </div>
 
           {/* Surat Terkait (optional) */}
           <div>
-            <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>
-              Surat Terkait <span className="text-gray-400 text-xs font-normal">(opsional, max 2MB)</span>
+            <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>
+              Surat Terkait <span className="text-gray-400 text-xs font-normal transition-colors dark:text-slate-500">(opsional, max 2MB)</span>
             </label>
             <input
               type="file"
@@ -871,21 +877,21 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
                   setForm({ ...form, suratTerkait: file });
                 }
               }}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 transition-colors dark:bg-slate-800 dark:border-slate-700"
             />
-            <p className="text-[10px] text-gray-400 mt-1">Unggah file surat edaran, memo, atau referensi terkait untuk mendukung urgensi peminjaman.</p>
+            <p className="text-[10px] text-gray-400 mt-1 transition-colors dark:text-slate-500">Unggah file surat edaran, memo, atau referensi terkait untuk mendukung urgensi peminjaman.</p>
           </div>
 
           {room.approval_type === "manual" && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-700">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-700 transition-colors dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50">
               ⚠️ Ruangan ini memerlukan persetujuan manual dari Admin Ruangan.
             </div>
           )}
         </div>
-        <div className="p-6 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Batal</button>
+        <div className="p-6 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0 transition-colors dark:border-slate-800">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">Batal</button>
           <button onClick={handleSubmit} disabled={!form.agenda || !form.startTime || !form.endTime || loading}
-            className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${form.agenda && form.startTime && form.endTime && !loading ? "bg-[#1E3A5F] text-white hover:bg-[#0F2144]" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}>
+            className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${form.agenda && form.startTime && form.endTime && !loading ? "bg-[#1E3A5F] text-white hover:bg-[#0F2144]" : "bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 cursor-not-allowed"}`}>
             {loading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Memproses...</> : "Konfirmasi Booking"}
           </button>
         </div>

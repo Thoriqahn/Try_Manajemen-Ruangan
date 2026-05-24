@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Menu, Bell, Search, Calendar, Building2, BookOpen, QrCode } from "lucide-react";
 import { Sidebar } from "./Sidebar";
+import { ThemeToggle } from "./ThemeToggle";
 import { bookingService } from "../../services/bookingService";
 import { workspaceService } from "../../services/workspaceService";
 
@@ -158,10 +159,22 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
   }, [showNotifications]);
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans transition-colors duration-300 relative dark:bg-slate-900">
+      {/* Background IKN Ornaments - Subtle Patterns */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-[0.03] dark:opacity-[0.05] transition-colors duration-300">
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/200/svg">
+          <defs>
+            <pattern id="ikn-pattern" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1.5" fill="currentColor" className="text-slate-300 transition-colors duration-300 dark:text-slate-200" />
+            </pattern>
+          </defs>
+          <rect x="0" y="0" width="100%" height="100%" fill="url(#ikn-pattern)" />
+        </svg>
+      </div>
+
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setMobileOpen(false)} />
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-30 lg:hidden transition-opacity dark:bg-black/40" onClick={() => setMobileOpen(false)} />
       )}
 
       {/* Sidebar */}
@@ -181,66 +194,71 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50/50 relative z-10 transition-colors duration-300 dark:bg-slate-900/50">
         {/* Topbar */}
-        <header className="bg-white border-b border-gray-200 px-4 lg:px-6 h-14 flex items-center gap-4 flex-shrink-0 z-30">
+        <header className="bg-white/70 backdrop-blur-xl border-b border-white/50 px-4 lg:px-8 h-16 flex items-center gap-6 flex-shrink-0 z-30 shadow-[0_4px_20px_rgb(0,0,0,0.02)] relative transition-colors duration-300 dark:bg-slate-950/70 dark:border-slate-800">
           <button
             onClick={() => { if (window.innerWidth >= 1024) { setSidebarCollapsed(!sidebarCollapsed); } else { setMobileOpen(!mobileOpen); } }}
-            className="text-gray-500 hover:text-gray-700 transition-colors hidden lg:block"
+            className="text-slate-400 hover:text-indigo-600 dark:hover:text-emerald-400 hover:bg-indigo-50 dark:hover:bg-slate-800 p-2 rounded-xl transition-all hidden lg:block dark:bg-indigo-500/30 dark:text-indigo-400"
           >
             <Menu size={20} />
           </button>
 
           <div className="flex-1">
-            <h1 className="text-gray-800 hidden sm:block" style={{ fontWeight: 600, fontSize: "1rem", lineHeight: 1.3 }}>{pageTitle}</h1>
-            {pageSubtitle && <p className="text-gray-400 text-xs hidden sm:block">{pageSubtitle}</p>}
+            <h1 className="text-slate-800 hidden sm:block tracking-tight transition-colors dark:text-slate-100" style={{ fontWeight: 600, fontSize: "1.1rem", lineHeight: 1.3 }}>{pageTitle}</h1>
+            {pageSubtitle && <p className="text-slate-500 text-xs hidden sm:block mt-0.5 transition-colors dark:text-slate-400">{pageSubtitle}</p>}
           </div>
 
           {/* Search */}
-          <div className="hidden md:flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 w-64">
-            <Search size={15} className="text-gray-400" />
-            <input type="text" placeholder="Cari ruangan, booking..." className="bg-transparent text-sm outline-none w-full text-gray-600 placeholder-gray-400" />
+          <div className="hidden md:flex items-center gap-2 bg-slate-100/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/50 hover:border-slate-300 dark:hover:border-slate-600 rounded-xl px-3 py-2 w-72 transition-all focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-indigo-300 dark:focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-emerald-500/20 dark:bg-slate-900 dark:border-indigo-500/40">
+            <Search size={16} className="text-slate-400 transition-colors duration-300 dark:text-slate-500" />
+            <input type="text" placeholder="Cari ruangan, booking..." className="bg-transparent text-sm outline-none w-full text-slate-700 placeholder-slate-400 dark:placeholder-slate-500 transition-colors duration-300 dark:text-slate-300" />
           </div>
+
+          <ThemeToggle />
 
           {/* Notifications Center */}
           <div className="relative">
             <button
               onClick={(e) => { e.stopPropagation(); setShowNotifications(!showNotifications); setUnreadCount(0); }}
-              className="relative text-gray-500 hover:text-gray-700 transition-colors p-1.5 hover:bg-gray-100 rounded-lg"
+              className="relative text-slate-400 hover:text-indigo-600 dark:hover:text-emerald-400 transition-colors p-2 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-xl dark:bg-indigo-500/30 dark:text-indigo-400"
             >
               <Bell size={20} />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs rounded-full w-4.5 h-4.5 flex items-center justify-center font-bold animate-pulse" style={{ fontSize: "9px" }}>
-                  {unreadCount}
-                </span>
+                <span className="absolute top-1.5 right-1.5 bg-red-500 text-white rounded-full w-2.5 h-2.5 border-2 border-white animate-pulse transition-colors duration-300 dark:bg-red-600 dark:border-slate-900" />
               )}
             </button>
 
             {showNotifications && (
               <div 
                 onClick={(e) => e.stopPropagation()} 
-                className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden max-h-96 flex flex-col animate-in fade-in slide-in-from-top-3 duration-200"
+                className="absolute right-0 mt-3 w-80 bg-white/95 backdrop-blur-xl border border-white/40 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.08)] z-50 overflow-hidden max-h-96 flex flex-col animate-in fade-in slide-in-from-top-4 duration-300 origin-top-right transition-colors dark:bg-slate-900/95 dark:border-slate-700"
               >
-                <div className="px-4 py-3 bg-slate-50 border-b border-gray-100 flex items-center justify-between">
-                  <span className="text-sm text-gray-800 font-bold">Notifikasi Sistem</span>
-                  <button onClick={() => setNotifications([])} className="text-xs text-blue-600 hover:underline">Bersihkan</button>
+                <div className="px-5 py-4 bg-slate-50/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between transition-colors duration-300 dark:bg-slate-800/80 dark:border-slate-700">
+                  <span className="text-sm text-slate-800 font-semibold tracking-tight transition-colors duration-300 dark:text-slate-200">Notifikasi Sistem</span>
+                  <button onClick={() => setNotifications([])} className="text-xs text-indigo-600 hover:text-indigo-700 dark:hover:text-emerald-300 font-medium hover:underline transition-all dark:text-indigo-400">Bersihkan</button>
                 </div>
-                <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
+                <div className="flex-1 overflow-y-auto divide-y divide-slate-100/50 dark:divide-slate-700/50 transition-colors duration-300">
                   {notifications.length === 0 ? (
-                    <div className="p-8 text-center text-gray-400 text-xs">
-                      Tidak ada notifikasi baru
+                    <div className="p-10 text-center flex flex-col items-center gap-3">
+                      <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center transition-colors duration-300 dark:bg-slate-800">
+                        <Bell size={20} className="text-slate-300 transition-colors duration-300 dark:text-slate-600" />
+                      </div>
+                      <p className="text-slate-400 text-xs font-medium transition-colors duration-300 dark:text-slate-500">Tidak ada notifikasi baru</p>
                     </div>
                   ) : (
                     notifications.map((n) => (
-                      <div key={n.id} className="p-3.5 hover:bg-slate-50/50 transition-colors flex items-start gap-2.5">
-                        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                          n.type === "success" ? "bg-green-500 animate-ping" :
-                          n.type === "warning" ? "bg-amber-500 animate-pulse" :
-                          n.type === "error" ? "bg-red-500" : "bg-blue-500"
+                      <div key={n.id} className="p-4 hover:bg-indigo-50/30 dark:hover:bg-slate-800/50 transition-colors flex items-start gap-3 group">
+                        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 transition-transform group-hover:scale-125 ${
+                          n.type === "success" ? "bg-emerald-500 dark:bg-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.4)]" :
+                          n.type === "warning" ? "bg-amber-500 dark:bg-amber-600 shadow-[0_0_8px_rgba(245,158,11,0.4)]" :
+                          n.type === "error" ? "bg-rose-500 dark:bg-rose-600 shadow-[0_0_8px_rgba(244,63,94,0.4)]" : "bg-indigo-500 dark:bg-indigo-600 shadow-[0_0_8px_rgba(99,102,241,0.4)]"
                         }`} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs text-gray-700 leading-normal" style={{ fontWeight: n.type === "success" || n.type === "warning" ? 500 : 400 }}>{n.text}</p>
-                          <span className="text-[10px] text-gray-400 mt-1 block">{n.date} · {n.time || "Aktif"}</span>
+                          <p className="text-xs text-slate-700 leading-relaxed transition-colors duration-300 dark:text-slate-300" style={{ fontWeight: n.type === "success" || n.type === "warning" ? 500 : 400 }}>{n.text}</p>
+                          <span className="text-[10px] text-slate-400 mt-1.5 font-medium flex items-center gap-1.5 transition-colors duration-300 dark:text-slate-500">
+                            {n.date} <span className="w-1 h-1 rounded-full bg-slate-300 transition-colors duration-300 dark:bg-slate-600" /> {n.time || "Aktif"}
+                          </span>
                         </div>
                       </div>
                     ))
@@ -251,45 +269,45 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
           </div>
 
           {/* Avatar */}
-          <div className="w-8 h-8 rounded-full bg-[#1E3A5F] flex items-center justify-center text-white text-xs cursor-pointer" style={{ fontWeight: 600 }}>
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 dark:from-emerald-600 dark:to-emerald-800 flex items-center justify-center text-white text-xs font-semibold cursor-pointer shadow-md shadow-indigo-500/20 hover:shadow-lg transition-all hover:-translate-y-0.5">
             {currentUser?.name ? currentUser.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() : role === "superadmin" ? "SA" : role === "admin" ? "AD" : "US"}
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto pb-16 lg:pb-0">
+        <main className="flex-1 overflow-auto pb-20 lg:pb-0 p-4 lg:p-8">
           {children}
         </main>
       </div>
 
       {/* Bottom Navigation (Mobile Only) */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 flex items-center justify-around h-16 pb-safe px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        <button onClick={() => onNavigate("calendar")} className={`flex flex-col items-center gap-1 p-2 ${currentPage === "calendar" ? "text-[#1E3A5F]" : "text-gray-400"}`}>
-          <Calendar size={20} />
-          <span className="text-[10px] font-bold">Kalender</span>
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-white/50 z-40 flex items-center justify-around h-16 pb-safe px-2 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.3)] transition-colors duration-300 dark:bg-slate-950/80 dark:border-slate-800">
+        <button onClick={() => onNavigate("calendar")} className={`flex flex-col items-center gap-1 p-2 transition-colors ${currentPage === "calendar" ? "text-indigo-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`}>
+          <Calendar size={20} className={currentPage === "calendar" ? "fill-indigo-50 dark:fill-emerald-900/30" : ""} />
+          <span className="text-[10px] font-semibold tracking-wide">Kalender</span>
         </button>
-        <button onClick={() => onNavigate("rooms")} className={`flex flex-col items-center gap-1 p-2 ${currentPage === "rooms" ? "text-[#1E3A5F]" : "text-gray-400"}`}>
-          <Building2 size={20} />
-          <span className="text-[10px] font-bold">Ruangan</span>
+        <button onClick={() => onNavigate("rooms")} className={`flex flex-col items-center gap-1 p-2 transition-colors ${currentPage === "rooms" ? "text-indigo-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`}>
+          <Building2 size={20} className={currentPage === "rooms" ? "fill-indigo-50 dark:fill-emerald-900/30" : ""} />
+          <span className="text-[10px] font-semibold tracking-wide">Ruangan</span>
         </button>
 
         {/* Center QR Scan Button */}
-        <div className="relative -top-5">
+        <div className="relative -top-6">
           <button 
             onClick={() => window.dispatchEvent(new CustomEvent('menara:trigger-scan-simulator'))} 
-            className="w-14 h-14 bg-gradient-to-tr from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-500/40 hover:scale-105 active:scale-95 transition-transform border-4 border-gray-50"
+            className="w-14 h-14 bg-gradient-to-tr from-indigo-500 to-indigo-600 dark:from-emerald-500 dark:to-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 dark:shadow-emerald-500/30 hover:shadow-xl hover:-translate-y-1 active:scale-95 transition-all duration-300 border-4 border-slate-50 rotate-3 hover:rotate-6 dark:border-slate-900"
           >
             <QrCode size={24} />
           </button>
         </div>
 
-        <button onClick={() => onNavigate("my-bookings")} className={`flex flex-col items-center gap-1 p-2 ${currentPage === "my-bookings" ? "text-[#1E3A5F]" : "text-gray-400"}`}>
-          <BookOpen size={20} />
-          <span className="text-[10px] font-bold">Booking</span>
+        <button onClick={() => onNavigate("my-bookings")} className={`flex flex-col items-center gap-1 p-2 transition-colors ${currentPage === "my-bookings" ? "text-indigo-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`}>
+          <BookOpen size={20} className={currentPage === "my-bookings" ? "fill-indigo-50 dark:fill-emerald-900/30" : ""} />
+          <span className="text-[10px] font-semibold tracking-wide">Booking</span>
         </button>
-        <button onClick={() => setMobileOpen(true)} className="flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-[#1E3A5F]">
+        <button onClick={() => setMobileOpen(true)} className="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-emerald-400 transition-colors dark:text-indigo-400">
           <Menu size={20} />
-          <span className="text-[10px] font-bold">Menu</span>
+          <span className="text-[10px] font-semibold tracking-wide">Menu</span>
         </button>
       </div>
     </div>

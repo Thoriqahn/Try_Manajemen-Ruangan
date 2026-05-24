@@ -149,24 +149,24 @@ export function ZoomManagement() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-gray-800 flex items-center gap-2" style={{ fontWeight: 700 }}>
-          <Video size={22} className="text-blue-600" />
+        <h2 className="text-gray-800 flex items-center gap-2 transition-colors duration-300 dark:text-slate-100" style={{ fontWeight: 700 }}>
+          <Video size={22} className="text-blue-600 transition-colors duration-300 dark:text-blue-400" />
           Integrasi Zoom Premium
         </h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-500 mt-1 transition-colors duration-300 dark:text-slate-400">
           Konfigurasi Server-to-Server OAuth dan kelola pool akun Zoom untuk rapat online & hybrid.
         </p>
       </div>
 
       {/* OAuth Config Section */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="p-5 border-b border-gray-100 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-            <Shield size={20} className="text-blue-600" />
+      <div className="bg-white backdrop-blur-md border border-gray-200 rounded-2xl overflow-hidden transition-colors duration-300 dark:bg-slate-900/90 dark:border-slate-700/50">
+        <div className="p-5 border-b border-gray-100 flex items-center gap-3 transition-colors duration-300 dark:border-slate-800/50">
+          <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center transition-colors duration-300 dark:bg-blue-900/20">
+            <Shield size={20} className="text-blue-600 transition-colors duration-300 dark:text-blue-400" />
           </div>
           <div>
-            <h3 className="text-gray-800" style={{ fontWeight: 600, fontSize: "0.95rem" }}>Konfigurasi OAuth (Server-to-Server)</h3>
-            <p className="text-xs text-gray-400 mt-0.5">Masukkan kredensial dari Zoom Marketplace App Anda</p>
+            <h3 className="text-gray-800 transition-colors duration-300 dark:text-slate-100" style={{ fontWeight: 600, fontSize: "0.95rem" }}>Konfigurasi OAuth (Server-to-Server)</h3>
+            <p className="text-xs text-gray-400 mt-0.5 transition-colors duration-300 dark:text-slate-500">Masukkan kredensial dari Zoom Marketplace App Anda</p>
           </div>
         </div>
 
@@ -176,41 +176,41 @@ export function ZoomManagement() {
               {[1, 2, 3].map(i => (
                 <div key={i} className="animate-pulse">
                   <div className="h-4 w-24 bg-gray-200 rounded mb-2" />
-                  <div className="h-10 bg-gray-100 rounded-lg" />
+                  <div className="h-10 bg-gray-100 rounded-xl transition-colors duration-300 dark:bg-slate-800" />
                 </div>
               ))}
             </div>
           ) : (
             <>
               <div>
-                <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Account ID</label>
+                <label className="block text-sm text-gray-700 mb-1.5 transition-colors duration-300 dark:text-slate-200" style={{ fontWeight: 500 }}>Account ID</label>
                 <input
                   type="text" value={config.account_id}
                   onChange={e => setConfig({ ...config, account_id: e.target.value })}
                   placeholder="Masukkan Zoom Account ID"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 font-mono"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 bg-gray-50 font-mono transition-all duration-300 dark:bg-slate-800/80 dark:border-slate-700/50"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Client ID</label>
+                <label className="block text-sm text-gray-700 mb-1.5 transition-colors duration-300 dark:text-slate-200" style={{ fontWeight: 500 }}>Client ID</label>
                 <input
                   type="text" value={config.client_id}
                   onChange={e => setConfig({ ...config, client_id: e.target.value })}
                   placeholder="Masukkan Zoom Client ID"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 font-mono"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 bg-gray-50 font-mono transition-all duration-300 dark:bg-slate-800/80 dark:border-slate-700/50"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Client Secret</label>
+                <label className="block text-sm text-gray-700 mb-1.5 transition-colors duration-300 dark:text-slate-200" style={{ fontWeight: 500 }}>Client Secret</label>
                 <div className="relative">
                   <input
                     type={showSecret ? "text" : "password"} value={config.client_secret}
                     onChange={e => setConfig({ ...config, client_secret: e.target.value })}
                     placeholder="Masukkan Zoom Client Secret"
-                    className="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 font-mono"
+                    className="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 bg-gray-50 font-mono transition-all duration-300 dark:bg-slate-800/80 dark:border-slate-700/50"
                   />
                   <button onClick={() => setShowSecret(!showSecret)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 transition-all duration-300 dark:text-slate-300">
                     {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
@@ -218,10 +218,10 @@ export function ZoomManagement() {
 
               {/* Connection status */}
               {connectionStatus !== "idle" && (
-                <div className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs ${
-                  connectionStatus === "testing" ? "bg-blue-50 border border-blue-200 text-blue-700" :
-                  connectionStatus === "success" ? "bg-green-50 border border-green-200 text-green-700" :
-                  "bg-red-50 border border-red-200 text-red-700"
+                <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs ${
+                  connectionStatus === "testing" ? "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300" :
+                  connectionStatus === "success" ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 text-green-700 dark:text-green-300" :
+                  "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300"
                 }`}>
                   {connectionStatus === "testing" && <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
                   {connectionStatus === "success" && <Wifi size={14} />}
@@ -232,11 +232,11 @@ export function ZoomManagement() {
 
               <div className="flex items-center gap-3 pt-2">
                 <button onClick={handleSaveConfig} disabled={configSaving}
-                  className="px-4 py-2.5 bg-[#1E3A5F] text-white rounded-lg text-sm hover:bg-[#0F2144] disabled:opacity-50 flex items-center gap-2 transition-colors">
+                  className="px-4 py-2.5 bg-[#1E3A5F] text-white rounded-xl text-sm hover:bg-[#0F2144] disabled:opacity-50 flex items-center gap-2 transition-colors">
                   {configSaving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Menyimpan...</> : "Simpan Konfigurasi"}
                 </button>
                 <button onClick={handleTestConnection} disabled={connectionStatus === "testing" || !config.client_id}
-                  className="px-4 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors">
+                  className="px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2 transition-colors dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700/50">
                   {connectionStatus === "testing" ? <><RefreshCw size={14} className="animate-spin" />Menguji...</> : <><Wifi size={14} />Tes Koneksi</>}
                 </button>
               </div>
@@ -246,45 +246,45 @@ export function ZoomManagement() {
       </div>
 
       {/* Account Pool Section */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+      <div className="bg-white backdrop-blur-md border border-gray-200 rounded-2xl overflow-hidden transition-colors duration-300 dark:bg-slate-900/90 dark:border-slate-700/50">
+        <div className="p-5 border-b border-gray-100 flex items-center justify-between transition-colors duration-300 dark:border-slate-800/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-              <Video size={20} className="text-indigo-600" />
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center transition-colors duration-300 dark:bg-indigo-900/20">
+              <Video size={20} className="text-indigo-600 transition-colors duration-300 dark:text-indigo-400" />
             </div>
             <div>
-              <h3 className="text-gray-800" style={{ fontWeight: 600, fontSize: "0.95rem" }}>Pool Akun Zoom</h3>
-              <p className="text-xs text-gray-400 mt-0.5">Kelola akun Zoom berlisensi untuk penjadwalan otomatis rapat</p>
+              <h3 className="text-gray-800 transition-colors duration-300 dark:text-slate-100" style={{ fontWeight: 600, fontSize: "0.95rem" }}>Pool Akun Zoom</h3>
+              <p className="text-xs text-gray-400 mt-0.5 transition-colors duration-300 dark:text-slate-500">Kelola akun Zoom berlisensi untuk penjadwalan otomatis rapat</p>
             </div>
           </div>
-          <span className="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-1 rounded-full" style={{ fontWeight: 600 }}>
+          <span className="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-1 rounded-full transition-colors duration-300 dark:bg-indigo-900/40 dark:text-indigo-300" style={{ fontWeight: 600 }}>
             {accounts.filter(a => a.is_active).length} Aktif
           </span>
         </div>
 
         {/* Add account form */}
-        <div className="p-5 border-b border-gray-100 bg-gray-50/50">
+        <div className="p-5 border-b border-gray-100 bg-gray-50/50 transition-colors duration-300 dark:border-slate-800/50">
           <div className="flex items-end gap-3">
             <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1" style={{ fontWeight: 500 }}>Email Zoom</label>
+              <label className="block text-xs text-gray-500 mb-1 transition-colors duration-300 dark:text-slate-400" style={{ fontWeight: 500 }}>Email Zoom</label>
               <input
                 type="email" value={addEmail}
                 onChange={e => setAddEmail(e.target.value)}
                 placeholder="user@company.com"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 bg-white backdrop-blur-md transition-all duration-300 dark:bg-slate-900/90 dark:border-slate-700/50"
               />
             </div>
             <div className="w-40">
-              <label className="block text-xs text-gray-500 mb-1" style={{ fontWeight: 500 }}>Label (opsional)</label>
+              <label className="block text-xs text-gray-500 mb-1 transition-colors duration-300 dark:text-slate-400" style={{ fontWeight: 500 }}>Label (opsional)</label>
               <input
                 type="text" value={addLabel}
                 onChange={e => setAddLabel(e.target.value)}
                 placeholder="Contoh: Zoom Utama"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 bg-white backdrop-blur-md transition-all duration-300 dark:bg-slate-900/90 dark:border-slate-700/50"
               />
             </div>
             <button onClick={handleAddAccount} disabled={addLoading || !addEmail}
-              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 transition-colors flex-shrink-0">
+              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm hover:bg-indigo-700 disabled:opacity-50 transition-colors flex-shrink-0">
               {addLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Plus size={16} />}
               Tambah
             </button>
@@ -292,41 +292,41 @@ export function ZoomManagement() {
         </div>
 
         {/* Account list */}
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 dark:divide-slate-800/50 transition-colors duration-300">
           {accountsLoading ? (
             Array.from({ length: 2 }).map((_, i) => (
               <div key={i} className="p-5 flex items-center gap-4">
                 <div className="animate-pulse w-10 h-10 bg-gray-200 rounded-full" />
                 <div className="flex-1 space-y-2">
                   <div className="animate-pulse h-4 w-48 bg-gray-200 rounded" />
-                  <div className="animate-pulse h-3 w-32 bg-gray-100 rounded" />
+                  <div className="animate-pulse h-3 w-32 bg-gray-100 rounded transition-colors duration-300 dark:bg-slate-800" />
                 </div>
               </div>
             ))
           ) : accounts.length === 0 ? (
             <div className="py-12 text-center">
-              <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 transition-colors duration-300 dark:bg-slate-800">
                 <Video size={24} className="text-gray-300" />
               </div>
-              <p className="text-gray-500 text-sm" style={{ fontWeight: 500 }}>Belum ada akun Zoom</p>
-              <p className="text-xs text-gray-400 mt-1">Tambahkan akun berlisensi untuk mulai menjadwalkan rapat otomatis.</p>
+              <p className="text-gray-500 text-sm transition-colors duration-300 dark:text-slate-400" style={{ fontWeight: 500 }}>Belum ada akun Zoom</p>
+              <p className="text-xs text-gray-400 mt-1 transition-colors duration-300 dark:text-slate-500">Tambahkan akun berlisensi untuk mulai menjadwalkan rapat otomatis.</p>
             </div>
           ) : (
             accounts.map(account => (
-              <div key={account.id} className="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0 ${account.is_active ? "bg-indigo-500" : "bg-gray-400"}`} style={{ fontWeight: 700 }}>
+              <div key={account.id} className="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors dark:bg-slate-800/80">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0 ${account.is_active ? "bg-indigo-50 dark:bg-indigo-900/200" : "bg-gray-400"}`} style={{ fontWeight: 700 }}>
                   {account.email.slice(0, 2).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-800 truncate" style={{ fontWeight: 500 }}>{account.email}</span>
+                    <span className="text-sm text-gray-800 truncate transition-colors duration-300 dark:text-slate-100" style={{ fontWeight: 500 }}>{account.email}</span>
                     {account.label && (
-                      <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{account.label}</span>
+                      <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded transition-colors duration-300 dark:bg-slate-800 dark:text-slate-500">{account.label}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     {account.license_type ? (
-                      <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full flex items-center gap-1 transition-colors duration-300 dark:bg-green-900/40 dark:text-green-300">
                         <CheckCircle size={10} /> {account.license_type}
                       </span>
                     ) : (
@@ -334,14 +334,14 @@ export function ZoomManagement() {
                         <AlertTriangle size={10} /> Belum diverifikasi
                       </span>
                     )}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${account.is_active ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"}`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${account.is_active ? "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400" : "bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500"}`}>
                       {account.is_active ? "Aktif" : "Nonaktif"}
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button onClick={() => handleVerifyAccount(account.id)} disabled={verifyingId === account.id}
-                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors disabled:opacity-50 dark:bg-blue-900/20 dark:text-blue-400"
                     title="Verifikasi Lisensi">
                     {verifyingId === account.id ? (
                       <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -350,7 +350,7 @@ export function ZoomManagement() {
                     )}
                   </button>
                   <button onClick={() => handleRemoveAccount(account.id)} disabled={removingId === account.id}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50 dark:bg-red-900/20 dark:text-slate-500"
                     title="Hapus dari Pool">
                     {removingId === account.id ? (
                       <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
@@ -366,9 +366,9 @@ export function ZoomManagement() {
       </div>
 
       {/* Info footer */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <h4 className="text-sm text-blue-800 mb-1" style={{ fontWeight: 600 }}>💡 Cara Kerja</h4>
-        <ul className="text-xs text-blue-700 space-y-1 list-disc pl-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 transition-colors duration-300 dark:bg-blue-900/20 dark:border-blue-800/50">
+        <h4 className="text-sm text-blue-800 mb-1 transition-colors duration-300 dark:text-blue-200" style={{ fontWeight: 600 }}>💡 Cara Kerja</h4>
+        <ul className="text-xs text-blue-700 space-y-1 list-disc pl-4 transition-colors duration-300 dark:text-blue-300">
           <li>Saat user membuat booking dengan tipe <strong>Online</strong> atau <strong>Hybrid</strong>, sistem akan otomatis membuat Zoom Meeting menggunakan akun yang tersedia.</li>
           <li>Akun Zoom diambil dari pool secara <strong>round-robin</strong> — akun yang paling sedikit digunakan di jam tersebut akan diprioritaskan.</li>
           <li>Pastikan setiap akun memiliki lisensi <strong>Licensed</strong> atau <strong>Pro</strong> agar tidak terbatas 40 menit.</li>

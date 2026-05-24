@@ -18,23 +18,23 @@ interface MyBookingsProps {
 }
 
 const Shimmer = ({ className }: { className?: string }) => (
-  <div className={`animate-pulse bg-gray-200 rounded-xl ${className}`} />
+  <div className={`animate-pulse bg-slate-200 dark:bg-slate-800 rounded-xl ${className}`} />
 );
 
 const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
-  confirmed: { bg: "bg-blue-50 border border-blue-200 text-blue-700", label: "Dikonfirmasi" },
-  pending: { bg: "bg-amber-50 border border-amber-200 text-amber-700", label: "Menunggu Approval" },
-  ongoing: { bg: "bg-green-50 border border-green-200 text-green-700", label: "Sedang Berjalan" },
-  completed: { bg: "bg-slate-50 border border-slate-200 text-slate-600", label: "Selesai" },
-  cancelled: { bg: "bg-red-50 border border-red-200 text-red-600", label: "Dibatalkan" },
-  rejected: { bg: "bg-rose-50 border border-rose-200 text-rose-600", label: "Ditolak" },
-  CANCELLED_NOSHOW: { bg: "bg-red-100 border border-red-300 text-red-800", label: "No-Show (Batal Otomatis)" }
+  confirmed: { bg: "bg-blue-50 dark:bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400", label: "Dikonfirmasi" },
+  pending: { bg: "bg-amber-50 dark:bg-amber-500/20 dark:bg-amber-500/30 border border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-400", label: "Menunggu Approval" },
+  ongoing: { bg: "bg-emerald-50 dark:bg-emerald-500/10 dark:bg-emerald-500/20 dark:bg-emerald-500/30 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400", label: "Sedang Berjalan" },
+  completed: { bg: "bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400", label: "Selesai" },
+  cancelled: { bg: "bg-rose-50 dark:bg-rose-500/10 dark:bg-rose-500/20 dark:bg-rose-500/30 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400", label: "Dibatalkan" },
+  rejected: { bg: "bg-rose-50 dark:bg-rose-500/10 dark:bg-rose-500/20 dark:bg-rose-500/30 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400", label: "Ditolak" },
+  CANCELLED_NOSHOW: { bg: "bg-red-100 dark:bg-red-500/20 dark:bg-red-500/30 border border-red-300 dark:border-red-500/30 text-red-800 dark:text-red-400", label: "No-Show (Batal Otomatis)" }
 };
 
 const meetingTypeBadge: Record<string, { bg: string; text: string; label: string; icon: string }> = {
-  offline: { bg: "bg-slate-50 border border-slate-200 text-slate-600", label: "Offline", icon: "🏢" },
-  online: { bg: "bg-purple-50 border border-purple-200 text-purple-700", label: "Online", icon: "💻" },
-  hybrid: { bg: "bg-teal-50 border border-teal-200 text-teal-700", label: "Hybrid", icon: "🔄" },
+  offline: { bg: "bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400", label: "Offline", icon: "🏢" },
+  online: { bg: "bg-purple-50 dark:bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-500/20 text-purple-700 dark:text-purple-400", label: "Online", icon: "💻" },
+  hybrid: { bg: "bg-teal-50 dark:bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-500/20 text-teal-700 dark:text-teal-400", label: "Hybrid", icon: "🔄" },
 };
 
 // Fallback Mock Bookings Data for Demonstration
@@ -473,20 +473,20 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
   const nextMeeting = bookings.find(b => ["confirmed", "ongoing"].includes(b.status));
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 transition-colors duration-300">
       
       {/* Greetings Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-150/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 transition-colors dark:border-slate-800/60">
         <div>
-          <h2 className="text-xl font-bold text-gray-800 tracking-tight flex items-center gap-2">
-            Selamat Bekerja, {currentUser?.name || "Budi Santoso"} <Sparkles size={16} className="text-yellow-500 animate-pulse" />
+          <h2 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2 transition-colors dark:text-slate-100">
+            Selamat Bekerja, {currentUser?.name || "Budi Santoso"} <Sparkles size={16} className="text-amber-500 animate-pulse transition-colors dark:text-amber-400" />
           </h2>
-          <p className="text-xs text-gray-400 font-semibold mt-0.5">
+          <p className="text-xs text-slate-500 font-medium mt-0.5 transition-colors dark:text-slate-400">
             Kementerian PPN/Bappenas · Otorita Ibu Kota Nusantara (OIKN)
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-white border border-gray-150 rounded-2xl px-4 py-2 shadow-sm flex-shrink-0 self-start sm:self-center">
-          <div className="w-8 h-8 rounded-full bg-[#1E3A5F] border border-blue-900/10 flex items-center justify-center overflow-hidden">
+        <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl px-4 py-2 shadow-sm flex-shrink-0 self-start sm:self-center transition-colors dark:bg-slate-900/80 dark:border-slate-800">
+          <div className="w-9 h-9 rounded-full bg-indigo-600 border-2 border-indigo-100 flex items-center justify-center overflow-hidden shadow-sm transition-colors dark:bg-indigo-600 dark:border-indigo-500/30">
             {currentUser?.avatar_url ? (
               <img src={currentUser.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -496,8 +496,8 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
             )}
           </div>
           <div>
-            <span className="text-[10px] text-gray-400 font-bold block uppercase tracking-wider">Departemen Kerja</span>
-            <span className="text-[11px] font-bold text-gray-700">Divisi Teknologi Informasi IKN</span>
+            <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider transition-colors dark:text-slate-400">Departemen Kerja</span>
+            <span className="text-xs font-bold text-slate-700 transition-colors dark:text-slate-200">Divisi Teknologi Informasi IKN</span>
           </div>
         </div>
       </div>
@@ -505,45 +505,45 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
       {/* Summary Statistics Widgets */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <div className="bg-white border border-gray-150 p-4 rounded-2xl shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
-            <Calendar size={18} />
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-4.5 rounded-[1.25rem] shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:border-indigo-200 dark:hover:border-emerald-500/30 group dark:bg-slate-900/80 dark:border-indigo-500/30">
+          <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0 group-hover:scale-105 transition-transform transition-colors dark:bg-indigo-500/30 dark:text-indigo-400 dark:border-indigo-500/20">
+            <Calendar size={20} />
           </div>
           <div>
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Rapat Bulan Ini</span>
-            <h4 className="text-base font-extrabold text-gray-800 mt-0.5">{totalRapatBulanIni} Rapat</h4>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-colors dark:text-slate-500">Total Rapat Bulan Ini</span>
+            <h4 className="text-lg font-extrabold text-slate-800 mt-0.5 transition-colors dark:text-slate-100">{totalRapatBulanIni} Rapat</h4>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-150 p-4 rounded-2xl shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0">
-            <Armchair size={18} />
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-4.5 rounded-[1.25rem] shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:border-emerald-200 dark:hover:border-emerald-500/30 group dark:bg-slate-900/80 dark:border-emerald-500/30">
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 group-hover:scale-105 transition-transform transition-colors dark:bg-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/20">
+            <Armchair size={20} />
           </div>
           <div>
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">ID Meja Kerja Anda</span>
-            <h4 className="text-base font-extrabold text-gray-800 mt-0.5">{assignedDesk?.desk_id || "Belum Ada"}</h4>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-colors dark:text-slate-500">ID Meja Kerja Anda</span>
+            <h4 className="text-lg font-extrabold text-slate-800 mt-0.5 transition-colors dark:text-slate-100">{assignedDesk?.desk_id || "Belum Ada"}</h4>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-150 p-4 rounded-2xl shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
-          <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0">
-            <Clock size={18} />
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-4.5 rounded-[1.25rem] shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:border-sky-200 dark:hover:border-sky-500/30 group dark:bg-slate-900/80 dark:border-sky-500/30">
+          <div className="w-12 h-12 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 flex-shrink-0 group-hover:scale-105 transition-transform transition-colors dark:bg-sky-500/30 dark:text-sky-400 dark:border-sky-500/20">
+            <Clock size={20} />
           </div>
           <div className="min-w-0 flex-1">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Agenda Rapat Terdekat</span>
-            <h4 className="text-xs font-extrabold text-gray-800 mt-0.5 truncate" title={nextMeeting?.agenda || "Tidak ada rapat terdekat"}>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5 transition-colors dark:text-slate-500">Agenda Terdekat</span>
+            <h4 className="text-sm font-extrabold text-slate-800 truncate transition-colors dark:text-slate-100" title={nextMeeting?.agenda || "Tidak ada rapat terdekat"}>
               {nextMeeting ? `${nextMeeting.start_time} - ${nextMeeting.agenda}` : "Tidak Ada"}
             </h4>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-150 p-4 rounded-2xl shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0">
-            <CheckCircle2 size={18} />
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-4.5 rounded-[1.25rem] shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:border-teal-200 dark:hover:border-teal-500/30 group dark:bg-slate-900/80 dark:border-teal-500/30">
+          <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 flex-shrink-0 group-hover:scale-105 transition-transform transition-colors dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-500/20">
+            <CheckCircle2 size={20} />
           </div>
           <div>
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tingkat Kehadiran</span>
-            <h4 className="text-base font-extrabold text-gray-800 mt-0.5">96.8%</h4>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-colors dark:text-slate-500">Tingkat Kehadiran</span>
+            <h4 className="text-lg font-extrabold text-slate-800 mt-0.5 transition-colors dark:text-slate-100">96.8%</h4>
           </div>
         </div>
 
@@ -562,16 +562,16 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
       >
         {/* Glow decoration */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl -mr-20 -mt-20 group-hover:bg-blue-400/20 transition-all duration-500" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl -ml-16 -mb-16" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl -ml-16 -mb-16 transition-colors duration-300 dark:bg-indigo-500/20" />
         
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-4 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="bg-blue-500/20 border border-blue-400/30 text-blue-300 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+              <span className="bg-blue-100 border border-blue-200 text-blue-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 transition-colors dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30">
                 <Armchair size={10} /> Penempatan Meja Kerja
               </span>
               {pendingRequest && (
-                <span className="bg-amber-500/20 border border-amber-400/30 text-amber-300 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1">
+                <span className="bg-amber-100 border border-amber-200 text-amber-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1 transition-colors dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30">
                   <AlertTriangle size={10} /> Pengajuan Pindah Pending
                 </span>
               )}
@@ -597,7 +597,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                   {!pendingRequest && (
                     <button
                       onClick={() => setIsSeatingModalOpen(true)}
-                      className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/40 text-blue-100 hover:text-white border border-blue-400/30 rounded-lg text-[10px] font-bold transition-all shadow-sm flex items-center gap-1 ml-2"
+                      className="px-3 py-1.5 bg-blue-50 hover:bg-blue-50 text-blue-100 hover:text-white border border-blue-400/30 rounded-lg text-[10px] font-bold transition-all shadow-sm flex items-center gap-1 ml-2 dark:bg-blue-900/20/40"
                     >
                       Ganti Tempat Duduk
                       <ArrowRight size={10} />
@@ -644,7 +644,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
               !pendingRequest && (
                 <button
                   onClick={() => setIsSeatingModalOpen(true)}
-                  className="px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:shadow-xl hover:scale-105 active:scale-95 group/btn"
+                  className="px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-2xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:shadow-xl hover:scale-105 active:scale-95 group/btn dark:bg-blue-500"
                 >
                   Ajukan Penempatan Meja Kerja Baru
                   <ArrowRight size={13} className="transition-transform group-hover/btn:translate-x-1" />
@@ -656,7 +656,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
 
         {/* Pending seating request warning alert */}
         {!seatingLoading && pendingRequest && (
-          <div className="mt-5 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-3 animate-pulse">
+          <div className="mt-5 bg-amber-50 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-3 animate-pulse transition-colors dark:bg-amber-900/20">
             <AlertTriangle className="text-amber-400 flex-shrink-0" size={18} />
             <div className="text-xs text-amber-200">
               Permintaan relokasi Anda ke meja <strong className="text-white underline">{pendingRequest.desk_id}</strong> di <strong className="text-white">{pendingRequest.room_name}</strong> diajukan pada {new Date(pendingRequest.created_at).toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' })} sedang dalam antrean peninjauan oleh Admin.
@@ -667,7 +667,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
         {/* Resolved seating request alert (Approved or Rejected) */}
         {!seatingLoading && resolvedRequest && !pendingRequest && (
           <div className={`mt-5 border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 ${
-            resolvedRequest.status === 'APPROVED' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'
+            resolvedRequest.status === 'APPROVED' ? 'bg-emerald-500/10 dark:bg-emerald-500/20 dark:bg-emerald-500/30 border-emerald-500/20' : 'bg-red-500/10 dark:bg-red-500/20 dark:bg-red-500/30 border-red-500/20'
           }`}>
             {resolvedRequest.status === 'APPROVED' ? (
               <CheckCircle2 className="text-emerald-400 flex-shrink-0" size={18} />
@@ -690,8 +690,8 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
               onClick={() => setResolvedRequest(null)}
               className={`px-3 py-1.5 text-[10px] font-bold border rounded-lg transition-colors ml-auto sm:ml-0 whitespace-nowrap ${
                 resolvedRequest.status === 'APPROVED' 
-                  ? 'text-emerald-300 hover:text-white border-emerald-400/30 hover:bg-emerald-500/20' 
-                  : 'text-red-300 hover:text-white border-red-400/30 hover:bg-red-500/20'
+                  ? 'text-emerald-300 hover:text-white border-emerald-400/30 hover:bg-emerald-500/20 dark:bg-emerald-500/30' 
+                  : 'text-red-300 hover:text-white border-red-400/30 hover:bg-red-500/20 dark:bg-red-500/30'
               }`}
             >
               Tutup Peringatan
@@ -704,73 +704,73 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Reservasi Rapat & Kolaborasi</h3>
-            <p className="text-xs text-gray-400">Jadwal rapat ongoing, upcoming, dan riwayat pemesanan ruangan Anda</p>
+            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider transition-colors dark:text-slate-100">Reservasi Rapat & Kolaborasi</h3>
+            <p className="text-xs text-slate-500 transition-colors dark:text-slate-400">Jadwal rapat ongoing, upcoming, dan riwayat pemesanan ruangan Anda</p>
           </div>
           
-          <div className="relative w-full sm:w-64 flex-shrink-0">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <div className="relative w-full sm:w-72 flex-shrink-0 group">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 dark:group-focus-within:text-emerald-400 transition-colors dark:text-indigo-400" />
             <input
               type="text"
               placeholder="Cari agenda atau ruangan..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs outline-none focus:border-blue-400 bg-white text-gray-700"
+              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-white/50 backdrop-blur-sm text-slate-800 placeholder-slate-400 dark:placeholder-slate-500 transition-all duration-300 font-medium dark:bg-slate-900/50 dark:text-slate-100 dark:border-slate-700"
             />
           </div>
         </div>
 
-        <div className="bg-white/85 backdrop-blur-md border border-gray-150 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-[1.25rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] overflow-hidden transition-all duration-300 dark:bg-slate-900/80 dark:border-slate-800">
           {/* Tabs */}
-          <div className="flex border-b border-gray-150 bg-gray-50/50">
+          <div className="flex border-b border-slate-200 bg-slate-50/50 transition-colors dark:bg-slate-800/50 dark:border-slate-800">
             {(["upcoming", "ongoing", "past"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-3.5 text-xs font-bold flex items-center justify-center gap-2 transition-all relative ${
+                className={`flex-1 py-4 text-xs font-bold flex items-center justify-center gap-2 transition-all relative ${
                   activeTab === tab 
-                    ? "text-[#1E3A5F] bg-[#1E3A5F]/5" 
-                    : "text-gray-400 hover:text-gray-600"
+                    ? "text-indigo-600 dark:text-emerald-400 bg-indigo-50/50 dark:bg-emerald-500/10 dark:bg-emerald-500/20 dark:bg-emerald-500/30" 
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 dark:hover:text-slate-300 hover:bg-slate-100/50 dark:hover:bg-slate-800/80"
                 }`}
               >
                 {tab === "upcoming" ? "Akan Datang" : tab === "ongoing" ? "Sedang Berjalan" : "Riwayat"}
-                <span className={`text-[10px] rounded-full px-2 py-0.5 font-extrabold ${
+                <span className={`text-[10px] rounded-full px-2.5 py-0.5 font-extrabold transition-colors ${
                   activeTab === tab 
-                    ? "bg-[#1E3A5F]/10 text-[#1E3A5F]" 
-                    : "bg-gray-100 text-gray-400"
+                    ? "bg-indigo-100 dark:bg-emerald-500/20 dark:bg-emerald-500/30 text-indigo-700 dark:text-emerald-300" 
+                    : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
                 }`}>
                   {tabCount(tab)}
                 </span>
                 {activeTab === tab && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1E3A5F]" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 transition-colors dark:bg-emerald-400" />
                 )}
               </button>
             ))}
           </div>
 
           {/* Booking Cards */}
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800/60 transition-colors">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="p-5 space-y-3">
-                  <div className="flex gap-2"><Shimmer className="h-4 w-20" /><Shimmer className="h-4 w-14" /></div>
-                  <Shimmer className="h-5 w-2/3" />
-                  <Shimmer className="h-3.5 w-1/2" />
+                  <div className="flex gap-2"><Shimmer className="h-5 w-24" /><Shimmer className="h-5 w-16" /></div>
+                  <Shimmer className="h-6 w-2/3" />
+                  <Shimmer className="h-4 w-1/2" />
                 </div>
               ))
             ) : tabBookings.length === 0 ? (
-              <div className="py-16 text-center">
-                <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Calendar size={24} className="text-gray-400" />
+              <div className="py-20 text-center flex flex-col items-center">
+                <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mb-4 shadow-sm transition-colors dark:bg-slate-800/50 dark:border-slate-700">
+                  <Calendar size={28} className="text-slate-400 transition-colors dark:text-slate-500" />
                 </div>
-                <p className="text-gray-600 font-bold text-sm">Tidak ada booking</p>
-                <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
+                <p className="text-slate-700 font-bold text-base mb-1 transition-colors dark:text-slate-200">Tidak ada booking</p>
+                <p className="text-sm text-slate-500 max-w-xs mx-auto mb-6 transition-colors dark:text-slate-400">
                   {activeTab === "upcoming" ? "Anda belum memiliki reservasi mendatang" :
                    activeTab === "ongoing" ? "Tidak ada booking yang sedang berlangsung" :
                    "Belum ada riwayat booking"}
                 </p>
                 {activeTab === "upcoming" && (
-                  <button onClick={() => onNavigate("rooms")} className="mt-4 px-4 py-2 bg-[#1E3A5F] hover:bg-[#254A7B] text-white rounded-xl text-xs font-bold transition-all shadow">
+                  <button onClick={() => onNavigate("rooms")} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 dark:bg-emerald-600">
                     Cari & Booking Ruangan
                   </button>
                 )}
@@ -782,90 +782,90 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                 const zoomStatus = getZoomButtonStatus(booking);
 
                 return (
-                  <div key={booking.id} className="p-5 hover:bg-gray-50/50 transition-colors">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div key={booking.id} className="p-5 md:p-6 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors duration-300">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
                       
-                      <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex-1 min-w-0 space-y-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${cfg.bg}`}>
+                          <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${cfg.bg}`}>
                             {cfg.label}
                           </span>
                           {mtBadge && booking.meeting_type && booking.meeting_type !== "offline" && (
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${mtBadge.bg} flex items-center gap-1`}>
+                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${mtBadge.bg} flex items-center gap-1.5`}>
                               {mtBadge.icon} {mtBadge.label}
                             </span>
                           )}
                           {booking.id.startsWith("mock-") && (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                            <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200 transition-colors dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
                               Simulasi
                             </span>
                           )}
                         </div>
                         
-                        <h4 className="text-gray-800 text-sm font-bold truncate leading-snug">{booking.agenda}</h4>
+                        <h4 className="text-slate-800 text-base font-bold truncate leading-snug transition-colors dark:text-slate-100">{booking.agenda}</h4>
                         
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
+                        <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5 pt-1">
                           {booking.room_name && (
-                            <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                              <MapPin size={12} className="text-gray-400 flex-shrink-0" />
+                            <div className="flex items-center gap-2 text-xs text-slate-500 font-medium transition-colors dark:text-slate-400">
+                              <MapPin size={14} className="text-slate-400 flex-shrink-0 transition-colors dark:text-slate-500" />
                               <span className="truncate">{booking.room_name} · {booking.building_name || ""}</span>
                             </div>
                           )}
                           {booking.meeting_type === "online" && !booking.room_name && (
-                            <div className="flex items-center gap-1.5 text-xs text-indigo-600 font-medium">
-                              <Video size={12} className="flex-shrink-0" />
+                            <div className="flex items-center gap-2 text-xs text-indigo-600 font-medium transition-colors dark:text-emerald-400">
+                              <Video size={14} className="flex-shrink-0" />
                               <span>Rapat Online (Zoom)</span>
                             </div>
                           )}
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                            <Calendar size={12} className="text-gray-400 flex-shrink-0" />
+                          <div className="flex items-center gap-2 text-xs text-slate-500 font-medium transition-colors dark:text-slate-400">
+                            <Calendar size={14} className="text-slate-400 flex-shrink-0 transition-colors dark:text-slate-500" />
                             <span>{booking.date}</span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                            <Clock size={12} className="text-gray-400 flex-shrink-0" />
+                          <div className="flex items-center gap-2 text-xs text-slate-500 font-medium transition-colors dark:text-slate-400">
+                            <Clock size={14} className="text-slate-400 flex-shrink-0 transition-colors dark:text-slate-500" />
                             <span>{booking.start_time} – {booking.end_time}</span>
                           </div>
                         </div>
 
                         {/* Surat Terkait Display */}
                         {booking.surat_terkait && (
-                          <div className="text-xs text-gray-500 bg-gray-50 border border-gray-150 rounded-xl px-3 py-2 flex items-center gap-2 w-fit">
+                          <div className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 w-fit transition-colors dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700">
                             <span>📄</span>
-                            <span className="font-semibold text-gray-600">Surat Pengantar:</span>
-                            <span className="italic">{booking.surat_terkait}</span>
+                            <span className="font-semibold text-slate-700 transition-colors dark:text-slate-200">Surat Pengantar:</span>
+                            <span className="italic opacity-90">{booking.surat_terkait}</span>
                           </div>
                         )}
 
                         {/* Zoom details */}
                         {booking.zoom_join_url && (booking.meeting_type === "online" || booking.meeting_type === "hybrid") && (
-                          <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl px-3 py-2 space-y-1 w-fit min-w-[240px]">
+                          <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl px-4 py-3 space-y-1.5 w-fit min-w-[240px] transition-colors dark:bg-emerald-500/30 dark:border-emerald-500/20">
                             <div className="flex items-center gap-2">
-                              <Video size={13} className="text-indigo-600 flex-shrink-0" />
-                              <span className="text-[10px] text-indigo-700 font-bold uppercase tracking-wider">Zoom Meeting Info</span>
+                              <Video size={14} className="text-indigo-600 flex-shrink-0 transition-colors dark:text-emerald-400" />
+                              <span className="text-[10px] text-indigo-700 font-bold uppercase tracking-wider transition-colors dark:text-emerald-400">Zoom Meeting Info</span>
                             </div>
                             {booking.zoom_passcode && (
-                              <div className="text-xs text-indigo-600">
-                                Passcode: <span className="font-mono bg-indigo-100/60 px-1.5 py-0.5 rounded text-[11px] font-bold">{booking.zoom_passcode}</span>
+                              <div className="text-xs text-indigo-700 transition-colors dark:text-emerald-300">
+                                Passcode: <span className="font-mono bg-indigo-100/60 px-2 py-0.5 rounded text-[11px] font-bold tracking-widest transition-colors dark:bg-emerald-500/30">{booking.zoom_passcode}</span>
                               </div>
                             )}
                             {booking.zoom_host_email && (
-                              <div className="text-[11px] text-indigo-500 font-medium">Host: {booking.zoom_host_email}</div>
+                              <div className="text-[11px] text-indigo-500 font-medium mt-1 transition-colors dark:text-emerald-500/80">Host: {booking.zoom_host_email}</div>
                             )}
                           </div>
                         )}
                       </div>
 
-                      <div className="flex items-center md:items-end justify-between md:flex-col gap-2 flex-shrink-0">
+                      <div className="flex items-center md:items-end justify-between md:flex-col gap-3 flex-shrink-0">
                         {/* Map Location Button */}
                         {booking.building_name && booking.meeting_type !== "online" && (activeTab === "upcoming" || activeTab === "ongoing") && (
                           <a
                             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.building_name + " IKN Nusantara")}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm bg-white hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 border border-slate-200 group dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                             title={`Lihat rute ke ${booking.building_name}`}
                           >
-                            <MapPin size={13} className="text-gray-500" />
+                            <MapPin size={14} className="text-slate-400 group-hover:text-indigo-500 dark:group-hover:text-emerald-400 transition-colors dark:text-indigo-400" />
                             <span>Lokasi Gedung</span>
                           </a>
                         )}
@@ -880,14 +880,14 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                                 window.dispatchEvent(new CustomEvent('menara:trigger-scan-simulator', { detail: { bookingId: booking.id } }));
                               }
                             }}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 ${
+                            className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 ${
                               booking.is_checked_in
-                                ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200"
-                                : "bg-gradient-to-tr from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white hover:shadow-md hover:-translate-y-0.5"
+                                ? "bg-emerald-50 dark:bg-emerald-500/10 dark:bg-emerald-500/20 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20"
+                                : "bg-indigo-600 dark:bg-emerald-600 hover:bg-indigo-700 dark:hover:bg-emerald-700 text-white hover:shadow-md hover:-translate-y-0.5"
                             }`}
                             title={booking.is_checked_in ? "Sudah Check-In" : "Scan QR untuk Presensi"}
                           >
-                            <QrCode size={13} />
+                            <QrCode size={14} />
                             <span>{booking.is_checked_in ? "Sudah Check-In" : "Scan QR Presensi"}</span>
                           </button>
                         )}
@@ -896,10 +896,10 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                         {(activeTab === "ongoing" || activeTab === "past") && booking.meeting_type !== "online" && (
                           <button
                             onClick={() => handleOpenAttendees(booking.id)}
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm bg-white hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 border border-slate-200 group dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                             title="Lihat Daftar Hadir"
                           >
-                            <UserCheck size={13} className="text-emerald-500" />
+                            <UserCheck size={14} className="text-emerald-500 group-hover:scale-110 transition-transform transition-colors dark:text-emerald-400" />
                             <span>Presensi</span>
                           </button>
                         )}
@@ -911,23 +911,23 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => { if (!zoomStatus.enabled) e.preventDefault(); }}
-                            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
                               zoomStatus.enabled
-                                ? "bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
-                                : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                                ? "bg-indigo-600 hover:bg-indigo-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white cursor-pointer hover:shadow-md hover:-translate-y-0.5"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700"
                             }`}
                             title={zoomStatus.label}
                           >
-                            <Video size={13} />
+                            <Video size={14} />
                             <span>{zoomStatus.label}</span>
-                            {zoomStatus.enabled && <ExternalLink size={11} />}
+                            {zoomStatus.enabled && <ExternalLink size={12} />}
                           </a>
                         )}
 
                         {activeTab === "upcoming" && (
                           <button
                             onClick={() => setCancelModal(booking.id)}
-                            className="px-3.5 py-2 text-xs border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl font-bold transition-all"
+                            className="px-4 py-2.5 text-xs border border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 dark:bg-rose-500/30 dark:text-rose-400 dark:border-rose-500/30"
                           >
                             Batalkan Rapat
                           </button>
@@ -937,10 +937,11 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                     </div>
 
                     {booking.rejection_reason && (
-                      <div className="mt-3 p-3 bg-red-50/50 border border-red-100 rounded-xl flex items-start gap-2">
-                        <AlertTriangle className="text-red-500 mt-0.5 flex-shrink-0" size={14} />
-                        <p className="text-xs text-red-600 leading-normal">
-                          <span className="font-bold">Alasan penolakan admin:</span> {booking.rejection_reason}
+                      <div className="mt-4 p-3 bg-rose-50/80 border border-rose-200 rounded-xl flex items-start gap-2.5 transition-colors dark:bg-rose-500/30 dark:border-rose-500/20">
+                        <AlertTriangle className="text-rose-500 mt-0.5 flex-shrink-0 transition-colors dark:text-rose-400" size={16} />
+                        <p className="text-sm text-rose-700 leading-relaxed font-medium transition-colors dark:text-rose-300">
+                          <span className="font-bold block text-[10px] uppercase tracking-wider text-rose-500 mb-0.5 transition-colors duration-300 dark:text-rose-400">Alasan penolakan admin:</span>
+                          {booking.rejection_reason}
                         </p>
                       </div>
                     )}
@@ -955,39 +956,39 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
       {/* Seating Relocation Inline Modal */}
       {isSeatingModalOpen && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden border border-gray-200 flex flex-col max-h-[90vh] md:max-h-[85vh] animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-[2rem] w-full max-w-4xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh] md:max-h-[85vh] animate-in zoom-in-95 duration-200 transition-colors dark:bg-slate-900 dark:border-slate-800">
             
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-slate-50 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+            <div className="px-6 py-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between flex-shrink-0 transition-colors dark:bg-slate-900 dark:border-slate-800">
               <div>
-                <h3 className="text-gray-800 font-extrabold text-base flex items-center gap-2">
-                  <Armchair className="text-blue-600" size={18} /> Ganti Penempatan Tempat Duduk
+                <h3 className="text-slate-800 font-extrabold text-lg flex items-center gap-2 transition-colors dark:text-slate-100">
+                  <Armchair className="text-indigo-600 transition-colors dark:text-emerald-400" size={20} /> Ganti Penempatan Tempat Duduk
                 </h3>
-                <p className="text-xs text-gray-400 font-semibold mt-0.5">
+                <p className="text-xs text-slate-500 font-medium mt-1 transition-colors dark:text-slate-400">
                   Ajukan perpindahan meja kerja dinas Anda di Kawasan Inti IKN secara online
                 </p>
               </div>
               <button
                 onClick={() => { setIsSeatingModalOpen(false); setModalSelectedDesk(null); }}
-                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all"
+                className="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-all dark:bg-slate-800 dark:text-slate-500"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
             {/* Modal Content Scrollable */}
-            <div className="p-6 overflow-y-auto space-y-6 flex-1">
+            <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-white transition-colors dark:bg-slate-900">
               
               {/* Filter Area Selection */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl border border-gray-150">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-150 transition-colors dark:bg-slate-800/50 dark:border-slate-700/50">
                 <div className="flex flex-col">
-                  <label className="text-[10px] text-gray-400 font-bold mb-1 flex items-center gap-1">
-                    <Building size={11} /> Gedung
+                  <label className="text-[10px] text-slate-500 font-bold mb-1.5 flex items-center gap-1.5 uppercase tracking-wider transition-colors dark:text-slate-400">
+                    <Building size={12} /> Gedung
                   </label>
                   <select
                     value={modalBuilding}
                     onChange={e => setModalBuilding(e.target.value)}
-                    className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-blue-400 bg-white text-gray-700 font-bold"
+                    className="px-4 py-2.5 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-400 dark:focus:border-emerald-500 bg-white text-slate-800 font-bold transition-all shadow-sm dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                   >
                     <option value="" disabled>Pilih Gedung</option>
                     {buildingsList.map(b => (
@@ -997,13 +998,13 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                 </div>
 
                 <div className="flex flex-col">
-                  <label className="text-[10px] text-gray-400 font-bold mb-1 flex items-center gap-1">
-                    <MapPin size={11} /> Lantai
+                  <label className="text-[10px] text-slate-500 font-bold mb-1.5 flex items-center gap-1.5 uppercase tracking-wider transition-colors dark:text-slate-400">
+                    <MapPin size={12} /> Lantai
                   </label>
                   <select
                     value={modalFloor}
                     onChange={e => setModalFloor(e.target.value)}
-                    className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-blue-400 bg-white text-gray-700 font-bold"
+                    className="px-4 py-2.5 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-400 dark:focus:border-emerald-500 bg-white text-slate-800 font-bold transition-all shadow-sm dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                     disabled={floorsList.length === 0}
                   >
                     {floorsList.length === 0 && <option value="">Tidak ada lantai</option>}
@@ -1014,13 +1015,13 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                 </div>
 
                 <div className="flex flex-col">
-                  <label className="text-[10px] text-gray-400 font-bold mb-1 flex items-center gap-1">
-                    <UserCheck size={11} /> Ruang Kerja
+                  <label className="text-[10px] text-slate-500 font-bold mb-1.5 flex items-center gap-1.5 uppercase tracking-wider transition-colors dark:text-slate-400">
+                    <UserCheck size={12} /> Ruang Kerja
                   </label>
                   <select
                     value={modalRoom}
                     onChange={e => setModalRoom(e.target.value)}
-                    className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-blue-400 bg-white text-gray-700 font-bold"
+                    className="px-4 py-2.5 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-400 dark:focus:border-emerald-500 bg-white text-slate-800 font-bold transition-all shadow-sm dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                     disabled={modalFilteredRooms.length === 0}
                   >
                     {modalFilteredRooms.length === 0 && <option value="">Tidak ada workspace</option>}
@@ -1035,38 +1036,38 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                 
                 {/* Visual Layout Map */}
-                <div className="lg:col-span-3 border border-gray-150 rounded-2xl p-4 bg-slate-50/50 flex flex-col min-h-[300px]">
+                <div className="lg:col-span-3 border border-slate-200 rounded-[1.25rem] p-5 bg-slate-50/50 flex flex-col min-h-[300px] transition-colors dark:bg-slate-800/20 dark:border-slate-800">
                   
                   {modalRoomPhotos.length > 0 && (
-                    <div className="w-full h-40 mb-4 rounded-xl overflow-hidden relative border border-gray-200 group">
+                    <div className="w-full h-48 mb-5 rounded-xl overflow-hidden relative border border-slate-200 group shadow-sm transition-colors dark:border-slate-700">
                       <img 
                         src={modalRoomPhotos[modalPhotoIndex].startsWith('http') ? modalRoomPhotos[modalPhotoIndex] : `http://127.0.0.1:5000${modalRoomPhotos[modalPhotoIndex]}`} 
                         alt={`${modalRoomName} - Foto ${modalPhotoIndex + 1}`} 
-                        className="w-full h-full object-cover transition-all duration-300" 
+                        className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105" 
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-3">
-                        <span className="text-white text-xs font-bold flex items-center gap-1.5"><Camera size={14}/> Foto Ruangan ({modalPhotoIndex + 1}/{modalRoomPhotos.length})</span>
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent flex items-end p-4">
+                        <span className="text-white text-xs font-bold flex items-center gap-2"><Camera size={16}/> Foto Ruangan ({modalPhotoIndex + 1}/{modalRoomPhotos.length})</span>
                       </div>
                       
                       {modalRoomPhotos.length > 1 && (
                         <>
                           <button 
                             onClick={(e) => { e.preventDefault(); setModalPhotoIndex(prev => prev === 0 ? modalRoomPhotos.length - 1 : prev - 1); }}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300"
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md transition-all duration-300 border border-white/10"
                           >
                             <ChevronLeft size={18} />
                           </button>
                           <button 
                             onClick={(e) => { e.preventDefault(); setModalPhotoIndex(prev => prev === modalRoomPhotos.length - 1 ? 0 : prev + 1); }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md transition-all duration-300 border border-white/10"
                           >
                             <ChevronRight size={18} />
                           </button>
                           
                           {/* Indicators */}
-                          <div className="absolute bottom-3 right-3 flex gap-1">
+                          <div className="absolute bottom-4 right-4 flex gap-1.5">
                             {modalRoomPhotos.map((_, idx) => (
-                              <div key={idx} className={`w-1.5 h-1.5 rounded-full ${idx === modalPhotoIndex ? 'bg-white' : 'bg-white/40'}`} />
+                              <div key={idx} className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${idx === modalPhotoIndex ? 'bg-white dark:bg-slate-900 scale-125' : 'bg-white/40'}`} />
                             ))}
                           </div>
                         </>
@@ -1075,64 +1076,64 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                   )}
 
                   {modalFacilities.length > 0 && (
-                    <div className="mb-4 flex flex-wrap gap-2">
+                    <div className="mb-5 flex flex-wrap gap-2.5">
                       {modalFacilities.map((f, idx) => (
-                        <div key={idx} className="px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-[10px] font-bold text-gray-600 flex items-center gap-1.5 shadow-sm">
-                          <Sparkles size={11} className="text-blue-500"/>
+                        <div key={idx} className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 flex items-center gap-1.5 shadow-sm transition-colors dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
+                          <Sparkles size={12} className="text-indigo-500 transition-colors dark:text-emerald-400"/>
                           {f.facility_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md ml-1">{f.quantity}</span>
+                          <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md ml-1 transition-colors dark:bg-slate-700 dark:text-slate-400">{f.quantity}</span>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-5 transition-colors dark:border-slate-700">
                     <div>
-                      <h4 className="text-xs font-bold text-gray-700">{modalRoomName || "Visual Floor Plan"}</h4>
-                      <p className="text-[10px] text-gray-400">Klik meja hijau kosong untuk memilih</p>
+                      <h4 className="text-sm font-bold text-slate-800 transition-colors dark:text-slate-100">{modalRoomName || "Visual Floor Plan"}</h4>
+                      <p className="text-xs text-slate-500 mt-0.5 transition-colors dark:text-slate-400">Klik meja hijau kosong untuk memilih</p>
                     </div>
                     {/* Legend */}
-                    <div className="flex gap-3 text-[10px] font-semibold">
-                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 bg-green-500 rounded-full" /> <span>Kosong</span></div>
-                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 bg-blue-500 rounded-full" /> <span>Terisi</span></div>
+                    <div className="flex gap-4 text-[10px] font-bold text-slate-600 uppercase tracking-wider transition-colors dark:text-slate-300">
+                      <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-emerald-500 rounded-full transition-colors duration-300 dark:bg-emerald-600" /> <span>Kosong</span></div>
+                      <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 bg-indigo-500 rounded-full transition-colors dark:bg-slate-9500" /> <span>Terisi</span></div>
                     </div>
                   </div>
 
                   {modalLoadingLayout ? (
-                    <div className="flex-1 flex flex-col items-center justify-center gap-2">
-                      <div className="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                      <span className="text-[10px] text-gray-400 font-bold">Memuat denah...</span>
+                    <div className="flex-1 flex flex-col items-center justify-center gap-3 py-10">
+                      <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin transition-colors dark:border-emerald-500" />
+                      <span className="text-xs text-slate-500 font-bold uppercase tracking-wider transition-colors dark:text-slate-400">Memuat denah...</span>
                     </div>
                   ) : modalLayout.length === 0 ? (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-400">
-                      <Building size={28} className="mb-2 text-gray-300" />
-                      <span className="text-xs font-bold">Tidak Ada Workspace Terpilih</span>
+                    <div className="flex-1 flex flex-col items-center justify-center text-center text-slate-400 py-10 transition-colors dark:text-slate-600">
+                      <Building size={32} className="mb-3 text-slate-300 transition-colors dark:text-slate-200" />
+                      <span className="text-sm font-bold">Tidak Ada Workspace Terpilih</span>
                     </div>
                   ) : (
                     <div className="flex-1 flex items-center justify-center">
-                      <div className="grid grid-cols-5 md:grid-cols-6 gap-3 w-full p-2 bg-white rounded-xl border border-gray-100">
+                      <div className="grid grid-cols-5 md:grid-cols-6 gap-3 w-full p-4 bg-white rounded-2xl border border-slate-200 shadow-sm transition-colors dark:bg-slate-900 dark:border-slate-700">
                         {modalLayout.map(desk => {
                           const isSelected = modalSelectedDesk?.desk_id === desk.desk_id;
-                          let bgColor = "bg-green-50 hover:bg-green-100 text-green-700 border-green-300";
+                          let bgColor = "bg-emerald-50 dark:bg-emerald-500/10 dark:bg-emerald-500/20 dark:bg-emerald-500/30 hover:bg-emerald-100 dark:bg-emerald-500/20 dark:bg-emerald-500/30 dark:hover:bg-emerald-500/20 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/30";
                           if (desk.status === "OCCUPIED") {
-                            bgColor = "bg-blue-50 text-blue-400 border-blue-200 cursor-not-allowed";
+                            bgColor = "bg-indigo-50 dark:bg-slate-800 text-indigo-400 dark:text-slate-500 border-indigo-200 dark:border-slate-700 cursor-not-allowed opacity-75";
                           } else if (desk.status === "DISABLED") {
-                            bgColor = "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed";
+                            bgColor = "bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-50";
                           }
                           
                           if (isSelected) {
-                            bgColor = "bg-green-500 text-white border-green-600 shadow ring-2 ring-green-300 scale-105";
+                            bgColor = "bg-emerald-500 dark:bg-emerald-600 text-white border-emerald-600 dark:border-emerald-500 shadow-md shadow-emerald-500/20 ring-4 ring-emerald-500/20 scale-105 z-10";
                           }
 
                           return (
                             <div
                               key={desk.desk_id}
                               onClick={() => desk.status === "VACANT" && handleModalDeskClick(desk)}
-                              className={`h-11 rounded-lg border flex flex-col items-center justify-center transition-all cursor-pointer relative group ${bgColor}`}
+                              className={`h-12 rounded-xl border flex flex-col items-center justify-center transition-all cursor-pointer relative group ${bgColor}`}
                             >
-                              <span className="text-[9px] font-extrabold">{desk.desk_id}</span>
+                              <span className="text-[10px] font-extrabold">{desk.desk_id}</span>
                               {desk.status === "OCCUPIED" && (
-                                <div className="absolute z-30 bottom-full mb-1 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] px-2 py-1 rounded shadow opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity font-bold">
+                                <div className="opacity-0 group-hover:opacity-100 absolute z-30 bottom-full mb-1 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2.5 py-1 rounded-md shadow-lg pointer-events-none transition-opacity font-bold whitespace-nowrap dark:bg-slate-100 dark:text-slate-900">
                                   {desk.name || "Terisi"}
                                 </div>
                               )}
@@ -1145,40 +1146,40 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                 </div>
 
                 {/* Form Action Column */}
-                <div className="lg:col-span-2 border border-gray-150 rounded-2xl p-4 bg-white space-y-4">
-                  <h4 className="text-xs font-bold text-gray-800 pb-2 border-b border-gray-100">
+                <div className="lg:col-span-2 border border-slate-200 rounded-[1.25rem] p-5 bg-white space-y-5 shadow-sm transition-colors dark:bg-slate-900 dark:border-slate-800">
+                  <h4 className="text-sm font-bold text-slate-800 pb-3 border-b border-slate-200 transition-colors dark:text-slate-100 dark:border-slate-800">
                     Konfirmasi Relokasi
                   </h4>
                   
                   {modalSelectedDesk ? (
-                    <div className="space-y-4">
-                      <div className="bg-blue-50/50 border border-blue-150 rounded-xl p-3 space-y-2">
+                    <div className="space-y-5">
+                      <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 space-y-2.5 transition-colors dark:bg-emerald-500/30 dark:border-emerald-500/20">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-gray-400 font-semibold">ID Meja Baru:</span>
-                          <span className="font-mono font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px]">
+                          <span className="text-slate-500 font-bold uppercase tracking-wider transition-colors dark:text-slate-400">ID Meja Baru:</span>
+                          <span className="font-mono font-bold bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-md text-[11px] transition-colors dark:bg-emerald-500/30 dark:text-emerald-300">
                             {modalSelectedDesk.desk_id}
                           </span>
                         </div>
-                        <div className="text-[11px] text-gray-600 space-y-1">
-                          <p><strong>Gedung:</strong> {buildingsList.find(b => b.id === modalBuilding)?.name}</p>
-                          <p><strong>Lantai:</strong> {floorsList.find(f => f.id === modalFloor)?.name}</p>
+                        <div className="text-[11px] text-slate-600 space-y-1.5 font-medium transition-colors dark:text-slate-300">
+                          <p><strong className="text-slate-700 transition-colors dark:text-slate-200">Gedung:</strong> {buildingsList.find(b => b.id === modalBuilding)?.name}</p>
+                          <p><strong className="text-slate-700 transition-colors dark:text-slate-200">Lantai:</strong> {floorsList.find(f => f.id === modalFloor)?.name}</p>
                         </div>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="block text-[10px] text-gray-400 font-bold uppercase">
-                          Alasan Pemindahan <span className="text-rose-500">*</span>
+                      <div className="space-y-2">
+                        <label className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider transition-colors dark:text-slate-400">
+                          Alasan Pemindahan <span className="text-rose-500 transition-colors duration-300 dark:text-rose-400">*</span>
                         </label>
                         <textarea
                           required
-                          rows={3}
+                          rows={4}
                           placeholder="Contoh: Kebutuhan tim koordinasi teknologi informasi dekat server..."
                           value={modalRationale}
                           onChange={e => setModalRationale(e.target.value)}
-                          className="w-full p-2.5 border border-gray-200 rounded-xl text-xs outline-none focus:border-blue-400 bg-white"
+                          className="w-full p-3.5 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-slate-50/50 text-slate-800 transition-all duration-300 dark:bg-slate-800/50 dark:text-slate-100 dark:border-slate-700"
                         />
-                        <div className="text-[9px] text-right font-semibold text-gray-400">
-                          Karakter: <span className={modalRationale.trim().length >= 10 ? "text-green-600" : "text-rose-500"}>{modalRationale.trim().length}</span> / 10 min
+                        <div className="text-[10px] text-right font-bold text-slate-400 transition-colors dark:text-slate-500">
+                          Karakter: <span className={modalRationale.trim().length >= 10 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400"}>{modalRationale.trim().length}</span> / 10 min
                         </div>
                       </div>
 
@@ -1186,36 +1187,36 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                         type="button"
                         disabled={modalRationale.trim().length < 10 || modalSubmitLoading}
                         onClick={handleSubmitSeatingRequest}
-                        className={`w-full py-2 bg-[#1E3A5F] hover:bg-[#254A7B] text-white rounded-xl text-xs font-bold transition-all shadow flex items-center justify-center gap-1.5 ${
+                        className={`w-full py-3 bg-indigo-600 dark:bg-emerald-600 hover:bg-indigo-700 dark:hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-all duration-300 shadow flex items-center justify-center gap-2 ${
                           modalRationale.trim().length >= 10 && !modalSubmitLoading
-                            ? "cursor-pointer"
-                            : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 shadow-none"
+                            ? "cursor-pointer hover:shadow-lg hover:shadow-indigo-500/30 dark:hover:shadow-emerald-500/30 hover:-translate-y-0.5"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed border border-slate-200 dark:border-slate-700 shadow-none"
                         }`}
                       >
                         {modalSubmitLoading ? (
                           <>
-                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             Mengajukan...
                           </>
                         ) : "Kirim Pengajuan Relokasi"}
                       </button>
                     </div>
                   ) : (
-                    <div className="text-center py-10 text-gray-400 border border-dashed border-gray-150 rounded-xl bg-gray-50/20">
-                      <HelpCircle size={22} className="mx-auto mb-2 text-gray-300 animate-bounce" />
-                      <span className="text-xs font-bold">Belum Ada Meja Terpilih</span>
-                      <p className="text-[10px] text-gray-400 max-w-[150px] mx-auto mt-1 leading-normal">
+                    <div className="text-center py-12 text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 transition-colors dark:bg-slate-800/30 dark:text-slate-500 dark:border-slate-700">
+                      <HelpCircle size={28} className="mx-auto mb-3 text-slate-300 animate-bounce transition-colors dark:text-slate-600" />
+                      <span className="text-sm font-bold text-slate-600 transition-colors dark:text-slate-400">Belum Ada Meja Terpilih</span>
+                      <p className="text-xs text-slate-500 max-w-[180px] mx-auto mt-2 leading-relaxed transition-colors dark:text-slate-500">
                         Silakan klik salah satu meja kosong hijau pada denah untuk mengajukan perpindahan.
                       </p>
                     </div>
                   )}
 
                   {/* Policy rules */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[10px] text-slate-500 space-y-1">
-                    <div className="font-bold text-slate-700 flex items-center gap-1">
-                      <Info size={11} /> Ketentuan Persetujuan
+                  <div className="bg-amber-50/50 border border-amber-200 rounded-xl p-4 text-[11px] text-amber-700 space-y-2 transition-colors dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/20">
+                    <div className="font-bold flex items-center gap-1.5 text-amber-800 transition-colors dark:text-amber-400">
+                      <Info size={14} /> Ketentuan Persetujuan
                     </div>
-                    <p className="leading-normal">
+                    <p className="leading-relaxed">
                       Setiap permohonan relokasi akan langsung diajukan ke antrean persetujuan Admin Ruangan Kerja terkait. Meja kerja lama Anda akan dibebaskan otomatis ketika permohonan disetujui.
                     </p>
                   </div>
@@ -1232,31 +1233,31 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
 
       {/* Cancel Confirmation Modal */}
       {cancelModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 border border-gray-100">
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl p-8 border border-slate-200 animate-in zoom-in-95 duration-200 transition-colors dark:bg-slate-900 dark:border-slate-800">
             <div className="flex flex-col items-center text-center">
-              <div className="w-14 h-14 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mb-4">
-                <AlertTriangle size={24} className="text-rose-600" />
+              <div className="w-16 h-16 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mb-5 shadow-sm transition-colors dark:bg-rose-500/30 dark:border-rose-500/20">
+                <AlertTriangle size={28} className="text-rose-600 transition-colors dark:text-rose-400" />
               </div>
-              <h3 className="text-gray-800 font-extrabold text-lg mb-2">Batalkan Reservasi?</h3>
-              <p className="text-xs text-gray-400 mb-6 leading-relaxed max-w-[250px]">
+              <h3 className="text-slate-800 font-extrabold text-xl mb-3 transition-colors dark:text-slate-100">Batalkan Reservasi?</h3>
+              <p className="text-sm text-slate-500 mb-8 leading-relaxed max-w-[250px] transition-colors dark:text-slate-400">
                 Apakah Anda yakin ingin membatalkan jadwal rapat ini? Slot waktu ruangan akan segera dibebaskan untuk pegawai lain.
               </p>
-              <div className="flex gap-3 w-full">
-                <button
-                  onClick={() => setCancelModal(null)}
-                  className="flex-1 py-2.5 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 transition-all"
-                >
-                  Kembali
-                </button>
+              <div className="flex flex-col gap-3 w-full">
                 <button
                   onClick={() => handleCancel(cancelModal)}
                   disabled={cancelLoading}
-                  className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow flex items-center justify-center gap-1.5"
+                  className="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold transition-all duration-300 shadow flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-rose-500/30 hover:-translate-y-0.5"
                 >
                   {cancelLoading ? (
-                    <span className="flex items-center gap-1"><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Batal...</span>
-                  ) : "Ya, Batalkan"}
+                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Batal...</>
+                  ) : "Ya, Batalkan Reservasi"}
+                </button>
+                <button
+                  onClick={() => setCancelModal(null)}
+                  className="w-full py-3.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                >
+                  Kembali
                 </button>
               </div>
             </div>
@@ -1266,37 +1267,37 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
 
       {/* Attendees Modal */}
       {attendeesModal && (
-        <div className="fixed inset-0 bg-[#0A1428]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 shadow-2xl flex flex-col max-h-[85vh]">
-            <div className="px-6 py-4 bg-[#1E3A5F] text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/10 rounded-xl">
-                  <UserCheck size={20} className="text-emerald-300" />
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2rem] w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 shadow-2xl flex flex-col max-h-[85vh] border border-slate-200 transition-colors dark:bg-slate-900 dark:border-slate-800">
+            <div className="px-6 py-5 bg-indigo-600 text-white flex items-center justify-between border-b border-indigo-700 transition-colors dark:bg-slate-800 dark:border-slate-700">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center border border-white/20 shadow-inner transition-colors dark:bg-emerald-500/30 dark:border-emerald-500/20">
+                  <UserCheck size={22} className="text-white transition-colors dark:text-emerald-400" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm">Daftar Kehadiran</h3>
-                  <p className="text-[10px] text-blue-200">Riwayat presensi dari pemindaian pintu ruangan</p>
+                  <h3 className="font-extrabold text-lg">Daftar Kehadiran</h3>
+                  <p className="text-xs text-indigo-100 font-medium mt-0.5 transition-colors dark:text-slate-400">Riwayat presensi peserta rapat</p>
                 </div>
               </div>
-              <button onClick={() => setAttendeesModal(null)} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-blue-200 hover:text-white">
-                <X size={18} />
+              <button onClick={() => setAttendeesModal(null)} className="w-10 h-10 hover:bg-white/10 rounded-full flex items-center justify-center transition-colors text-indigo-100 hover:text-white dark:text-slate-400">
+                <X size={20} />
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 bg-slate-50 space-y-4 relative">
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 space-y-4 relative transition-colors dark:bg-slate-900">
               {attendeesLoading ? (
-                <div className="flex flex-col items-center justify-center py-10 gap-3">
-                  <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Memuat Data Presensi...</span>
+                <div className="flex flex-col items-center justify-center py-12 gap-4">
+                  <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin transition-colors dark:border-emerald-500" />
+                  <span className="text-xs text-slate-500 font-bold uppercase tracking-wider transition-colors dark:text-slate-400">Memuat Data Presensi...</span>
                 </div>
               ) : attendeesList.length === 0 ? (
-                <div className="text-center py-10 px-4 bg-white border border-dashed border-gray-200 rounded-2xl">
-                  <UserCheck size={32} className="mx-auto text-gray-300 mb-3" />
-                  <p className="text-sm font-bold text-gray-600">Belum ada peserta hadir</p>
-                  <p className="text-xs text-gray-400 mt-1">Gunakan QR Simulator untuk men-scan pintu ruangan.</p>
+                <div className="text-center py-12 px-6 bg-white border border-dashed border-slate-200 rounded-2xl transition-colors dark:bg-slate-800/50 dark:border-slate-700">
+                  <UserCheck size={36} className="mx-auto text-slate-300 mb-4 transition-colors dark:text-slate-600" />
+                  <p className="text-base font-bold text-slate-600 mb-1 transition-colors dark:text-slate-300">Belum ada peserta hadir</p>
+                  <p className="text-xs text-slate-400 leading-relaxed transition-colors dark:text-slate-500">Gunakan fitur Scan QR untuk melakukan presensi kehadiran rapat.</p>
                 </div>
               ) : (
-                <div className="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-emerald-500/20 before:to-transparent">
+                <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-indigo-500/20 dark:before:via-emerald-500/20 before:to-transparent transition-colors">
                   {attendeesList.map((attendee, index) => {
                     const scannedTime = new Date(attendee.scanned_at);
                     const timeString = scannedTime.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -1304,18 +1305,20 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
 
                     return (
                       <div key={attendee.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-50 group-[.is-active]:bg-emerald-50 text-emerald-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                        <div className={`flex items-center justify-center w-10 h-10 rounded-full border shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 transition-colors ${
+                          isFirst ? "bg-amber-50 dark:bg-amber-50 dark:bg-amber-900/20/20 border-amber-200 dark:border-amber-500/30 text-amber-500 dark:text-amber-400" : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-indigo-500 dark:text-emerald-400"
+                        }`}>
                           {isFirst ? <Sparkles size={16} /> : <UserCheck size={16} />}
                         </div>
-                        <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl border border-gray-100 bg-white shadow-sm flex flex-col">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                        <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col transition-colors group-hover:shadow-md group-hover:border-indigo-200 dark:group-hover:border-emerald-500/30 dark:bg-slate-800 dark:border-indigo-500/30">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100 transition-colors dark:bg-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/20">
                               {timeString}
                             </span>
-                            {isFirst && <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 rounded-full">Klaim Ruangan</span>}
+                            {isFirst && <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-wider transition-colors dark:bg-amber-500/30 dark:text-amber-400 dark:border-amber-500/20">Hadir Pertama</span>}
                           </div>
-                          <span className="text-sm font-bold text-gray-800 line-clamp-1">{attendee.user_name}</span>
-                          <span className="text-[10px] text-gray-500 mt-0.5 uppercase tracking-wide">ID: {attendee.user_id.split('-').pop()}</span>
+                          <span className="text-sm font-bold text-slate-800 line-clamp-1 transition-colors dark:text-slate-100">{attendee.user_name}</span>
+                          <span className="text-[10px] text-slate-500 mt-1 uppercase tracking-wide font-medium transition-colors dark:text-slate-400">ID: {attendee.user_id.split('-').pop()}</span>
                         </div>
                       </div>
                     );
@@ -1324,8 +1327,8 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
               )}
             </div>
             
-            <div className="p-4 bg-white border-t border-gray-100 text-center text-[10px] text-gray-400">
-              Total peserta tercatat hadir: <strong className="text-gray-700">{attendeesList.length} orang</strong>
+            <div className="p-5 bg-white border-t border-slate-200 text-center text-xs text-slate-500 transition-colors dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
+              Total peserta tercatat hadir: <strong className="text-slate-800 font-bold transition-colors dark:text-slate-100">{attendeesList.length} orang</strong>
             </div>
           </div>
         </div>

@@ -1,0 +1,125 @@
+[Duplicate CSS]: CalendarView.tsx:511 has multiple dark:bg- classes: dark:bg-red-500/10, dark:bg-red-500/20, dark:bg-red-500/30
+[Duplicate CSS]: CalendarView.tsx:752 has multiple dark:bg- classes: dark:bg-green-500/20, dark:bg-green-500/30
+[Duplicate CSS]: CalendarView.tsx:782 has multiple dark:bg- classes: dark:bg-red-500/10, dark:bg-red-500/20, dark:bg-red-500/30
+[Duplicate CSS]: CalendarView.tsx:799 has multiple dark:bg- classes: dark:bg-amber-500/20, dark:bg-amber-500/30
+[Hidden UX]: MyBookings.tsx contains opacity-0 group-hover:opacity-100
+[Duplicate CSS]: MyBookings.tsx:489 has multiple dark:bg- classes: dark:bg-indigo-500, dark:bg-indigo-600
+[Duplicate CSS]: MyBookings.tsx:509 has multiple dark:bg- classes: dark:bg-indigo-500/10, dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: MyBookings.tsx:519 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: MyBookings.tsx:529 has multiple dark:bg- classes: dark:bg-sky-500/10, dark:bg-sky-500/20, dark:bg-sky-500/30
+[Duplicate CSS]: MyBookings.tsx:541 has multiple dark:bg- classes: dark:bg-teal-50, dark:bg-teal-900/20
+[Duplicate CSS]: MyBookings.tsx:600 has multiple dark:bg- classes: dark:bg-blue-900/20/20, dark:bg-blue-900/20/40
+[Duplicate CSS]: MyBookings.tsx:841 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: MyBookings.tsx:848 has multiple dark:bg- classes: dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: MyBookings.tsx:865 has multiple dark:bg- classes: dark:bg-slate-800, dark:bg-slate-800
+[Duplicate CSS]: MyBookings.tsx:899 has multiple dark:bg- classes: dark:bg-slate-800, dark:bg-slate-800
+[Duplicate CSS]: MyBookings.tsx:930 has multiple dark:bg- classes: dark:bg-rose-500/10, dark:bg-rose-500/20, dark:bg-rose-500/30, dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: MyBookings.tsx:940 has multiple dark:bg- classes: dark:bg-rose-500/10, dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: MyBookings.tsx:1136 has multiple dark:bg- classes: dark:bg-slate-100, dark:bg-slate-800
+[Duplicate CSS]: MyBookings.tsx:1156 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: MyBookings.tsx:1159 has multiple dark:bg- classes: dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: MyBookings.tsx:1239 has multiple dark:bg- classes: dark:bg-rose-500/10, dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: MyBookings.tsx:1274 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: MyBookings.tsx:1315 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: MyBookings.tsx:1318 has multiple dark:bg- classes: dark:bg-amber-500/20, dark:bg-amber-500/30
+[Hidden UX]: RoomDetail.tsx contains opacity-0 group-hover:opacity-100
+[Duplicate CSS]: RoomDetail.tsx:732 has multiple dark:bg- classes: dark:bg-green-500/20, dark:bg-green-500/30
+[Duplicate CSS]: RoomDetail.tsx:768 has multiple dark:bg- classes: dark:bg-red-500/10, dark:bg-red-500/20, dark:bg-red-500/30
+[Hidden UX]: RoomList.tsx contains opacity-0 group-hover:opacity-100
+[Duplicate CSS]: RoomList.tsx:79 has multiple dark:bg- classes: dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: RoomList.tsx:129 has multiple dark:bg- classes: dark:bg-indigo-500/10, dark:bg-indigo-500/20, dark:bg-indigo-500/30, dark:bg-indigo-500/20, dark:bg-indigo-500/30, dark:bg-indigo-500/30
+[Duplicate CSS]: RoomList.tsx:147 has multiple dark:bg- classes: dark:bg-rose-500/10, dark:bg-rose-500/20, dark:bg-rose-500/30, dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: RoomList.tsx:203 has multiple dark:bg- classes: dark:bg-amber-600, dark:bg-amber-500/20, dark:bg-amber-500/30
+[Duplicate CSS]: RoomList.tsx:215 has multiple dark:bg- classes: dark:bg-purple-50, dark:bg-purple-900/20
+[Duplicate CSS]: RoomList.tsx:220 has multiple dark:bg- classes: dark:bg-teal-50, dark:bg-teal-900/20
+[Duplicate CSS]: RoomList.tsx:266 has multiple dark:bg- classes: dark:bg-indigo-500/10, dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: RoomList.tsx:267 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: RoomList.tsx:271 has multiple dark:bg- classes: dark:bg-teal-50, dark:bg-teal-900/20
+[Duplicate CSS]: RoomList.tsx:282 has multiple dark:bg- classes: dark:bg-sky-500/10, dark:bg-sky-500/20, dark:bg-sky-500/30
+[Duplicate CSS]: RoomList.tsx:315 has multiple dark:bg- classes: dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: AdminDashboard.tsx:68 has multiple dark:bg- classes: dark:bg-slate-800, dark:bg-indigo-500/10, dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: AdminDashboard.tsx:108 has multiple dark:bg- classes: dark:bg-indigo-500/10, dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: AdminDashboard.tsx:138 has multiple dark:bg- classes: dark:bg-purple-500/10, dark:bg-purple-500/20, dark:bg-purple-500/30
+[Duplicate CSS]: AdminDashboard.tsx:163 has multiple dark:bg- classes: dark:bg-rose-500/10, dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: AdminDashboard.tsx:207 has multiple dark:bg- classes: dark:bg-amber-500/10, dark:bg-amber-500/20, dark:bg-amber-500/30, dark:bg-amber-500/20, dark:bg-amber-500/30, dark:bg-amber-500/30
+[Duplicate CSS]: AdminDashboard.tsx:211 has multiple dark:bg- classes: dark:bg-indigo-500/10, dark:bg-indigo-500/20, dark:bg-indigo-500/30, dark:bg-indigo-500/20, dark:bg-indigo-500/30, dark:bg-indigo-500/30
+[Duplicate CSS]: AdminDashboard.tsx:215 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30, dark:bg-emerald-500/20, dark:bg-emerald-500/30, dark:bg-emerald-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:93 has multiple dark:bg- classes: dark:bg-amber-500/20, dark:bg-amber-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:94 has multiple dark:bg- classes: dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:95 has multiple dark:bg- classes: dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:100 has multiple dark:bg- classes: dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:101 has multiple dark:bg- classes: dark:bg-purple-500/20, dark:bg-purple-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:113 has multiple dark:bg- classes: dark:bg-slate-800, dark:bg-indigo-500/10, dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:245 has multiple dark:bg- classes: dark:bg-rose-500/10, dark:bg-rose-500/20, dark:bg-rose-500/30, dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:276 has multiple dark:bg- classes: dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:338 has multiple dark:bg- classes: dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:362 has multiple dark:bg- classes: dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:394 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:431 has multiple dark:bg- classes: dark:bg-orange-500/10, dark:bg-orange-500/20, dark:bg-orange-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:433 has multiple dark:bg- classes: dark:bg-orange-500/20, dark:bg-orange-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:443 has multiple dark:bg- classes: dark:bg-amber-500/10, dark:bg-amber-500/20, dark:bg-amber-500/30
+[Duplicate CSS]: ApprovalQueue.tsx:464 has multiple dark:bg- classes: dark:bg-slate-800, dark:bg-rose-500/10, dark:bg-rose-500/20, dark:bg-rose-500/30, dark:bg-rose-500/20, dark:bg-rose-500/30
+[Hidden UX]: RoomManagement.tsx contains opacity-0 group-hover:opacity-100
+[Duplicate CSS]: RoomManagement.tsx:184 has multiple dark:bg- classes: dark:bg-emerald-500, dark:bg-emerald-600
+[Duplicate CSS]: RoomManagement.tsx:214 has multiple dark:bg- classes: dark:bg-slate-800/80, dark:bg-slate-800
+[Duplicate CSS]: RoomManagement.tsx:251 has multiple dark:bg- classes: dark:bg-purple-500/10, dark:bg-purple-500/20, dark:bg-purple-500/30
+[Duplicate CSS]: RoomManagement.tsx:253 has multiple dark:bg- classes: dark:bg-teal-500/10, dark:bg-teal-500/20, dark:bg-teal-500/30
+[Duplicate CSS]: RoomManagement.tsx:277 has multiple dark:bg- classes: dark:bg-purple-500/20, dark:bg-purple-500/30
+[Duplicate CSS]: RoomManagement.tsx:283 has multiple dark:bg- classes: dark:bg-teal-500/20, dark:bg-teal-500/30
+[Duplicate CSS]: RoomManagement.tsx:337 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30, dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: RoomManagement.tsx:341 has multiple dark:bg- classes: dark:bg-indigo-500/10, dark:bg-indigo-500/20, dark:bg-indigo-500/30, dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: RoomManagement.tsx:363 has multiple dark:bg- classes: dark:bg-amber-500/20, dark:bg-amber-500/30
+[Duplicate CSS]: RoomManagement.tsx:416 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30, dark:bg-indigo-500/20, dark:bg-indigo-500/30, dark:bg-emerald-500/30
+[Duplicate CSS]: RoomManagement.tsx:460 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: RoomManagement.tsx:462 has multiple dark:bg- classes: dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: RoomManagement.tsx:607 has multiple dark:bg- classes: dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: RoomManagement.tsx:625 has multiple dark:bg- classes: dark:bg-rose-500/10, dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: RoomManagement.tsx:700 has multiple dark:bg- classes: dark:bg-teal-500/10, dark:bg-teal-500/20, dark:bg-teal-500/30
+[Duplicate CSS]: RoomManagement.tsx:701 has multiple dark:bg- classes: dark:bg-teal-500/20, dark:bg-teal-500/30
+[Duplicate CSS]: RoomManagement.tsx:712 has multiple dark:bg- classes: dark:bg-purple-500/10, dark:bg-purple-500/20, dark:bg-purple-500/30
+[Duplicate CSS]: RoomManagement.tsx:713 has multiple dark:bg- classes: dark:bg-purple-500/20, dark:bg-purple-500/30
+[Duplicate CSS]: RoomManagement.tsx:760 has multiple dark:bg- classes: dark:bg-rose-500/10, dark:bg-rose-500/20, dark:bg-rose-500/30, dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: RoomManagement.tsx:921 has multiple dark:bg- classes: dark:bg-emerald-500, dark:bg-emerald-600
+[Duplicate CSS]: ScheduleControl.tsx:66 has multiple dark:bg- classes: dark:bg-slate-800/80, dark:bg-slate-800
+[Duplicate CSS]: ScheduleControl.tsx:72 has multiple dark:bg- classes: dark:bg-amber-500/10, dark:bg-amber-500/20, dark:bg-amber-500/30
+[Duplicate CSS]: ScheduleControl.tsx:73 has multiple dark:bg- classes: dark:bg-amber-500/20, dark:bg-amber-500/30
+[Duplicate CSS]: ScheduleControl.tsx:113 has multiple dark:bg- classes: dark:bg-rose-500/10, dark:bg-rose-500/20, dark:bg-rose-500/30, dark:bg-rose-600
+[Duplicate CSS]: ScheduleControl.tsx:128 has multiple dark:bg- classes: dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: ScheduleControl.tsx:148 has multiple dark:bg- classes: dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: ScheduleControl.tsx:218 has multiple dark:bg- classes: dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: ScheduleControl.tsx:222 has multiple dark:bg- classes: dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: ScheduleControl.tsx:226 has multiple dark:bg- classes: dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: ScheduleControl.tsx:236 has multiple dark:bg- classes: dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: ScheduleControl.tsx:254 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: ScheduleControl.tsx:255 has multiple dark:bg- classes: dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: ScheduleControl.tsx:269 has multiple dark:bg- classes: dark:bg-amber-500/10, dark:bg-amber-500/20, dark:bg-amber-500/30
+[Duplicate CSS]: ScheduleControl.tsx:271 has multiple dark:bg- classes: dark:bg-amber-500/20, dark:bg-amber-500/30
+[Duplicate CSS]: ScheduleControl.tsx:282 has multiple dark:bg- classes: dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: ScheduleControl.tsx:320 has multiple dark:bg- classes: dark:bg-rose-500/10, dark:bg-rose-500/20, dark:bg-rose-500/30, dark:bg-rose-600
+[Duplicate CSS]: WorkspaceApproval.tsx:101 has multiple dark:bg- classes: dark:bg-amber-500/20, dark:bg-amber-500/30
+[Duplicate CSS]: WorkspaceApproval.tsx:102 has multiple dark:bg- classes: dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: WorkspaceApproval.tsx:103 has multiple dark:bg- classes: dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: WorkspaceApproval.tsx:114 has multiple dark:bg- classes: dark:bg-slate-800/50, dark:bg-slate-900
+[Duplicate CSS]: WorkspaceApproval.tsx:177 has multiple dark:bg- classes: dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: WorkspaceApproval.tsx:191 has multiple dark:bg- classes: dark:bg-indigo-500/10, dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: WorkspaceApproval.tsx:241 has multiple dark:bg- classes: dark:bg-rose-500/20, dark:bg-rose-500/30
+[Hidden UX]: ApiMonitoring.tsx contains opacity-0 group-hover:opacity-100
+[Hidden UX]: BuildingManagement.tsx contains opacity-0 group-hover:opacity-100
+[Duplicate CSS]: BuildingManagement.tsx:61 has multiple dark:bg- classes: dark:bg-slate-900/90, dark:bg-blue-900/20
+[Duplicate CSS]: BuildingManagement.tsx:127 has multiple dark:bg- classes: dark:bg-blue-900/20, dark:bg-blue-900/40
+[Hidden UX]: GlobalPolicy.tsx contains opacity-0 group-hover:opacity-100
+[Duplicate CSS]: ForgotPasswordPage.tsx:135 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: ForgotPasswordPage.tsx:154 has multiple dark:bg- classes: dark:bg-indigo-500/10, dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: LoginPage.tsx:83 has multiple dark:bg- classes: dark:bg-red-500/10, dark:bg-red-500/20, dark:bg-red-500/30
+[Duplicate CSS]: LoginPage.tsx:174 has multiple dark:bg- classes: dark:bg-slate-800, dark:bg-slate-800
+[Duplicate CSS]: RegisterPage.tsx:159 has multiple dark:bg- classes: dark:bg-red-500/10, dark:bg-red-500/20, dark:bg-red-500/30
+[Duplicate CSS]: RegisterPage.tsx:172 has multiple dark:bg- classes: dark:bg-slate-800/50, dark:bg-slate-800, dark:bg-slate-900
+[Duplicate CSS]: RegisterPage.tsx:199 has multiple dark:bg- classes: dark:bg-slate-800/50, dark:bg-slate-800, dark:bg-slate-900
+[Duplicate CSS]: RegisterPage.tsx:246 has multiple dark:bg- classes: dark:bg-slate-800, dark:bg-indigo-600, dark:bg-emerald-600
+[Duplicate CSS]: RegisterPage.tsx:280 has multiple dark:bg- classes: dark:bg-emerald-500/10, dark:bg-emerald-500/20, dark:bg-emerald-500/30
+[Duplicate CSS]: RegisterPage.tsx:305 has multiple dark:bg- classes: dark:bg-slate-800/50, dark:bg-slate-900
+[Duplicate CSS]: MainLayout.tsx:202 has multiple dark:bg- classes: dark:bg-indigo-500/10, dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: MainLayout.tsx:213 has multiple dark:bg- classes: dark:bg-slate-800/50, dark:bg-slate-800, dark:bg-slate-900
+[Duplicate CSS]: MainLayout.tsx:224 has multiple dark:bg- classes: dark:bg-indigo-500/10, dark:bg-indigo-500/20, dark:bg-indigo-500/30
+[Duplicate CSS]: Sidebar.tsx:165 has multiple dark:bg- classes: dark:bg-rose-500/20, dark:bg-rose-500/30
+[Duplicate CSS]: ThemeToggle.tsx:36 has multiple dark:bg- classes: dark:bg-indigo-500/10, dark:bg-indigo-500/20, dark:bg-indigo-500/30

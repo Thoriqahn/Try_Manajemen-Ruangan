@@ -237,55 +237,57 @@ function DailyView({
 
   const activeConflict = drag ? rangeHasConflict(drag.roomId, Math.min(drag.startIdx, drag.endIdx), Math.max(drag.startIdx, drag.endIdx)) : false;
 
+  const isPastDay = selectedDay < formatDate(new Date());
+
   return (
-    <div className="flex flex-col h-full bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 shadow-sm" onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between flex-shrink-0 gap-2">
-        <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 shrink-0 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 transition-colors">
+    <div className="flex flex-col h-full bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 shadow-sm transition-colors dark:bg-slate-950" onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between flex-shrink-0 gap-2 transition-colors dark:bg-slate-900 dark:border-slate-700">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 shrink-0 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 transition-colors dark:bg-slate-800 dark:text-slate-200 dark:border-slate-800">
           <ChevronLeft size={16} />
           <span>Kembali</span>
         </button>
         <div className="text-center flex-1">
-          <div className="text-gray-800 text-sm sm:text-base" style={{ fontWeight: 700 }}>
+          <div className="text-gray-800 text-sm sm:text-base transition-colors dark:text-slate-100" style={{ fontWeight: 700 }}>
             {dayName}, {selDate.getDate()} {MONTH_NAMES[selDate.getMonth()]} {selDate.getFullYear()}
           </div>
-          <div className="text-xs text-gray-400 hidden sm:block mt-0.5">Tahan & seret kolom waktu untuk memilih durasi booking</div>
+          <div className="text-xs text-gray-400 hidden sm:block mt-0.5 transition-colors dark:text-slate-500">Tahan & seret kolom waktu untuk memilih durasi booking</div>
         </div>
         <div className="w-20 shrink-0" />
       </div>
 
-      <div className="sm:hidden px-4 py-2 bg-blue-50 border-b border-blue-100 flex items-center gap-2">
-        <Info size={13} className="text-blue-500 shrink-0" />
-        <p className="text-xs text-blue-600">Tahan & seret kolom waktu untuk memilih durasi booking</p>
+      <div className="sm:hidden px-4 py-2 bg-blue-50 border-b border-blue-100 flex items-center gap-2 transition-colors dark:bg-blue-900/20">
+        <Info size={13} className="text-blue-500 shrink-0 transition-colors duration-300 dark:text-blue-400" />
+        <p className="text-xs text-blue-600 transition-colors duration-300 dark:text-blue-400">Tahan & seret kolom waktu untuk memilih durasi booking</p>
       </div>
 
-      <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center gap-4 text-xs text-gray-500 flex-shrink-0 overflow-x-auto">
-        <div className="flex items-center gap-1.5 shrink-0"><div className="w-4 h-3 rounded bg-amber-500" /><span>⏳ Menunggu Persetujuan</span></div>
+      <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center gap-4 text-xs text-gray-500 flex-shrink-0 overflow-x-auto transition-colors dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
+        <div className="flex items-center gap-1.5 shrink-0"><div className="w-4 h-3 rounded bg-amber-50 transition-colors dark:bg-amber-900/20" /><span>⏳ Menunggu Persetujuan</span></div>
         <div className="flex items-center gap-1.5 shrink-0"><div className="w-4 h-3 rounded bg-[#1E3A5F]" /><span>✅ Disetujui (Terkonfirmasi)</span></div>
         <div className="flex items-center gap-1.5 shrink-0"><div className="w-4 h-3 rounded bg-emerald-600" /><span>⚡ Sedang Berjalan</span></div>
-        <div className="flex items-center gap-1.5 shrink-0"><div className="w-4 h-3 rounded bg-white border border-gray-200" /><span>Tersedia</span></div>
-        <div className="flex items-center gap-1.5 shrink-0"><div className="w-4 h-3 rounded bg-amber-100 border border-amber-400" /><span>Pilihan Anda (Proses Request)</span></div>
+        <div className="flex items-center gap-1.5 shrink-0"><div className="w-4 h-3 rounded bg-white border border-gray-200 transition-colors dark:bg-slate-900 dark:border-slate-700" /><span>Tersedia</span></div>
+        <div className="flex items-center gap-1.5 shrink-0"><div className="w-4 h-3 rounded bg-amber-100 border border-amber-400 transition-colors duration-300 dark:bg-amber-500/30" /><span>Pilihan Anda (Proses Request)</span></div>
       </div>
 
-      <div className="flex-1 overflow-auto select-none bg-white">
+      <div className="flex-1 overflow-auto select-none bg-white transition-colors dark:bg-slate-900">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-64 space-y-3">
             <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-gray-400">Memuat jadwal ruangan...</p>
+            <p className="text-sm text-gray-400 transition-colors dark:text-slate-500">Memuat jadwal ruangan...</p>
           </div>
         ) : (
           <div style={{ minWidth: `${LEFT_W + timeSlots.length * SLOT_W}px` }}>
-            <div className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm flex">
-              <div className="shrink-0 border-r border-gray-200 bg-gray-50 flex items-end px-3 pb-2" style={{ width: LEFT_W }}>
-                <span className="text-xs text-gray-400" style={{ fontWeight: 600 }}>Ruangan</span>
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm flex transition-colors dark:bg-slate-900 dark:border-slate-700">
+              <div className="shrink-0 border-r border-gray-200 bg-gray-50 flex items-end px-3 pb-2 transition-colors dark:bg-slate-800 dark:border-slate-700" style={{ width: LEFT_W }}>
+                <span className="text-xs text-gray-400 transition-colors dark:text-slate-500" style={{ fontWeight: 600 }}>Ruangan</span>
               </div>
               {timeSlots.map((t, i) => (
                 <div
                   key={t}
-                  className={`shrink-0 border-r border-gray-100 last:border-r-0 flex items-end justify-center pb-1.5 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}
+                  className={`shrink-0 border-r border-gray-100 dark:border-slate-800 last:border-r-0 flex items-end justify-center pb-1.5 ${i % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-gray-50/50"}`}
                   style={{ width: SLOT_W }}
                 >
                   {i % 2 === 0 && (
-                    <span className="text-xs text-gray-400" style={{ fontWeight: 600, fontSize: "10px" }}>{t}</span>
+                    <span className="text-xs text-gray-400 transition-colors dark:text-slate-500" style={{ fontWeight: 600, fontSize: "10px" }}>{t}</span>
                   )}
                 </div>
               ))}
@@ -298,28 +300,29 @@ function DailyView({
               return (
                 <div
                   key={room.id}
-                  className={`flex border-b border-gray-100 ${ri % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}
+                  className={`flex border-b border-gray-100 dark:border-slate-800 ${ri % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-gray-50/30"}`}
                   style={{ height: ROW_H }}
                 >
                   <div
-                    className="shrink-0 border-r border-gray-200 px-3 flex flex-col justify-center cursor-pointer hover:bg-blue-50/50 transition-colors"
+                    className="shrink-0 border-r border-gray-200 px-3 flex flex-col justify-center cursor-pointer hover:bg-blue-50/50 transition-colors dark:border-slate-700"
                     style={{ width: LEFT_W }}
                     onClick={() => onNavigate("room-detail", { roomId: room.id })}
                   >
-                    <div className="text-sm text-gray-800 truncate" style={{ fontWeight: 600 }}>{room.name}</div>
+                    <div className="text-sm text-gray-800 truncate transition-colors dark:text-slate-100" style={{ fontWeight: 600 }}>{room.name}</div>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="flex items-center gap-0.5 text-xs text-gray-400">
+                      <span className="flex items-center gap-0.5 text-xs text-gray-400 transition-colors dark:text-slate-500">
                         <MapPin size={10} />{room.floor_name || "Lantai"}
                       </span>
-                      <span className="flex items-center gap-0.5 text-xs text-gray-400">
+                      <span className="flex items-center gap-0.5 text-xs text-gray-400 transition-colors dark:text-slate-500">
                         <Users size={10} />{maxCap}
                       </span>
-                      {hasVC && <span className="text-xs bg-green-50 text-green-600 rounded px-1 border border-green-200" style={{ fontSize: "9px" }}>VC</span>}
+                      {hasVC && <span className="text-xs bg-green-50 text-green-600 rounded px-1 border border-green-200 transition-colors dark:bg-green-900/20 dark:text-green-400 dark:border-green-800/50" style={{ fontSize: "9px" }}>VC</span>}
                     </div>
                   </div>
 
                   {timeSlots.map((time, si) => {
                     const booked = isSlotBooked(room.id, si);
+                    const disabled = isPastDay || booked;
                     const booking = getSlotBooking(room.id, si);
                     const selected = isInSelection(room.id, si);
                     const isSelConflict = selected && activeConflict;
@@ -329,17 +332,17 @@ function DailyView({
                         key={`${room.id}-${si}`}
                         data-room={room.id}
                         data-slot={si}
-                        className={`shrink-0 border-r border-gray-100 last:border-r-0 relative transition-colors ${
-                          booked
-                            ? "cursor-not-allowed bg-slate-50"
+                        className={`shrink-0 border-r border-gray-100 dark:border-slate-800 last:border-r-0 relative transition-colors ${
+                          disabled
+                            ? "cursor-not-allowed bg-slate-50 dark:bg-slate-950"
                             : selected
                             ? isSelConflict
-                              ? "cursor-not-allowed bg-red-100"
+                              ? "cursor-not-allowed bg-red-100 dark:bg-red-500/20 dark:bg-red-500/30"
                               : "cursor-crosshair bg-amber-50/50"
-                            : "cursor-crosshair hover:bg-green-50/50"
+                            : "cursor-crosshair hover:bg-green-50/50 dark:hover:bg-green-900/20"
                         }`}
                         style={{ width: SLOT_W, height: ROW_H }}
-                        onMouseDown={() => !booked && handleMouseDown(room.id, si)}
+                        onMouseDown={() => !disabled && handleMouseDown(room.id, si)}
                         onMouseEnter={() => handleMouseEnter(room.id, si)}
                         onMouseUp={() => handleMouseUp(room.id)}
                         onTouchStart={(e) => handleTouchStart(room.id, si, e)}
@@ -348,7 +351,7 @@ function DailyView({
                           <div
                             className={`absolute inset-0.5 rounded flex items-center justify-center overflow-hidden border ${
                               booking?.status === "pending"
-                                ? "bg-amber-500 border-amber-600 text-white"
+                                ? "bg-amber-50 dark:bg-amber-900/20 border-amber-600 text-white"
                                 : booking?.status === "ongoing"
                                 ? "bg-emerald-600 border-emerald-700 text-white"
                                 : "bg-[#1E3A5F] border-[#132742] text-white"
@@ -366,7 +369,7 @@ function DailyView({
                         {selected && !booked && (
                           <div className={`absolute inset-0.5 rounded border border-amber-400 bg-amber-100/80 flex items-center justify-center`}>
                             {si === (drag ? Math.min(drag.startIdx, drag.endIdx) : si) && (
-                              <span className={`text-xs text-amber-800 animate-pulse font-bold`} style={{ fontSize: "10px", fontWeight: 700 }}>
+                              <span className={`text-xs text-amber-800 dark:text-amber-300 animate-pulse font-bold`} style={{ fontSize: "10px", fontWeight: 700 }}>
                                 {isSelConflict ? "✗" : "⏳"}
                               </span>
                             )}
@@ -488,24 +491,24 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
   }
 
   const FilterPanel = () => (
-    <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap gap-3">
+    <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap gap-3 transition-colors dark:bg-slate-900 dark:border-slate-700">
       <div className="flex-1 min-w-[140px]">
-        <label className="block text-xs text-gray-500 mb-1" style={{ fontWeight: 500 }}>Gedung</label>
+        <label className="block text-xs text-gray-500 mb-1 transition-colors dark:text-slate-400" style={{ fontWeight: 500 }}>Gedung</label>
         <select value={filterBuilding} onChange={e => { setFilterBuilding(e.target.value); setFilterFloor("all"); }}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-400 bg-gray-50">
+          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-400 bg-gray-50 transition-colors dark:bg-slate-800 dark:border-slate-700">
           {buildings.map(b => <option key={b} value={b}>{b === "all" ? "Semua Gedung" : b}</option>)}
         </select>
       </div>
       <div className="flex-1 min-w-[140px]">
-        <label className="block text-xs text-gray-500 mb-1" style={{ fontWeight: 500 }}>Lantai</label>
+        <label className="block text-xs text-gray-500 mb-1 transition-colors dark:text-slate-400" style={{ fontWeight: 500 }}>Lantai</label>
         <select value={filterFloor} onChange={e => setFilterFloor(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-400 bg-gray-50">
+          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-400 bg-gray-50 transition-colors dark:bg-slate-800 dark:border-slate-700">
           {floors.map(f => <option key={f} value={f}>{f === "all" ? "Semua Lantai" : f}</option>)}
         </select>
       </div>
       <div className="flex items-end">
         <button onClick={() => { setFilterBuilding("all"); setFilterFloor("all"); }}
-          className="px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg border border-red-200">Reset</button>
+          className="px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg border border-red-200 transition-colors duration-300 dark:bg-red-500/30 dark:text-red-400 dark:border-red-500/30">Reset</button>
       </div>
     </div>
   );
@@ -518,21 +521,21 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
 
     return (
       <button
-        onClick={() => setSelectedDay(dateStr)}
-        className={`w-full text-left border-r border-b border-gray-100 last:border-r-0 transition-colors group ${
+        onClick={() => !isPast && setSelectedDay(dateStr)}
+        className={`w-full text-left border-r border-b border-gray-100 dark:border-slate-800 last:border-r-0 transition-colors group ${
           compact ? "p-1 min-h-[70px]" : "p-2 sm:p-2.5 min-h-[80px] sm:min-h-[96px]"
-        } ${isPast ? "bg-gray-50/70" : isToday ? "bg-blue-50/70" : "bg-white hover:bg-blue-50/30"}`}
+        } ${isPast ? "cursor-not-allowed bg-gray-50/70" : isToday ? "bg-blue-50/70" : "bg-white dark:bg-slate-900 hover:bg-blue-50/30"}`}
       >
         <div className="flex items-start justify-between mb-1">
-          <span className={`text-xs sm:text-sm w-6 h-6 flex items-center justify-center rounded-full transition-all group-hover:bg-blue-100 ${
+          <span className={`text-xs sm:text-sm w-6 h-6 flex items-center justify-center rounded-full transition-all group-hover:bg-blue-100 dark:bg-blue-500/20 dark:bg-blue-500/30 ${
             isToday ? "bg-blue-600 text-white group-hover:bg-blue-600" :
             !inCurrentMonth ? "text-gray-300" :
-            isPast ? "text-gray-400" : "text-gray-700"
+            isPast ? "text-gray-400 dark:text-slate-500" : "text-gray-700 dark:text-slate-200"
           }`} style={{ fontWeight: isToday ? 700 : 500 }}>
             {date.getDate()}
           </span>
           {bookings.length > 0 && !compact && (
-            <span className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-full w-5 h-5 flex items-center justify-center font-bold" style={{ fontSize: "10px" }}>{bookings.length}</span>
+            <span className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-full w-5 h-5 flex items-center justify-center font-bold transition-colors dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/50" style={{ fontSize: "10px" }}>{bookings.length}</span>
           )}
         </div>
         {!compact ? (
@@ -542,10 +545,10 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
                 key={i} 
                 className={`text-xs rounded px-1.5 py-0.5 truncate hidden sm:block border ${
                   b.status === "pending"
-                    ? "bg-amber-50 text-amber-700 border-amber-200"
+                    ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50"
                     : b.status === "ongoing"
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : "bg-blue-50 text-blue-700 border-blue-200"
+                    ? "bg-emerald-50 dark:bg-emerald-500/10 dark:bg-emerald-500/20 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30"
+                    : "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50"
                 }`} 
                 style={{ fontSize: "10px", fontWeight: 600 }}
               >
@@ -559,15 +562,15 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
                   <div 
                     key={i} 
                     className={`w-1.5 h-1.5 rounded-full ${
-                      b.status === "pending" ? "bg-amber-500" :
-                      b.status === "ongoing" ? "bg-emerald-500" : "bg-blue-500"
+                      b.status === "pending" ? "bg-amber-50 dark:bg-amber-900/20" :
+                      b.status === "ongoing" ? "bg-emerald-500 dark:bg-emerald-600" : "bg-blue-50 dark:bg-blue-900/20"
                     }`} 
                   />
                 ))}
               </div>
             )}
             {bookings.length > 2 && (
-              <div className="text-xs text-gray-400 hidden sm:block pl-1" style={{ fontSize: "10px" }}>+{bookings.length - 2} lainnya</div>
+              <div className="text-xs text-gray-400 hidden sm:block pl-1 transition-colors dark:text-slate-500" style={{ fontSize: "10px" }}>+{bookings.length - 2} lainnya</div>
             )}
           </div>
         ) : (
@@ -577,8 +580,8 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
                 <div 
                   key={i} 
                   className={`w-1.5 h-1.5 rounded-full ${
-                    b.status === "pending" ? "bg-amber-500" :
-                    b.status === "ongoing" ? "bg-emerald-500" : "bg-blue-500"
+                    b.status === "pending" ? "bg-amber-50 dark:bg-amber-900/20" :
+                    b.status === "ongoing" ? "bg-emerald-500 dark:bg-emerald-600" : "bg-blue-50 dark:bg-blue-900/20"
                   }`} 
                 />
               ))}
@@ -593,12 +596,12 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-gray-800" style={{ fontWeight: 700 }}>Kalender Ruangan</h2>
-          <p className="text-sm text-gray-500">Pilih tanggal untuk melihat jadwal & booking</p>
+          <h2 className="text-gray-800 transition-colors dark:text-slate-100" style={{ fontWeight: 700 }}>Kalender Ruangan</h2>
+          <p className="text-sm text-gray-500 transition-colors dark:text-slate-400">Pilih tanggal untuk melihat jadwal & booking</p>
         </div>
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg border text-sm transition-all self-start sm:self-auto ${showFilters ? "bg-[#1E3A5F] text-white border-[#1E3A5F]" : "bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"}`}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg border text-sm transition-all self-start sm:self-auto ${showFilters ? "bg-[#1E3A5F] text-white border-[#1E3A5F]" : "bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:bg-slate-800"}`}
         >
           <Filter size={15} />
           Filter Ruangan
@@ -607,32 +610,32 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
 
       {showFilters && <FilterPanel />}
 
-      <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+      <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 transition-colors dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50">
         <Info size={14} className="shrink-0" />
         Pilih tanggal → tahan & seret kolom waktu di baris ruangan untuk memilih durasi booking secara instan.
       </div>
 
       {loading ? (
-        <div className="bg-white border border-gray-100 rounded-2xl p-12 flex flex-col items-center justify-center space-y-4 min-h-[300px]">
+        <div className="bg-white border border-gray-100 rounded-2xl p-12 flex flex-col items-center justify-center space-y-4 min-h-[300px] transition-colors dark:bg-slate-900 dark:border-slate-800">
           <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-gray-400">Memuat data kalender...</p>
+          <p className="text-sm text-gray-400 transition-colors dark:text-slate-500">Memuat data kalender...</p>
         </div>
       ) : (
         <>
           {/* DESKTOP Month View */}
-          <div className="hidden lg:block bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-slate-50/50">
-              <button onClick={() => setMonthDate(new Date(monthDate.getFullYear(), monthDate.getMonth() - 1, 1))} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors bg-white border border-gray-100">
+          <div className="hidden lg:block bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm transition-colors dark:bg-slate-900 dark:border-slate-700">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-slate-50/50 transition-colors dark:border-slate-800">
+              <button onClick={() => setMonthDate(new Date(monthDate.getFullYear(), monthDate.getMonth() - 1, 1))} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors bg-white border border-gray-100 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
                 <ChevronLeft size={18} />
               </button>
-              <span className="text-gray-800 text-base" style={{ fontWeight: 700 }}>{MONTH_NAMES[monthDate.getMonth()]} {monthDate.getFullYear()}</span>
-              <button onClick={() => setMonthDate(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1))} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors bg-white border border-gray-100">
+              <span className="text-gray-800 text-base transition-colors dark:text-slate-100" style={{ fontWeight: 700 }}>{MONTH_NAMES[monthDate.getMonth()]} {monthDate.getFullYear()}</span>
+              <button onClick={() => setMonthDate(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1))} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors bg-white border border-gray-100 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
                 <ChevronRight size={18} />
               </button>
             </div>
-            <div className="grid grid-cols-7 border-b border-gray-100 bg-slate-50/20">
+            <div className="grid grid-cols-7 border-b border-gray-100 bg-slate-50/20 transition-colors dark:border-slate-800">
               {DAY_NAMES_SHORT.map(d => (
-                <div key={d} className="py-2.5 text-center text-xs text-gray-400 border-r border-gray-100 last:border-r-0" style={{ fontWeight: 700 }}>{d}</div>
+                <div key={d} className="py-2.5 text-center text-xs text-gray-400 border-r border-gray-100 last:border-r-0 transition-colors dark:text-slate-500 dark:border-slate-800" style={{ fontWeight: 700 }}>{d}</div>
               ))}
             </div>
             {monthGrid.map((week, wi) => (
@@ -645,28 +648,28 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
           </div>
 
           {/* MOBILE Week View */}
-          <div className="lg:hidden bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100 bg-slate-50/50">
-              <button onClick={() => { const d = new Date(weekMonday); d.setDate(d.getDate() - 7); setWeekMonday(d); }} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors bg-white border border-gray-100">
+          <div className="lg:hidden bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm transition-colors dark:bg-slate-900 dark:border-slate-700">
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100 bg-slate-50/50 transition-colors dark:border-slate-800">
+              <button onClick={() => { const d = new Date(weekMonday); d.setDate(d.getDate() - 7); setWeekMonday(d); }} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors bg-white border border-gray-100 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
                 <ChevronLeft size={16} />
               </button>
               <div className="text-center">
-                <div className="text-gray-800 text-sm" style={{ fontWeight: 700 }}>
+                <div className="text-gray-800 text-sm transition-colors dark:text-slate-100" style={{ fontWeight: 700 }}>
                   {weekDays[0].getDate()} – {weekDays[6].getDate()} {MONTH_NAMES[weekDays[6].getMonth()]} {weekDays[6].getFullYear()}
                 </div>
-                <div className="text-xs text-gray-400 mt-0.5">Ketuk tanggal untuk detail jadwal</div>
+                <div className="text-xs text-gray-400 mt-0.5 transition-colors dark:text-slate-500">Ketuk tanggal untuk detail jadwal</div>
               </div>
-              <button onClick={() => { const d = new Date(weekMonday); d.setDate(d.getDate() + 7); setWeekMonday(d); }} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors bg-white border border-gray-100">
+              <button onClick={() => { const d = new Date(weekMonday); d.setDate(d.getDate() + 7); setWeekMonday(d); }} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors bg-white border border-gray-100 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
                 <ChevronRight size={16} />
               </button>
             </div>
-            <div className="grid grid-cols-7 border-b border-gray-100">
+            <div className="grid grid-cols-7 border-b border-gray-100 transition-colors dark:border-slate-800">
               {weekDays.map((date, i) => {
                 const isToday = formatDate(date) === todayStr;
                 return (
-                  <div key={i} className="py-2 text-center border-r border-gray-100 last:border-r-0">
-                    <div className="text-xs text-gray-400 mb-0.5" style={{ fontWeight: 600 }}>{DAY_NAMES_SHORT[i]}</div>
-                    <div className={`w-7 h-7 flex items-center justify-center rounded-full mx-auto text-xs ${isToday ? "bg-blue-600 text-white font-bold" : "text-gray-700"}`}>
+                  <div key={i} className="py-2 text-center border-r border-gray-100 last:border-r-0 transition-colors dark:border-slate-800">
+                    <div className="text-xs text-gray-400 mb-0.5 transition-colors dark:text-slate-500" style={{ fontWeight: 600 }}>{DAY_NAMES_SHORT[i]}</div>
+                    <div className={`w-7 h-7 flex items-center justify-center rounded-full mx-auto text-xs ${isToday ? "bg-blue-600 text-white font-bold" : "text-gray-700 dark:text-slate-200"}`}>
                       {date.getDate()}
                     </div>
                   </div>
@@ -678,19 +681,19 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
                 <DayCell key={i} date={date} compact />
               ))}
             </div>
-            <div className="px-4 py-3 border-t border-gray-100 flex gap-4 text-xs text-gray-500 bg-slate-50/50">
-              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-blue-500" /><span>Ada booking</span></div>
+            <div className="px-4 py-3 border-t border-gray-100 flex gap-4 text-xs text-gray-500 bg-slate-50/50 transition-colors dark:text-slate-400 dark:border-slate-800">
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-blue-50 transition-colors dark:bg-blue-900/20" /><span>Ada booking</span></div>
               <div className="flex items-center gap-1.5"><span className="text-gray-300 text-sm">—</span><span>Kosong</span></div>
             </div>
           </div>
         </>
       )}
 
-      <div className="hidden lg:flex gap-4 text-xs text-gray-400 pt-2">
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-blue-50 border border-blue-200" /><span>Hari ini</span></div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-blue-100 border border-blue-300" /><span>Ada booking</span></div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-white border border-gray-200" /><span>Tersedia</span></div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-gray-50 border border-gray-100" /><span>Sudah lewat</span></div>
+      <div className="hidden lg:flex gap-4 text-xs text-gray-400 pt-2 transition-colors dark:text-slate-500">
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-blue-50 border border-blue-200 transition-colors dark:bg-blue-900/20 dark:border-blue-800/50" /><span>Hari ini</span></div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-blue-100 border border-blue-300 transition-colors duration-300 dark:bg-blue-500/30 dark:border-blue-500/40" /><span>Ada booking</span></div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-white border border-gray-200 transition-colors dark:bg-slate-900 dark:border-slate-700" /><span>Tersedia</span></div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-gray-50 border border-gray-100 transition-colors dark:bg-slate-800 dark:border-slate-800" /><span>Sudah lewat</span></div>
       </div>
     </div>
   );
@@ -745,17 +748,17 @@ function BookingModal({ room, date, startTime, endTime, onClose, onConfirm }: {
   if (success) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-        <div className="bg-white rounded-2xl w-full max-w-sm text-center p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white rounded-2xl w-full max-w-sm text-center p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200 transition-colors dark:bg-slate-900">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-300 dark:bg-green-500/30">
+            <svg className="w-8 h-8 text-green-500 transition-colors duration-300 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h3 className="text-gray-800 mb-2" style={{ fontWeight: 700 }}>
+          <h3 className="text-gray-800 mb-2 transition-colors dark:text-slate-100" style={{ fontWeight: 700 }}>
             {room?.approval_type === "instant" ? "Booking Berhasil!" : "Permohonan Terkirim!"}
           </h3>
-          <p className="text-sm text-gray-500 mb-1">{room?.name}</p>
-          <p className="text-sm text-blue-600 mb-6 font-bold">
+          <p className="text-sm text-gray-500 mb-1 transition-colors dark:text-slate-400">{room?.name}</p>
+          <p className="text-sm text-blue-600 mb-6 font-bold transition-colors duration-300 dark:text-blue-400">
             {date} · {startTime} – {form.endTime}
           </p>
           <button onClick={onConfirm} className="w-full py-3 bg-[#1E3A5F] text-white rounded-xl text-sm font-bold shadow-md shadow-blue-900/10 hover:bg-[#142946] transition-colors">Tutup</button>
@@ -766,49 +769,49 @@ function BookingModal({ room, date, startTime, endTime, onClose, onConfirm }: {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 transition-colors dark:bg-slate-900">
+        <div className="p-5 border-b border-gray-100 flex items-center justify-between transition-colors dark:border-slate-800">
           <div>
-            <h3 className="text-gray-800" style={{ fontWeight: 700 }}>Konfirmasi Booking</h3>
-            <p className="text-sm text-gray-500 mt-0.5">{room?.name} · {room?.floor_name}</p>
+            <h3 className="text-gray-800 transition-colors dark:text-slate-100" style={{ fontWeight: 700 }}>Konfirmasi Booking</h3>
+            <p className="text-sm text-gray-500 mt-0.5 transition-colors dark:text-slate-400">{room?.name} · {room?.floor_name}</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">×</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg transition-colors dark:text-slate-300">×</button>
         </div>
 
         {error && (
-          <div className="mx-5 mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl">
+          <div className="mx-5 mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl transition-colors duration-300 dark:bg-red-500/30 dark:text-red-400 dark:border-red-500/30">
             {error}
           </div>
         )}
 
-        <div className="mx-5 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3">
+        <div className="mx-5 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3 transition-colors dark:bg-blue-900/20 dark:border-blue-800/50">
           <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
             <Monitor size={18} className="text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm text-blue-900 font-bold">{date}</div>
-            <div className="text-xs text-blue-600">
+            <div className="text-sm text-blue-900 font-bold transition-colors dark:text-blue-100">{date}</div>
+            <div className="text-xs text-blue-600 transition-colors duration-300 dark:text-blue-400">
               {startTime} – {form.endTime || "…"}
               {durationLabel() && <span className="ml-2 text-blue-400">({durationLabel()})</span>}
             </div>
           </div>
           {room?.approval_type === "manual" && (
-            <span className="text-xs bg-amber-100 text-amber-700 rounded-full px-2 py-0.5 shrink-0" style={{ fontWeight: 500 }}>Perlu Approval</span>
+            <span className="text-xs bg-amber-100 text-amber-700 rounded-full px-2 py-0.5 shrink-0 transition-colors duration-300 dark:bg-amber-500/30 dark:text-amber-400" style={{ fontWeight: 500 }}>Perlu Approval</span>
           )}
         </div>
 
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Mulai</label>
-              <div className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 font-bold">{startTime}</div>
+              <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>Mulai</label>
+              <div className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 font-bold transition-colors dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">{startTime}</div>
             </div>
             <div>
-              <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Selesai <span className="text-red-500">*</span></label>
+              <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>Selesai <span className="text-red-500 transition-colors duration-300 dark:text-red-400">*</span></label>
               <select
                 value={form.endTime}
                 onChange={e => setForm({ ...form, endTime: e.target.value })}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 font-bold"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 font-bold transition-colors dark:bg-slate-800 dark:border-slate-700"
               >
                 <option value="">Pilih waktu</option>
                 {endOptions.map(t => <option key={t} value={t}>{t}</option>)}
@@ -817,49 +820,49 @@ function BookingModal({ room, date, startTime, endTime, onClose, onConfirm }: {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Agenda Rapat <span className="text-red-500">*</span></label>
+            <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>Agenda Rapat <span className="text-red-500 transition-colors duration-300 dark:text-red-400">*</span></label>
             <input
               type="text"
               value={form.agenda}
               onChange={e => setForm({ ...form, agenda: e.target.value })}
               placeholder="Contoh: Rapat Koordinasi Q2"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 transition-colors dark:bg-slate-800 dark:border-slate-700"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Jumlah Peserta</label>
+            <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>Jumlah Peserta</label>
             <input
               type="number"
               value={form.participants}
               onChange={e => setForm({ ...form, participants: e.target.value })}
               placeholder={`Contoh: 10 orang`}
               min={1}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 transition-colors dark:bg-slate-800 dark:border-slate-700"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Catatan <span className="text-gray-400 text-xs">(opsional)</span></label>
+            <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>Catatan <span className="text-gray-400 text-xs transition-colors dark:text-slate-500">(opsional)</span></label>
             <textarea
               value={form.notes}
               onChange={e => setForm({ ...form, notes: e.target.value })}
               placeholder="Kebutuhan tambahan, layout, dll."
               rows={2}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 resize-none"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 resize-none transition-colors dark:bg-slate-800 dark:border-slate-700"
             />
           </div>
         </div>
 
         <div className="px-5 pb-5 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Batal</button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">Batal</button>
           <button
             onClick={handleSubmit}
             disabled={!form.agenda || !form.endTime || loading}
             className={`px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 ${
               form.agenda && form.endTime && !loading
                 ? "bg-[#1E3A5F] text-white hover:bg-[#0F2144]"
-                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 cursor-not-allowed"
             }`}
             style={{ fontWeight: 600 }}
           >

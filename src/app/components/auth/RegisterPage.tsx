@@ -113,74 +113,93 @@ export function RegisterPage({ onNavigate, onLogin }: RegisterPageProps) {
 
   const CheckItem = ({ ok, label }: { ok: boolean; label: string }) => (
     <div className="flex items-center gap-2">
-      <div className={`w-4 h-4 rounded-full flex items-center justify-center ${ok ? "bg-green-100" : "bg-red-100"}`}>
-        {ok ? <Check size={10} className="text-green-600" /> : <X size={10} className="text-red-500" />}
+      <div className={`w-4 h-4 rounded-full flex items-center justify-center ${ok ? "bg-green-100 dark:bg-green-500/20 dark:bg-green-500/30" : "bg-red-100 dark:bg-red-500/20 dark:bg-red-500/30"}`}>
+        {ok ? <Check size={10} className="text-green-600 transition-colors duration-300 dark:text-green-400" /> : <X size={10} className="text-red-500 transition-colors duration-300 dark:text-red-400" />}
       </div>
-      <span className={`text-xs ${ok ? "text-green-700" : "text-red-500"}`}>{label}</span>
+      <span className={`text-xs ${ok ? "text-green-700 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>{label}</span>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0F2144] to-[#1E3A5F] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-            <Building2 className="w-6 h-6 text-[#1E3A5F]" />
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden font-sans transition-colors duration-300 dark:bg-slate-950">
+      {/* Background decorations */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-600/10 blur-[120px] transition-colors duration-300 dark:bg-emerald-600/10" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-500/10 blur-[120px] transition-colors duration-300 dark:bg-indigo-600/10" />
+      
+      {/* IKN Ornaments Pattern */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-[0.03] dark:opacity-[0.05] transition-colors duration-300">
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/200/svg">
+          <defs>
+            <pattern id="register-ikn-pattern" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1.5" fill="currentColor" className="text-slate-300 transition-colors duration-300 dark:text-slate-200" />
+            </pattern>
+          </defs>
+          <rect x="0" y="0" width="100%" height="100%" fill="url(#register-ikn-pattern)" />
+        </svg>
+      </div>
+
+      <div className="w-full max-w-[420px] relative z-10">
+        <div className="text-center mb-10 flex flex-col items-center">
+          <div className="inline-flex items-center gap-3 mb-5">
+            <div className="w-12 h-12 bg-gradient-to-tr from-indigo-500 to-indigo-600 dark:from-emerald-500 dark:to-emerald-700 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/30 dark:shadow-emerald-500/20 ring-4 ring-white dark:ring-slate-900 transition-all">
+              <Building2 className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-3xl text-slate-800 tracking-tight font-extrabold transition-colors dark:text-slate-100">Menara</span>
           </div>
-          <span className="text-2xl text-white" style={{ fontWeight: 700 }}>Menara</span>
+          <p className="text-slate-500 text-sm font-medium transition-colors dark:text-slate-400">Platform Manajemen Ruangan Internal</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] border border-white p-8 transition-colors dark:bg-slate-900/80 dark:border-slate-800">
           {step === "form" ? (
             <>
-              <h2 className="text-[#0F2144] mb-1" style={{ fontWeight: 700 }}>Buat Akun Baru</h2>
-              <p className="text-sm text-gray-500 mb-6">Daftar untuk mengakses sistem pemesanan ruangan</p>
+              <h2 className="text-slate-800 text-xl font-bold tracking-tight mb-2 transition-colors dark:text-slate-100">Buat Akun Baru</h2>
+              <p className="text-sm text-slate-500 mb-8 font-medium transition-colors dark:text-slate-400">Daftar untuk mengakses sistem pemesanan ruangan</p>
 
               {generalError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-600 text-sm">{generalError}</p>
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg transition-colors duration-300 dark:bg-red-500/30 dark:border-red-500/30">
+                  <p className="text-red-600 text-sm transition-colors duration-300 dark:text-red-400">{generalError}</p>
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Nama Lengkap</label>
+                  <label className="block text-sm text-slate-700 mb-2 font-semibold transition-colors dark:text-slate-300">Nama Lengkap</label>
                   <input
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     placeholder="Nama lengkap Anda"
-                    className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                    className="w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 text-slate-800 text-sm outline-none transition-all duration-300 placeholder-slate-400 dark:placeholder-slate-500 font-medium dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Email</label>
+                  <label className="block text-sm text-slate-700 mb-2 font-semibold transition-colors dark:text-slate-300">Email</label>
                   <input
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     placeholder="nama@oikn.go.id"
-                    className={`w-full px-4 py-3 rounded-lg border text-sm outline-none transition-all ${
-                      form.email && !emailValid ? "border-red-400 bg-red-50" :
-                      emailValid ? "border-green-400 bg-green-50" :
-                      "border-gray-200 bg-gray-50 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    className={`w-full px-4 py-3.5 rounded-xl border text-sm outline-none transition-all duration-300 placeholder-slate-400 dark:placeholder-slate-500 font-medium ${
+                      form.email && !emailValid ? "border-rose-300 dark:border-rose-500/50 bg-rose-50/50 dark:bg-rose-500/10 dark:bg-rose-500/20 dark:bg-rose-500/30 focus:border-rose-400 dark:focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 text-rose-900 dark:text-rose-200" :
+                      emailValid ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-500/10 dark:bg-emerald-500/20 dark:bg-emerald-500/30 focus:border-emerald-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-emerald-900 dark:text-emerald-200" :
+                      "border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-800 focus:bg-white dark:bg-slate-900 dark:focus:bg-slate-900 focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 text-slate-800 dark:text-slate-200"
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Password</label>
+                  <label className="block text-sm text-slate-700 mb-2 font-semibold transition-colors dark:text-slate-300">Password</label>
                   <div className="relative">
                     <input
                       type={showPwd ? "text" : "password"}
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
                       placeholder="••••••••"
-                      className="w-full px-4 py-3 pr-11 rounded-lg border border-gray-200 bg-gray-50 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className="w-full px-4 py-3.5 pr-12 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 text-slate-800 text-sm outline-none transition-all duration-300 placeholder-slate-400 dark:placeholder-slate-500 font-medium dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700"
                     />
-                    <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                      {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                    <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 dark:hover:text-emerald-400 transition-colors p-1 dark:text-indigo-400">
+                      {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                   {form.password && (
@@ -194,38 +213,43 @@ export function RegisterPage({ onNavigate, onLogin }: RegisterPageProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1.5" style={{ fontWeight: 500 }}>Konfirmasi Password</label>
+                  <label className="block text-sm text-slate-700 mb-2 font-semibold transition-colors dark:text-slate-300">Konfirmasi Password</label>
                   <div className="relative">
                     <input
                       type={showConfirm ? "text" : "password"}
                       value={form.confirmPassword}
                       onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                       placeholder="••••••••"
-                      className={`w-full px-4 py-3 pr-11 rounded-lg border text-sm outline-none transition-all ${
-                        form.confirmPassword && !passwordsMatch ? "border-red-400 bg-red-50" :
-                        passwordsMatch ? "border-green-400 bg-green-50" :
-                        "border-gray-200 bg-gray-50 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className={`w-full px-4 py-3.5 pr-12 rounded-xl border text-sm outline-none transition-all duration-300 placeholder-slate-400 dark:placeholder-slate-500 font-medium ${
+                        form.confirmPassword && !passwordsMatch ? "border-rose-300 dark:border-rose-500/50 bg-rose-50/50 dark:bg-rose-500/10 dark:bg-rose-500/20 dark:bg-rose-500/30 focus:border-rose-400 dark:focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 text-rose-900 dark:text-rose-200" :
+                        passwordsMatch ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-500/10 dark:bg-emerald-500/20 dark:bg-emerald-500/30 focus:border-emerald-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-emerald-900 dark:text-emerald-200" :
+                        "border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-800 focus:bg-white dark:bg-slate-900 dark:focus:bg-slate-900 focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 text-slate-800 dark:text-slate-200"
                       }`}
                     />
-                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                      {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 dark:hover:text-emerald-400 transition-colors p-1 dark:text-indigo-400">
+                      {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                   {form.confirmPassword && !passwordsMatch && (
-                    <p className="text-red-500 text-xs mt-1">Password tidak cocok</p>
+                    <p className="text-rose-500 text-xs mt-1.5 font-medium transition-colors duration-300 dark:text-rose-400">Password tidak cocok</p>
                   )}
                 </div>
 
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={agreed}
-                    onChange={(e) => setAgreed(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600"
-                  />
-                  <span className="text-sm text-gray-600">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative mt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={agreed}
+                      onChange={(e) => setAgreed(e.target.checked)}
+                      className="peer sr-only"
+                    />
+                    <div className="w-5 h-5 rounded-md border-2 border-slate-300 bg-white peer-checked:bg-indigo-500 dark:peer-checked:bg-emerald-500 peer-checked:border-indigo-500 dark:peer-checked:border-emerald-500 transition-all flex items-center justify-center dark:bg-emerald-600 dark:border-slate-600">
+                      <Check size={14} className="text-white peer-checked:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                  <span className="text-sm text-slate-600 font-medium transition-colors duration-300 dark:text-slate-400">
                     Saya menyetujui{" "}
-                    <span className="text-blue-600 underline cursor-pointer">Syarat dan Ketentuan</span>{" "}
+                    <span className="text-indigo-600 font-bold hover:underline cursor-pointer transition-colors duration-300 dark:text-emerald-400">Syarat dan Ketentuan</span>{" "}
                     penggunaan sistem
                   </span>
                 </label>
@@ -233,34 +257,34 @@ export function RegisterPage({ onNavigate, onLogin }: RegisterPageProps) {
                 <button
                   type="submit"
                   disabled={!formValid || loading}
-                  className={`w-full py-3 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${
+                  className={`w-full py-3.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 mt-2 ${
                     formValid && !loading
-                      ? "bg-[#1E3A5F] text-white hover:bg-[#0F2144] shadow-md"
-                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      ? "bg-indigo-600 dark:bg-emerald-600 text-white hover:bg-indigo-700 dark:hover:bg-emerald-700 hover:shadow-lg hover:shadow-indigo-500/30 dark:hover:shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed border border-slate-200 dark:border-slate-700"
                   }`}
                 >
                   {loading ? (
-                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Memproses...</span></>
+                    <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Memproses...</span></>
                   ) : "Daftar"}
                 </button>
               </form>
 
-              <p className="text-center text-sm text-gray-500 mt-6">
+              <p className="text-center text-sm text-slate-500 mt-8 font-medium transition-colors duration-300 dark:text-slate-400">
                 Sudah punya akun?{" "}
-                <button onClick={() => onNavigate("login")} className="text-blue-600 hover:underline" style={{ fontWeight: 500 }}>Masuk</button>
+                <button onClick={() => onNavigate("login")} className="text-indigo-600 hover:text-indigo-700 dark:hover:text-emerald-300 font-bold hover:underline transition-colors dark:text-indigo-400">Masuk Sekarang</button>
               </p>
             </>
           ) : (
             <>
               <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-lg transition-colors duration-300 dark:bg-emerald-500/30 dark:border-slate-800">
+                  <svg className="w-8 h-8 text-indigo-600 transition-colors duration-300 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <h2 className="text-[#0F2144]" style={{ fontWeight: 700 }}>Verifikasi Email</h2>
-                <p className="text-sm text-gray-500 mt-1">Kode OTP telah dikirim ke <span className="text-blue-600" style={{ fontWeight: 500 }}>{form.email}</span></p>
-                <p className="text-xs text-gray-400 mt-1">Berlaku selama 30 menit</p>
+                <h2 className="text-slate-800 text-xl font-bold tracking-tight mb-2 transition-colors duration-300 dark:text-slate-100">Verifikasi Email</h2>
+                <p className="text-sm text-slate-500 font-medium mt-1 transition-colors duration-300 dark:text-slate-400">Kode OTP telah dikirim ke <br/><span className="text-indigo-600 font-bold transition-colors duration-300 dark:text-emerald-400">{form.email}</span></p>
+                <p className="text-xs text-slate-400 mt-2 font-medium bg-slate-100 inline-block px-3 py-1 rounded-full transition-colors duration-300 dark:bg-slate-800 dark:text-slate-500">Berlaku selama 30 menit</p>
               </div>
 
               <div className="flex gap-2 justify-center mb-4">
@@ -278,34 +302,33 @@ export function RegisterPage({ onNavigate, onLogin }: RegisterPageProps) {
                         document.getElementById(`otp-${i - 1}`)?.focus();
                       }
                     }}
-                    className="w-11 h-12 text-center text-lg border rounded-lg border-gray-200 bg-gray-50 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
-                    style={{ fontWeight: 600 }}
+                    className="w-12 h-14 text-center text-xl font-bold border rounded-xl border-slate-200 bg-slate-50/50 outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 text-slate-800 transition-all duration-300 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700"
                   />
                 ))}
               </div>
-              {otpError && <p className="text-red-500 text-xs text-center mb-3">{otpError}</p>}
+              {otpError && <p className="text-red-500 text-xs text-center mb-3 transition-colors duration-300 dark:text-red-400">{otpError}</p>}
 
               <button
                 onClick={handleOtpSubmit}
                 disabled={loading}
-                className="w-full py-3 rounded-lg bg-[#1E3A5F] text-white text-sm hover:bg-[#0F2144] flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 dark:hover:bg-emerald-700 flex items-center justify-center gap-2 mt-2 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/30 dark:hover:shadow-emerald-500/30 hover:-translate-y-0.5 dark:bg-emerald-600"
               >
-                {loading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Memverifikasi...</span></> : "Verifikasi"}
+                {loading ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Memverifikasi...</span></> : "Verifikasi"}
               </button>
 
-              <p className="text-center text-sm text-gray-500 mt-4">
+              <p className="text-center text-sm text-slate-500 mt-6 font-medium transition-colors duration-300 dark:text-slate-400">
                 Tidak menerima kode?{" "}
                 {canResend ? (
-                  <button onClick={handleResend} className="text-blue-600 hover:underline" style={{ fontWeight: 500 }}>Kirim Ulang</button>
+                  <button onClick={handleResend} className="text-indigo-600 hover:text-indigo-700 dark:hover:text-emerald-300 font-bold hover:underline transition-colors dark:text-indigo-400">Kirim Ulang</button>
                 ) : (
-                  <span className="text-gray-400">Kirim ulang dalam {Math.floor(resendCooldown / 60)}:{String(resendCooldown % 60).padStart(2, '0')}</span>
+                  <span className="text-slate-400 transition-colors duration-300 dark:text-slate-500">Kirim ulang dalam {Math.floor(resendCooldown / 60)}:{String(resendCooldown % 60).padStart(2, '0')}</span>
                 )}
               </p>
             </>
           )}
         </div>
 
-        <p className="text-center text-blue-200/60 text-xs mt-6">© 2025 OIKN — Sistem Manajemen Ruangan</p>
+        <p className="text-center text-slate-400/80 text-xs mt-6 font-medium transition-colors duration-300 dark:text-slate-500/80">© 2025 OIKN — Sistem Manajemen Ruangan</p>
       </div>
     </div>
   );
