@@ -23,10 +23,11 @@ export function WorkspaceApproval({ onNavigate, isSuperAdmin = false }: Workspac
   const [selectedAdminFilter, setSelectedAdminFilter] = useState("");
   const [adminList, setAdminList] = useState<any[]>([]);
 
-  const fetchRequests = async () => {
+  const fetchRequests = async (adminFilterValue?: string) => {
     setLoading(true);
     try {
-      const res = await workspaceService.listRequests();
+      const filterAdmin = adminFilterValue !== undefined ? adminFilterValue : selectedAdminFilter;
+      const res = await workspaceService.listRequests(filterAdmin || undefined);
       if (res.success) {
         setRequests(res.data || []);
       }
@@ -111,32 +112,55 @@ export function WorkspaceApproval({ onNavigate, isSuperAdmin = false }: Workspac
           <h2 className="text-2xl font-bold text-slate-800 tracking-tight transition-colors dark:text-slate-100">Antrean Persetujuan Meja</h2>
           <p className="text-sm font-medium text-slate-500 mt-1 transition-colors dark:text-slate-400">Kelola permohonan penempatan meja permanen oleh pegawai</p>
         </div>
-        <button onClick={fetchRequests} className="p-3 text-slate-400 hover:text-indigo-600 dark:hover:text-emerald-400 bg-white/50 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-95 border border-slate-200/50 dark:bg-slate-900 dark:text-indigo-400 dark:border-slate-700/50" title="Refresh">
+        <button onClick={() => fetchRequests()} className="p-3 text-slate-400 hover:text-indigo-600 dark:hover:text-emerald-400 bg-white/50 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-95 border border-slate-200/50 dark:bg-slate-900 dark:text-indigo-400 dark:border-slate-700/50" title="Refresh">
           <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
 
       {/* Filters bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex gap-2 bg-slate-100/80 p-1.5 rounded-2xl w-fit flex-shrink-0 backdrop-blur-md border border-slate-200/50 transition-colors overflow-x-auto custom-scrollbar max-w-full dark:bg-slate-900/50 dark:border-slate-800">
+        <div className="flex gap-1 bg-slate-100/80 p-1.5 rounded-2xl w-fit max-w-full flex-shrink-0 backdrop-blur-md shadow-inner transition-colors overflow-x-auto custom-scrollbar dark:bg-slate-800/80">
           {(["all", "pending", "approved", "rejected"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setFilter(tab)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-all whitespace-nowrap ${filter === tab ? "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm font-bold border border-slate-200 dark:border-slate-700" : "text-slate-500 dark:text-slate-400 font-medium hover:text-slate-700 dark:text-slate-200 dark:hover:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-800/50"}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${
+                filter === tab 
+                  ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-emerald-400 shadow-sm" 
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"
+              }`}
             >
               {tab === "all" ? "Semua" : tab === "pending" ? "Menunggu" : tab === "approved" ? "Disetujui" : "Ditolak"}
-              <span className={`text-xs px-2 py-0.5 rounded-lg font-bold shadow-inner ${
-                tab === "pending" ? "bg-amber-100 dark:bg-amber-500/20 dark:bg-amber-500/30 text-amber-700 dark:text-amber-400" :
-                tab === "approved" ? "bg-emerald-100 dark:bg-emerald-500/20 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400" :
-                tab === "rejected" ? "bg-rose-100 dark:bg-rose-500/20 dark:bg-rose-500/30 text-rose-700 dark:text-rose-400" :
-                "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+              <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wider transition-colors ${
+                tab === "pending" ? "bg-amber-100 dark:bg-amber-500/20 dark:bg-amber-500/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30" :
+                tab === "approved" ? "bg-emerald-100 dark:bg-emerald-500/20 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30" :
+                tab === "rejected" ? "bg-rose-100 dark:bg-rose-500/20 dark:bg-rose-500/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30" :
+                "bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-500"
               }`}>
                 {counts[tab]}
               </span>
             </button>
           ))}
         </div>
+
+        {isSuperAdmin && (
+          <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm p-2 rounded-xl border border-slate-200 transition-colors dark:bg-slate-800/50 dark:border-slate-700">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-2 transition-colors dark:text-slate-400">Filter Admin:</span>
+            <select
+              value={selectedAdminFilter}
+              onChange={(e) => {
+                setSelectedAdminFilter(e.target.value);
+                fetchRequests(e.target.value);
+              }}
+              className="px-4 py-2 border-0 bg-transparent text-sm font-medium text-slate-800 outline-none focus:ring-0 min-w-[200px] transition-colors dark:text-slate-200"
+            >
+              <option value="" className="bg-white transition-colors duration-300 dark:bg-slate-800">Semua Admin Ruangan</option>
+              {adminList.map((admin) => (
+                <option key={admin.id} value={admin.id} className="bg-white transition-colors duration-300 dark:bg-slate-800">{admin.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Table container */}

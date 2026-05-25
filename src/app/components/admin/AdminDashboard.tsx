@@ -64,21 +64,25 @@ export function AdminDashboard({ onNavigate, isSuperAdmin = false }: AdminDashbo
           <h2 className="text-2xl font-bold text-slate-800 tracking-tight transition-colors dark:text-slate-100">Dashboard Operasional</h2>
           <p className="text-sm text-slate-500 font-medium mt-1 transition-colors dark:text-slate-400">Data real-time · {selectedAdminFilter ? "Ruangan terfilter" : "Ruangan yang Anda kelola"}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={fetchStats} className="p-2.5 text-slate-400 hover:text-indigo-600 dark:hover:text-emerald-400 bg-white hover:bg-indigo-50 dark:hover:bg-slate-700 border border-slate-200 rounded-xl transition-all shadow-sm active:scale-95 dark:bg-indigo-500/30 dark:text-indigo-400 dark:border-slate-700" title="Refresh">
-            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-          </button>
-          {isSuperAdmin && (
+        <button onClick={fetchStats} className="p-3 text-slate-400 hover:text-indigo-600 dark:hover:text-emerald-400 bg-white/50 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-95 border border-slate-200/50 backdrop-blur-md dark:bg-slate-900 dark:text-indigo-400 dark:border-slate-700/50" title="Refresh">
+          <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+        </button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
+        {isSuperAdmin && (
+          <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm p-2 rounded-xl border border-slate-200 transition-colors dark:bg-slate-800/50 dark:border-slate-700">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-2 transition-colors dark:text-slate-400">Filter Admin:</span>
             <select 
               value={selectedAdminFilter}
               onChange={e => setSelectedAdminFilter(e.target.value)}
-              className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-white text-slate-700 transition-colors shadow-sm dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+              className="px-4 py-2 border-0 bg-transparent text-sm font-medium text-slate-800 outline-none focus:ring-0 min-w-[200px] transition-colors dark:text-slate-200"
             >
-              <option value="">Semua Admin Ruangan</option>
-              {adminList.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              <option value="" className="bg-white transition-colors duration-300 dark:bg-slate-800">Semua Admin Ruangan</option>
+              {adminList.map(a => <option key={a.id} value={a.id} className="bg-white transition-colors duration-300 dark:bg-slate-800">{a.name}</option>)}
             </select>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Stats Grid */}

@@ -33,6 +33,28 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
 
   useEffect(() => { load(); }, [selectedAdminFilter]);
 
+  const handleForceCancel = async () => {
+    if (confirmStep === 1) {
+      setConfirmStep(2);
+      return;
+    }
+    
+    if (!forceCancelModal) return;
+    
+    setSubmitting(true);
+    try {
+      await bookingService.forceCancel(forceCancelModal, cancelReason);
+      setForceCancelModal(null);
+      setCancelReason("");
+      setConfirmStep(1);
+      load();
+    } catch (e: any) {
+      alert(e.response?.data?.message || e.message || "Gagal membatalkan jadwal");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const statusColor: Record<string, string> = {
     confirmed: "bg-blue-100 dark:bg-blue-500/20 dark:bg-blue-500/30 text-blue-700 dark:text-blue-400",
     ongoing: "bg-green-100 dark:bg-green-500/20 dark:bg-green-500/30 text-green-700 dark:text-green-400",
@@ -50,23 +72,27 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
           <h2 className="text-2xl font-bold text-slate-800 tracking-tight transition-colors dark:text-slate-100">Jadwal Aktif</h2>
           <p className="text-sm font-medium text-slate-500 mt-1 transition-colors dark:text-slate-400">Pantau dan kelola jadwal booking aktif di area tugas Anda</p>
         </div>
-        <div className="flex items-center gap-3">
-          {isSuperAdmin && (
+        <button onClick={load} className="p-3 text-slate-400 hover:text-indigo-600 dark:hover:text-emerald-400 bg-white/50 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-95 border border-slate-200/50 backdrop-blur-md dark:bg-slate-900 dark:text-indigo-400 dark:border-slate-700/50" title="Refresh">
+          <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+        </button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
+        {isSuperAdmin && (
+          <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm p-2 rounded-xl border border-slate-200 transition-colors dark:bg-slate-800/50 dark:border-slate-700">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-2 transition-colors dark:text-slate-400">Filter Admin:</span>
             <select
               value={selectedAdminFilter}
               onChange={(e) => setSelectedAdminFilter(e.target.value)}
-              className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium bg-white/80 text-slate-700 outline-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 backdrop-blur-md shadow-sm transition-all min-w-[200px] dark:bg-slate-800/80 dark:text-slate-200 dark:border-slate-700"
+              className="px-4 py-2 border-0 bg-transparent text-sm font-medium text-slate-800 outline-none focus:ring-0 min-w-[200px] transition-colors dark:text-slate-200"
             >
               <option value="" className="bg-white transition-colors duration-300 dark:bg-slate-800">Semua Admin Ruangan</option>
               {adminList.map((admin) => (
                 <option key={admin.id} value={admin.id} className="bg-white transition-colors duration-300 dark:bg-slate-800">{admin.name}</option>
               ))}
             </select>
-          )}
-          <button onClick={load} className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 bg-white/80 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-emerald-400 flex-shrink-0 backdrop-blur-md shadow-sm transition-all active:scale-95 dark:bg-slate-800 dark:text-indigo-400 dark:border-slate-700">
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-amber-50/80 backdrop-blur-md border border-amber-200 rounded-2xl p-5 flex items-start gap-4 transition-colors shadow-sm dark:bg-amber-500/30 dark:border-amber-500/20">
@@ -110,7 +136,7 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
                     </div>
                   </div>
                   <button onClick={(e) => { e.stopPropagation(); setForceCancelModal(booking.id); setConfirmStep(1); }}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-50 text-rose-600 text-sm font-bold rounded-xl hover:bg-rose-500 hover:text-white transition-all flex-shrink-0 shadow-sm active:scale-95 dark:bg-rose-600 dark:text-rose-400">
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-50 text-rose-600 text-sm font-bold rounded-xl hover:bg-rose-500 hover:text-white transition-all flex-shrink-0 shadow-sm active:scale-95 dark:bg-rose-500/20 dark:hover:bg-rose-500 dark:hover:text-white dark:text-rose-400">
                     <Trash2 size={16} /> Batalkan Paksa
                   </button>
                 </div>
@@ -317,7 +343,7 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
                   setConfirmStep(1);
                   setSelectedBookingView(null);
                 }}
-                className="px-5 py-2.5 bg-rose-50 text-rose-600 rounded-xl text-sm font-bold hover:bg-rose-500 hover:text-white transition-all flex items-center gap-2 shadow-sm active:scale-95 dark:bg-rose-600 dark:text-rose-400"
+                className="px-5 py-2.5 bg-rose-50 text-rose-600 rounded-xl text-sm font-bold hover:bg-rose-500 hover:text-white transition-all flex items-center gap-2 shadow-sm active:scale-95 dark:bg-rose-500/20 dark:text-rose-400 dark:hover:bg-rose-500 dark:hover:text-white"
               >
                 <Trash2 size={16} /> Batalkan Paksa
               </button>

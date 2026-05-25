@@ -29,7 +29,7 @@ type Page =
   | "login" | "register" | "forgot-password"
   | "calendar" | "rooms" | "room-detail" | "my-bookings" | "workspaces"
   | "admin-dashboard" | "admin-approval" | "admin-schedule" | "admin-rooms" | "admin-workspace-approval"
-  | "sa-buildings" | "sa-rooms" | "sa-users" | "sa-policy" | "sa-api" | "sa-audit" | "sa-zoom";
+  | "sa-buildings" | "sa-users" | "sa-policy" | "sa-api" | "sa-audit" | "sa-zoom";
 
 type Role = "user" | "admin" | "superadmin";
 
@@ -57,7 +57,7 @@ const pageTitles: Record<string, { title: string; subtitle?: string }> = {
   "admin-rooms": { title: "Kelola Ruangan", subtitle: "Manajemen ruangan yang menjadi tanggung jawab Anda" },
   "admin-workspace-approval": { title: "Persetujuan Meja", subtitle: "Kelola antrean permohonan meja pegawai" },
   "sa-buildings": { title: "Manajemen Gedung", subtitle: "Kelola daftar gedung, kantor, dan lokasi peta" },
-  "sa-rooms": { title: "Ruangan Global", subtitle: "Kelola seluruh ruangan di semua gedung" },
+
   "sa-users": { title: "Manajemen Pengguna", subtitle: "Kelola akun dan delegasi wilayah tugas" },
   "sa-policy": { title: "Kebijakan Global", subtitle: "Atur batasan dan blackout dates sistem" },
   "sa-api": { title: "Integrasi & API", subtitle: "Pantau trafik dan kelola token akses" },
@@ -68,7 +68,7 @@ const pageTitles: Record<string, { title: string; subtitle?: string }> = {
 const defaultPage: Record<Role, Page> = {
   user: "calendar",
   admin: "admin-dashboard",
-  superadmin: "sa-rooms",
+  superadmin: "admin-dashboard",
 };
 
 import PublicAttendance from "./pages/PublicAttendance";
@@ -182,17 +182,16 @@ export default function App() {
       case "admin-approval":
         return <ApprovalQueue onNavigate={handleNavigate} isSuperAdmin={role === "superadmin"} />;
       case "admin-schedule":
-        return <ScheduleControl />;
+        return <ScheduleControl isSuperAdmin={role === "superadmin"} />;
       case "admin-rooms":
-        return <RoomManagement isSuperAdmin={false} onNavigate={handleNavigate} />;
+        return <RoomManagement isSuperAdmin={role === "superadmin"} onNavigate={handleNavigate} />;
       case "admin-workspace-approval":
         return <WorkspaceApproval onNavigate={handleNavigate} isSuperAdmin={role === "superadmin"} />;
 
       // Super Admin
       case "sa-buildings":
         return <BuildingManagement />;
-      case "sa-rooms":
-        return <RoomManagement isSuperAdmin={true} onNavigate={handleNavigate} />;
+
       case "sa-users":
         return <UserManagement />;
       case "sa-policy":

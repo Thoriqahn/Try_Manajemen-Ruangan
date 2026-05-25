@@ -46,8 +46,10 @@ export const workspaceService = {
     });
   },
 
-  async listRequests() {
-    return api.get<SeatingRequest[]>('/v1/workspaces/assignments/requests');
+  async listRequests(admin_id?: string) {
+    const params = new URLSearchParams();
+    if (admin_id) params.append('admin_id', admin_id);
+    return api.get<SeatingRequest[]>(`/v1/workspaces/assignments/requests?${params}`);
   },
 
   async approveRequest(id: string) {

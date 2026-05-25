@@ -58,7 +58,7 @@ export function BuildingManagement({ onNavigate }: { onNavigate?: (p: string) =>
           <h2 className="text-2xl font-bold tracking-tight">Galeri Gedung & Kantor</h2>
           <p className="text-blue-100 mt-1 text-sm">Kelola seluruh portofolio properti, gedung, dan pemetaan lokasinya secara interaktif.</p>
         </div>
-        <button onClick={() => { setEditBuilding(null); setShowForm(true); }} className="flex items-center gap-2 bg-white backdrop-blur-md text-[#1E3A5F] px-5 py-2.5 rounded-2xl text-sm hover:bg-blue-50 transition-all font-semibold shadow-md hover:shadow-lg dark:bg-blue-900/20">
+        <button onClick={() => { setEditBuilding(null); setShowForm(true); }} className="flex items-center gap-2 bg-white backdrop-blur-md text-[#1E3A5F] px-5 py-2.5 rounded-2xl text-sm hover:bg-blue-50 transition-all font-semibold shadow-md hover:shadow-lg">
           <Plus size={18} /> Tambahkan Gedung
         </button>
       </div>
@@ -66,7 +66,7 @@ export function BuildingManagement({ onNavigate }: { onNavigate?: (p: string) =>
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white backdrop-blur-md rounded-2xl shadow-md shadow-black/5 dark:shadow-black/20 border border-gray-100 h-72 animate-pulse overflow-hidden flex flex-col transition-colors duration-300 dark:bg-slate-900/90 dark:border-slate-800/50">
+            <div key={i} className="bg-white backdrop-blur-md rounded-2xl shadow-md shadow-black/5 dark:shadow-black/20 border border-gray-100 h-72 animate-pulse overflow-hidden flex flex-col transition-colors duration-300 dark:bg-slate-800 dark:border-slate-700">
               <div className="h-40 bg-gray-200"></div>
               <div className="p-5 space-y-3 flex-1">
                 <div className="h-5 bg-gray-200 rounded w-2/3"></div>
@@ -76,7 +76,7 @@ export function BuildingManagement({ onNavigate }: { onNavigate?: (p: string) =>
           ))}
         </div>
       ) : buildings.length === 0 ? (
-        <div className="bg-white backdrop-blur-md rounded-2xl shadow-md shadow-black/5 dark:shadow-black/20 border border-gray-100 p-12 text-center flex flex-col items-center justify-center min-h-[400px] transition-colors duration-300 dark:bg-slate-900/90 dark:border-slate-800/50">
+        <div className="bg-white backdrop-blur-md rounded-2xl shadow-md shadow-black/5 dark:shadow-black/20 border border-gray-100 p-12 text-center flex flex-col items-center justify-center min-h-[400px] transition-colors duration-300 dark:bg-slate-800 dark:border-slate-700">
           <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4 transition-colors duration-300 dark:bg-blue-900/20">
             <Building2 size={32} className="text-[#1E3A5F]" />
           </div>
@@ -89,7 +89,7 @@ export function BuildingManagement({ onNavigate }: { onNavigate?: (p: string) =>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {buildings.map(b => (
-            <div key={b.id} className="group bg-white backdrop-blur-md rounded-2xl shadow-md shadow-black/5 dark:shadow-black/20 border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col relative dark:bg-slate-900/90 dark:border-slate-800/50">
+            <div key={b.id} className="group bg-white backdrop-blur-md rounded-2xl shadow-md shadow-black/5 dark:shadow-black/20 border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col relative dark:bg-slate-800 dark:border-slate-700">
               <div className="absolute top-3 right-3 z-10 flex gap-2 transition-opacity transition-all duration-300">
                 <button onClick={() => { setEditBuilding(b); setShowForm(true); }} className="p-2 bg-white/90 backdrop-blur text-blue-600 hover:bg-white backdrop-blur-md rounded-xl shadow-md shadow-black/5 dark:shadow-black/20 transition-all duration-300 dark:bg-slate-900/90 dark:text-blue-400" title="Edit">
                   <Edit2 size={16} />
@@ -316,19 +316,19 @@ function BuildingFormModal({ building, onClose }: { building: any; onClose: () =
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 transition-colors duration-300 dark:text-slate-200">Nama Gedung <span className="text-red-500">*</span></label>
-                  <input required type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full p-3 border border-gray-200 rounded-2xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all bg-gray-50/50 dark:border-slate-700/50" placeholder="Contoh: Gedung Kemenko 1" />
+                  <input required type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full p-3 border border-gray-200 rounded-2xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all bg-gray-50/50 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:focus:border-blue-500 dark:focus:ring-blue-500/20" placeholder="Contoh: Gedung Kemenko 1" />
                 </div>
                 
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 transition-colors duration-300 dark:text-slate-200">Alamat Lengkap</label>
-                  <textarea value={form.address} onChange={e => setForm({...form, address: e.target.value})} rows={3} className="w-full p-3 border border-gray-200 rounded-2xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all bg-gray-50/50 resize-none dark:border-slate-700/50" placeholder="Masukkan alamat lengkap gedung..." />
+                  <textarea value={form.address} onChange={e => setForm({...form, address: e.target.value})} rows={3} className="w-full p-3 border border-gray-200 rounded-2xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all bg-gray-50/50 resize-none dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:focus:border-blue-500 dark:focus:ring-blue-500/20" placeholder="Masukkan alamat lengkap gedung..." />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 transition-colors duration-300 dark:text-slate-200">Total Lantai <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <Layers size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors duration-300 dark:text-slate-500" />
-                    <input required type="number" min={1} value={form.total_floors} onChange={e => setForm({...form, total_floors: parseInt(e.target.value) || 1})} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-2xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all bg-gray-50/50 dark:border-slate-700/50" placeholder="1" />
+                    <input required type="number" min={1} value={form.total_floors} onChange={e => setForm({...form, total_floors: parseInt(e.target.value) || 1})} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-2xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all bg-gray-50/50 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:focus:border-blue-500 dark:focus:ring-blue-500/20" placeholder="1" />
                   </div>
                 </div>
               </div>

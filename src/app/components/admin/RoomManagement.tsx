@@ -33,7 +33,7 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
       const res = await roomService.list({ 
         search: search || undefined,
         admin_id: filterAdmin || undefined,
-        managed_only: "true"
+        managed_only: isSuperAdmin ? undefined : "true"
       });
       const normal = (res.data || []).map((r: any) => {
         const facs = r.facilities;
@@ -181,10 +181,15 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
           <h2 className="text-2xl font-bold text-slate-800 tracking-tight transition-colors dark:text-slate-100">{isSuperAdmin ? "Manajemen Ruangan Global" : "Kelola Ruangan"}</h2>
           <p className="text-sm text-slate-500 font-medium mt-1 transition-colors dark:text-slate-400">{isSuperAdmin ? "Semua ruangan di seluruh organisasi" : "Ruangan yang menjadi tanggung jawab Anda"}</p>
         </div>
-        <button onClick={() => { setEditRoom(null); setShowForm(true); }}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 dark:hover:bg-emerald-600 transition-all shadow-sm hover:shadow-md hover:shadow-indigo-500/20 dark:hover:shadow-emerald-500/20 active:scale-95 dark:bg-emerald-600">
-          <Plus size={18} /> Tambah Ruangan
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => load()} className="p-3 text-slate-400 hover:text-indigo-600 dark:hover:text-emerald-400 bg-white/50 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-95 border border-slate-200/50 backdrop-blur-md dark:bg-slate-900 dark:text-indigo-400 dark:border-slate-700/50" title="Refresh">
+            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+          </button>
+          <button onClick={() => { setEditRoom(null); setShowForm(true); }}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 dark:hover:bg-emerald-600 transition-all shadow-sm hover:shadow-md hover:shadow-indigo-500/20 dark:hover:shadow-emerald-500/20 active:scale-95 dark:bg-emerald-600">
+            <Plus size={18} /> Tambah Ruangan
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -196,25 +201,24 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
         </div>
         
         {isSuperAdmin && (
-          <select
-            value={selectedAdminFilter}
-            onChange={e => {
-              const val = e.target.value;
-              setSelectedAdminFilter(val);
-              load(val);
-            }}
-            className="px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-white/80 text-slate-700 backdrop-blur-md shadow-sm transition-all min-w-[220px] dark:bg-slate-800/80 dark:text-slate-200 dark:border-slate-700"
-          >
-            <option value="" className="bg-white transition-colors duration-300 dark:bg-slate-800">Semua Admin Ruangan</option>
-            {adminList.map(admin => (
-              <option key={admin.id} value={admin.id} className="bg-white transition-colors duration-300 dark:bg-slate-800">{admin.name}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm p-2 rounded-xl border border-slate-200 transition-colors dark:bg-slate-800/50 dark:border-slate-700">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-2 transition-colors dark:text-slate-400">Filter Admin:</span>
+            <select
+              value={selectedAdminFilter}
+              onChange={e => {
+                const val = e.target.value;
+                setSelectedAdminFilter(val);
+                load(val);
+              }}
+              className="px-4 py-2 border-0 bg-transparent text-sm font-medium text-slate-800 outline-none focus:ring-0 min-w-[200px] transition-colors dark:text-slate-200"
+            >
+              <option value="" className="bg-white transition-colors duration-300 dark:bg-slate-800">Semua Admin Ruangan</option>
+              {adminList.map(admin => (
+                <option key={admin.id} value={admin.id} className="bg-white transition-colors duration-300 dark:bg-slate-800">{admin.name}</option>
+              ))}
+            </select>
+          </div>
         )}
-
-        <button onClick={() => load()} className="px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-600 bg-white/80 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-emerald-400 flex items-center justify-center backdrop-blur-md shadow-sm transition-all active:scale-95 dark:bg-slate-800 dark:text-indigo-400 dark:border-slate-700">
-          <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-        </button>
       </div>
 
       {loading ? (
@@ -517,6 +521,9 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
   const [layouts, setLayouts] = useState<{type: string, capacity: number}[]>(
     room?.layouts?.length ? room.layouts.map((l: any) => ({ type: l.layout_type || l.type || l.name, capacity: l.capacity })) : [{ type: "Boardroom", capacity: 10 }]
   );
+  const [dynamicFacilities, setDynamicFacilities] = useState<{name: string, quantity: number}[]>(
+    Object.entries(room?.facilities || {}).map(([name, qty]) => ({ name, quantity: Number(qty) }))
+  );
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -578,17 +585,16 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
         payload.floor_id = null;
       }
       
+      payload.facilities = dynamicFacilities
+        .filter(f => f.name.trim() !== '')
+        .map(f => ({ type: f.name.trim(), quantity: Number(f.quantity) || 1 }));
+
       let roomId = room?.id;
       if (roomId) { 
         await roomService.update(roomId, payload); 
       } else { 
         const res = await roomService.create(payload);
         roomId = res.data?.id || res.id || res.data?.data?.id; // fallback logic just in case
-      }
-
-      // Convert facilities object -> array expected by backend
-      if (payload.facilities && typeof payload.facilities === 'object' && !Array.isArray(payload.facilities)) {
-        payload.facilities = Object.entries(payload.facilities).map(([key, val]) => ({ type: key, quantity: Number(val) }));
       }
 
       if (photos.length > 0 && roomId) {
@@ -772,48 +778,27 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
           {form.room_type !== 'digital' && (
             <div className="space-y-4">
               <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pb-3 border-b border-slate-100 transition-colors dark:text-slate-500 dark:border-slate-800">{form.jenis_manajemen_ruang === 'WORKSPACE' ? '2' : '3'}. Fasilitas Ruangan</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {["Proyektor", "Papan Tulis", "TV / Smart Screen", "AC", "Sound System", "Kursi Tambahan", "CCTV", "WiFi Kecepatan Tinggi"].map(fac => {
-                  const isChecked = !!form.facilities[fac];
-                  const count = form.facilities[fac] || 0;
-                  return (
-                    <div key={fac} className={`flex items-center justify-between p-3.5 border-2 rounded-xl transition-all ${isChecked ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-500/10 dark:bg-indigo-500/20 dark:bg-indigo-500/30 dark:border-indigo-400' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:border-slate-600 dark:hover:border-slate-600 bg-white dark:bg-slate-800'}`}>
-                      <label className="flex items-center gap-3 cursor-pointer flex-1">
-                        <input 
-                          type="checkbox" 
-                          className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:focus:ring-emerald-500 bg-slate-50 transition-colors duration-300 dark:bg-slate-900 dark:text-emerald-400 dark:border-slate-600"
-                          checked={isChecked} 
-                          onChange={e => {
-                            const newFac = { ...form.facilities };
-                            if (e.target.checked) newFac[fac] = 1;
-                            else delete newFac[fac];
-                            setForm({ ...form, facilities: newFac });
-                          }} 
-                        />
-                        <span className={`text-sm font-bold transition-colors ${isChecked ? 'text-indigo-900 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>{fac}</span>
-                      </label>
-                      {isChecked && (
-                        <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200">
-                          <input 
-                            type="number" 
-                            min={1} 
-                            max={999}
-                            value={count} 
-                            onChange={e => {
-                              const val = parseInt(e.target.value);
-                              const newFac = { ...form.facilities };
-                              if (val > 0) newFac[fac] = val;
-                              else newFac[fac] = 1;
-                              setForm({ ...form, facilities: newFac });
-                            }}
-                            className="w-16 px-2 py-1.5 text-sm font-bold border border-indigo-200 rounded-lg text-center outline-none focus:border-indigo-400 dark:focus:border-emerald-400 bg-white text-slate-800 transition-colors shadow-sm dark:bg-slate-900 dark:text-slate-100 dark:border-emerald-500/30" 
-                          />
-                          <span className="text-xs text-indigo-600 font-bold mr-1 transition-colors duration-300 dark:text-emerald-400">unit</span>
-                        </div>
-                      )}
+              <div className="space-y-3">
+                {dynamicFacilities.map((fac, i) => (
+                  <div key={i} className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1">
+                      <input type="text" value={fac.name} onChange={e => {
+                        const newF = [...dynamicFacilities]; newF[i].name = e.target.value; setDynamicFacilities(newF);
+                      }} placeholder="Nama Fasilitas (mis: Proyektor)" className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-slate-50 text-slate-800 transition-all shadow-sm dark:bg-slate-800/50 dark:text-slate-100 dark:border-slate-700" />
                     </div>
-                  );
-                })}
+                    <div className="w-full sm:w-32">
+                      <input type="number" min={1} value={fac.quantity} onChange={e => {
+                        const newF = [...dynamicFacilities]; newF[i].quantity = parseInt(e.target.value) || 0; setDynamicFacilities(newF);
+                      }} placeholder="Jumlah" className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-slate-50 text-slate-800 transition-all shadow-sm dark:bg-slate-800/50 dark:text-slate-100 dark:border-slate-700" />
+                    </div>
+                    <button type="button" onClick={() => setDynamicFacilities(dynamicFacilities.filter((_, idx) => idx !== i))} className="w-full sm:w-auto p-3 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-colors flex items-center justify-center dark:bg-rose-500/30 dark:text-rose-400">
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setDynamicFacilities([...dynamicFacilities, { name: "", quantity: 1 }])} className="text-sm text-indigo-600 font-bold hover:underline flex items-center gap-1.5 mt-2 transition-colors dark:text-emerald-400">
+                  <Plus size={16} /> Tambah Fasilitas
+                </button>
               </div>
             </div>
           )}

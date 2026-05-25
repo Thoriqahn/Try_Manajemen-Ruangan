@@ -200,7 +200,9 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
                   </td>
                   <td className="px-6 py-5">
                     <div className="text-sm font-bold text-slate-800 transition-colors dark:text-slate-100">{booking.room_name}</div>
-                    <div className="text-[11px] font-medium text-slate-500 transition-colors mt-0.5 dark:text-slate-400">{booking.floor_name} · {booking.building_name}</div>
+                    <div className="text-[11px] font-medium text-slate-500 transition-colors mt-0.5 dark:text-slate-400">
+                      {(booking.building_name || booking.floor_name) ? `Gedung: ${booking.building_name || '-'} | Lantai: ${booking.floor_name || '-'}` : 'Lokasi tidak tersedia'}
+                    </div>
                   </td>
                   <td className="px-6 py-5">
                     <div className="text-sm font-bold text-slate-700 transition-colors dark:text-slate-200">{booking.date}</div>
@@ -358,8 +360,13 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
                 <div className="p-5 bg-slate-50/80 rounded-2xl border border-slate-100 space-y-4 shadow-sm transition-colors dark:bg-slate-800/50 dark:border-slate-700/50">
                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest transition-colors duration-300 dark:text-slate-500">Informasi Waktu & Tempat</h4>
                   <div className="space-y-3 text-sm font-medium text-slate-700 transition-colors duration-300 dark:text-slate-300">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex px-2.5 py-1 bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-bold tracking-wider uppercase rounded-md backdrop-blur-sm transition-colors dark:bg-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/30">{selectedApprovalBooking.room_name}</span>
+                    <div className="flex flex-col gap-1.5">
+                      <span className="inline-flex px-2.5 py-1 bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-bold tracking-wider uppercase rounded-md backdrop-blur-sm transition-colors dark:bg-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/30 w-fit">{selectedApprovalBooking.room_name}</span>
+                      {(selectedApprovalBooking.building_name || selectedApprovalBooking.floor_name) && (
+                        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                          Gedung: {selectedApprovalBooking.building_name || '-'} | Lantai: {selectedApprovalBooking.floor_name || '-'}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-slate-500 transition-colors duration-300 dark:text-slate-400">Tanggal:</span> <span className="font-bold text-slate-800 transition-colors duration-300 dark:text-slate-100">{selectedApprovalBooking.date}</span>

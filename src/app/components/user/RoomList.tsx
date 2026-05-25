@@ -72,8 +72,13 @@ export function RoomList({ onNavigate }: RoomListProps) {
   const getMaxCapacity = (room: any) =>
     room.layouts?.length ? Math.max(...room.layouts.map((l: any) => l.capacity)) : 0;
 
-  const hasVc = (room: any) =>
-    room.facilities?.some((f: any) => f.facility_type === "video_conference" && f.quantity > 0);
+  const getFacilitiesList = (room: any) => {
+    if (!room.facilities) return [];
+    if (Array.isArray(room.facilities)) {
+      return room.facilities.map((f: any) => ({ name: f.type || f.name || f.facility_type, qty: f.quantity || f.qty }));
+    }
+    return Object.entries(room.facilities).map(([name, qty]) => ({ name, qty }));
+  };
 
 
   return (
@@ -273,8 +278,13 @@ export function RoomList({ onNavigate }: RoomListProps) {
                       <span key={l.id} className="px-2.5 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md border border-slate-200 transition-colors dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">{l.layout_type}</span>
                     ))
                   )}
-                  {hasVc(room) && room.room_type !== 'digital' && room.room_type !== 'hybrid' && (
-                     <span className="px-2.5 py-1 bg-sky-50 text-sky-700 text-[10px] font-bold rounded-md border border-sky-200 transition-colors dark:bg-sky-500/30 dark:text-sky-400 dark:border-sky-500/20">VC Ready</span>
+                  {room.room_type !== 'digital' && getFacilitiesList(room).slice(0, 3).map((f: any, i: number) => (
+                    <span key={`fac-${i}`} className="px-2.5 py-1 bg-sky-50 text-sky-700 text-[10px] font-bold rounded-md border border-sky-200 transition-colors dark:bg-sky-500/30 dark:text-sky-400 dark:border-sky-500/20">
+                      {f.name} (x{f.qty})
+                    </span>
+                  ))}
+                  {room.room_type !== 'digital' && getFacilitiesList(room).length > 3 && (
+                    <span className="px-2.5 py-1 bg-slate-50 text-slate-500 text-[10px] font-bold rounded-md border border-slate-200 transition-colors dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">+{getFacilitiesList(room).length - 3}</span>
                   )}
                 </div>
               </div>

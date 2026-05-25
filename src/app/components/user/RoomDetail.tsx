@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, MapPin, Users, Clock, Monitor, Wifi, Volume2, Zap, Calendar, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, MapPin, Users, Clock, Monitor, Wifi, Volume2, Zap, Calendar, RefreshCw, ChevronLeft, ChevronRight, Video, Speaker, Snowflake, Coffee, CheckCircle, FileText, Projector, Table, Mic } from "lucide-react";
 import { roomService, Room } from "../../services/roomService";
 import { bookingService, Booking } from "../../services/bookingService";
 import { TokenStore } from "../../services/apiClient";
@@ -227,13 +227,22 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
     setDragEnd(null);
   };
 
-  const facilityIcons: Record<string, any> = {
-    tv: { icon: <Monitor size={16} />, label: "TV Monitor" },
-    projector: { icon: <Monitor size={16} />, label: "Proyektor" },
-    videoConference: { icon: <Wifi size={16} />, label: "Video Conference" },
-    soundSystem: { icon: <Volume2 size={16} />, label: "Sound System" },
-    whiteboard: { icon: <Monitor size={16} />, label: "Whiteboard" },
-    outlet: { icon: <Zap size={16} />, label: "Stop Kontak" },
+  const getFacilityIcon = (name: string) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('tv') || lowerName.includes('televisi') || lowerName.includes('monitor') || lowerName.includes('screen') || lowerName.includes('layar')) return <Monitor size={16} />;
+    if (lowerName.includes('proyektor') || lowerName.includes('projector')) return <Projector size={16} />;
+    if (lowerName.includes('video') || lowerName.includes('kamera') || lowerName.includes('conference')) return <Video size={16} />;
+    if (lowerName.includes('sound') || lowerName.includes('audio') || lowerName.includes('speaker')) return <Speaker size={16} />;
+    if (lowerName.includes('mic') || lowerName.includes('mikrofon')) return <Mic size={16} />;
+    if (lowerName.includes('whiteboard') || lowerName.includes('papan tulis')) return <FileText size={16} />;
+    if (lowerName.includes('listrik') || lowerName.includes('stop kontak') || lowerName.includes('colokan') || lowerName.includes('outlet')) return <Zap size={16} />;
+    if (lowerName.includes('wifi') || lowerName.includes('internet')) return <Wifi size={16} />;
+    if (lowerName.includes('ac') || lowerName.includes('pendingin')) return <Snowflake size={16} />;
+    if (lowerName.includes('kursi')) return <Users size={16} />;
+    if (lowerName.includes('meja') || lowerName.includes('desk')) return <Table size={16} />;
+    if (lowerName.includes('kopi') || lowerName.includes('minum') || lowerName.includes('snack') || lowerName.includes('konsumsi')) return <Coffee size={16} />;
+    
+    return <CheckCircle size={16} />;
   };
 
   const statusColor: Record<string, string> = {
@@ -466,10 +475,10 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                   {Object.entries(facilities).filter(([, v]) => (v as number) > 0).map(([key, val]) => (
                     <div key={key} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 transition-colors dark:bg-slate-800 dark:border-slate-800">
                       <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500 flex-shrink-0 transition-colors dark:bg-blue-900/20 dark:text-blue-400">
-                        {facilityIcons[key]?.icon || <Monitor size={16} />}
+                        {getFacilityIcon(key)}
                       </div>
                       <div>
-                        <div className="text-xs text-gray-400 transition-colors dark:text-slate-500">{facilityIcons[key]?.label || key}</div>
+                        <div className="text-xs text-gray-400 transition-colors dark:text-slate-500">{key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</div>
                         <div className="text-sm text-gray-700 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>{String(val)} unit</div>
                       </div>
                     </div>
@@ -546,7 +555,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                           >
                             {booked ? (
                               isBlackoutDate(d.full) ? (
-                                <div className="absolute inset-0.5 rounded-xl bg-red-50/50 border border-red-100 text-red-400 text-[10px] flex items-center justify-center shadow-sm select-none transition-colors duration-300 dark:bg-red-500/10 dark:text-red-400/70 dark:border-red-500/20" style={{ fontWeight: 600 }}>Libur</div>
+                                <div className="absolute inset-0.5 rounded-xl bg-red-50 border border-red-200 text-red-500 text-[10px] flex items-center justify-center shadow-sm select-none transition-colors duration-300 dark:bg-red-500/10 dark:text-red-400/70 dark:border-red-500/20" style={{ fontWeight: 600 }}>Tutup</div>
                               ) : (() => {
                                 const booking = getBookingForSlot(d.full, time);
                                 return (
@@ -597,13 +606,14 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                   ))}
                 </div>
               </div>
-              <div className="p-5 border-t border-gray-100 flex flex-wrap gap-x-5 gap-y-3 text-xs text-gray-500 bg-gray-50/50 transition-colors duration-300 dark:text-slate-400 dark:border-slate-800/50 dark:bg-slate-900/50">
-                <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-amber-50 border border-amber-300 transition-colors duration-300 dark:bg-amber-500/20 dark:border-amber-500/30" /><span style={{ fontWeight: 500 }}>Menunggu Persetujuan</span></div>
-                <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-blue-600 border border-blue-700 transition-colors duration-300 dark:bg-blue-500/30 dark:border-blue-400/40" /><span style={{ fontWeight: 500 }}>Disetujui</span></div>
-                <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-emerald-500 border border-emerald-600 transition-colors duration-300 dark:bg-emerald-500/30 dark:border-emerald-400/40" /><span style={{ fontWeight: 500 }}>Sedang Berjalan</span></div>
-                <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-red-50/50 border border-red-100 transition-colors duration-300 dark:bg-red-500/10 dark:border-red-500/20" /><span style={{ fontWeight: 500 }}>Libur / Tutup</span></div>
-                <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-transparent border border-gray-200 transition-colors duration-300 dark:border-slate-700" /><span style={{ fontWeight: 500 }}>Tersedia</span></div>
-                <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-blue-50 border border-blue-400 transition-colors duration-300 dark:bg-blue-500/20 dark:border-blue-500/50" /><span style={{ fontWeight: 500 }}>Pilihan Anda</span></div>
+              <div className="p-5 border-t border-slate-200 flex flex-wrap gap-x-5 gap-y-3 text-xs text-slate-600 bg-slate-100/80 transition-colors duration-300 dark:text-slate-400 dark:border-slate-800/50 dark:bg-slate-900/50">
+                <div className="flex items-center gap-2 shrink-0"><div className="w-3.5 h-3.5 rounded-md bg-white border border-slate-300 shadow-sm transition-colors duration-300 dark:bg-slate-900 dark:border-slate-700" /><span style={{ fontWeight: 500 }}>Tersedia</span></div>
+                <div className="flex items-center gap-2 shrink-0"><div className="w-3.5 h-3.5 rounded-md bg-blue-50 border border-blue-300 transition-colors duration-300 dark:bg-blue-500/20 dark:border-blue-500/50" /><span style={{ fontWeight: 500 }}>Pilihan Anda</span></div>
+                <div className="flex items-center gap-2 shrink-0"><div className="w-3.5 h-3.5 rounded-md bg-amber-50 border border-amber-300 transition-colors duration-300 dark:bg-amber-500/20 dark:border-amber-500/30" /><span style={{ fontWeight: 500 }}>Menunggu Persetujuan</span></div>
+                <div className="flex items-center gap-2 shrink-0"><div className="w-3.5 h-3.5 rounded-md bg-blue-600 border border-blue-700 transition-colors duration-300 dark:bg-blue-500/30 dark:border-blue-400/40" /><span style={{ fontWeight: 500 }}>Disetujui</span></div>
+                <div className="flex items-center gap-2 shrink-0"><div className="w-3.5 h-3.5 rounded-md bg-emerald-500 border border-emerald-600 transition-colors duration-300 dark:bg-emerald-500/30 dark:border-emerald-400/40" /><span style={{ fontWeight: 500 }}>Sedang Berjalan</span></div>
+                <div className="flex items-center gap-2 shrink-0"><div className="w-3.5 h-3.5 rounded-md bg-red-50 border border-red-200 transition-colors duration-300 dark:bg-red-500/10 dark:border-red-500/20" /><span style={{ fontWeight: 500 }}>Tutup</span></div>
+                <div className="flex items-center gap-2 shrink-0"><div className="w-3.5 h-3.5 rounded-md bg-slate-200/70 border border-slate-300 transition-colors duration-300 dark:bg-slate-800/40 dark:border-slate-700/50" /><span style={{ fontWeight: 500 }}>Sudah Lewat</span></div>
               </div>
             </div>
           </div>

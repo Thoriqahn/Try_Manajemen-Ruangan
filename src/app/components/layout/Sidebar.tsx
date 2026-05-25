@@ -65,7 +65,6 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
     title: "Super Admin",
     items: [
       { icon: <Building2 size={18} />, label: "Manajemen Gedung", page: "sa-buildings" },
-      { icon: <Globe size={18} />, label: "Ruangan Global", page: "sa-rooms" },
       { icon: <Users size={18} />, label: "Manajemen Pengguna", page: "sa-users" },
       { icon: <ShieldCheck size={18} />, label: "Kebijakan Global", page: "sa-policy" },
       { icon: <Activity size={18} />, label: "Integrasi & API", page: "sa-api" },
@@ -83,11 +82,11 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
       <button
         onClick={() => onNavigate(item.page)}
         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-300 group ${isActive
-            ? "bg-indigo-500/10 dark:bg-indigo-500/20 dark:bg-indigo-500/30 text-indigo-400 shadow-[inset_0_0_0_1px_rgba(99,102,241,0.2)]"
-            : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+            ? "bg-white/15 dark:bg-indigo-500/20 text-white dark:text-indigo-400 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] dark:shadow-[inset_0_0_0_1px_rgba(99,102,241,0.2)]"
+            : "text-blue-100/70 hover:text-white hover:bg-white/5 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50"
           }`}
       >
-        <span className={`${isActive ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-300"} transition-colors`}>{item.icon}</span>
+        <span className={`${isActive ? "text-white dark:text-indigo-400" : "text-blue-200/60 group-hover:text-white dark:text-slate-500 dark:group-hover:text-slate-300"} transition-colors`}>{item.icon}</span>
         {!collapsed && (
           <>
             <span className="flex-1 text-left" style={{ fontWeight: isActive ? 500 : 400 }}>{item.label}</span>
@@ -103,9 +102,9 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
   };
 
   return (
-    <div className={`h-full bg-slate-950 border-r border-slate-800 flex flex-col transition-all duration-300 ${collapsed ? "w-[72px]" : "w-72"}`}>
+    <div className={`h-full bg-[#1E3A5F] dark:bg-slate-950 border-r border-[#2A4E85] dark:border-slate-800 flex flex-col transition-all duration-300 ${collapsed ? "w-[72px]" : "w-72"}`}>
       {/* Logo */}
-      <div className="p-5 border-b border-slate-800/60 flex items-center gap-3">
+      <div className="p-5 border-b border-[#2A4E85] dark:border-slate-800/60 flex items-center gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-500/20">
             <Building2 className="w-5 h-5 text-white" />
@@ -126,7 +125,7 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
             {!collapsed && (
               <button
                 onClick={() => toggleGroup(groupKeys[gi])}
-                className="w-full flex items-center justify-between px-2 mb-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider hover:text-slate-300 transition-colors"
+                className="w-full flex items-center justify-between px-2 mb-2 text-blue-200/60 dark:text-slate-500 text-[11px] font-bold uppercase tracking-wider hover:text-white dark:hover:text-slate-300 transition-colors"
               >
                 <span>{group.title}</span>
                 {expandedGroups.includes(groupKeys[gi]) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -144,17 +143,17 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
       </nav>
 
       {/* User profile & logout */}
-      <div className="p-4 border-t border-slate-800/60 bg-slate-950/50">
+      <div className="p-4 border-t border-[#2A4E85] dark:border-slate-800/60 bg-[#162C4A] dark:bg-slate-950/50">
         <div className={`flex items-center gap-3 px-2 py-2 mb-2 rounded-xl ${collapsed ? "justify-center" : ""}`}>
-          <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0 text-xs text-slate-300 font-bold border border-slate-700">
+          <div className="w-9 h-9 rounded-xl bg-[#2A4E85] dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-xs text-blue-100 dark:text-slate-300 font-bold border border-[#3A60A0] dark:border-slate-700">
             {role === "superadmin" ? "SA" : role === "admin" ? "AD" : "US"}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <div className="text-slate-200 text-sm font-semibold truncate">
+              <div className="text-white dark:text-slate-200 text-sm font-semibold truncate">
                 {role === "superadmin" ? "Super Admin" : role === "admin" ? "Admin Ruangan" : "Budi Santoso"}
               </div>
-              <div className="text-slate-500 text-xs truncate font-medium mt-0.5">
+              <div className="text-blue-200/70 dark:text-slate-500 text-xs truncate font-medium mt-0.5">
                 {role === "superadmin" ? "superadmin@oikn.go.id" : role === "admin" ? "admin@oikn.go.id" : "user@oikn.go.id"}
               </div>
             </div>
@@ -162,7 +161,7 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
         </div>
         <button
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 text-sm transition-all duration-300 group dark:bg-rose-500/30"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-200/70 dark:text-slate-400 hover:text-rose-300 dark:hover:text-rose-400 hover:bg-rose-500/10 text-sm transition-all duration-300 group dark:bg-rose-500/30"
         >
           <LogOut size={18} className="group-hover:-translate-x-0.5 transition-transform" />
           {!collapsed && <span className="font-medium">Keluar Sistem</span>}
