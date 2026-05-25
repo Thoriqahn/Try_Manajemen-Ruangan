@@ -1037,6 +1037,16 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                         </p>
                       </div>
                     )}
+                    
+                    {booking.cancel_reason && booking.status === "cancelled" && (
+                      <div className="mt-4 p-3 bg-rose-50/80 border border-rose-200 rounded-xl flex items-start gap-2.5 transition-colors dark:bg-rose-500/30 dark:border-rose-500/20">
+                        <AlertTriangle className="text-rose-500 mt-0.5 flex-shrink-0 transition-colors dark:text-rose-400" size={16} />
+                        <p className="text-sm text-rose-700 leading-relaxed font-medium transition-colors dark:text-rose-300">
+                          <span className="font-bold block text-[10px] uppercase tracking-wider text-rose-500 mb-0.5 transition-colors duration-300 dark:text-rose-400">Alasan Pembatalan:</span>
+                          {booking.cancel_reason}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 );
               })

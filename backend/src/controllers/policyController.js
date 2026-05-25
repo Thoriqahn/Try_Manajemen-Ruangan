@@ -38,13 +38,38 @@ const addBlackout = async (req, res, next) => {
   try {
     const { date, reason } = req.body;
     if (!date) return res.status(400).json({ success: false, message: 'Tanggal diperlukan' });
+    if (!reason) return res.status(400).json({ success: false, message: 'Alasan penutupan harus diisi' });
+
     await dbRun(`
       INSERT INTO blackout_dates (id, date, reason) 
       VALUES ($1, $2, $3) 
       ON CONFLICT (date) DO UPDATE SET deleted_at = NULL, reason = EXCLUDED.reason
-    `, [uuidv4(), date, reason || null]);
-    await audit({ actorId: req.user.id, actorName: req.user.name, action: 'ADD_BLACKOUT', resource: date, ip: req.ip, after: { date, reason } });
-    res.status(201).json({ success: true, message: `Blackout date ${date} ditambahkan` });
+    `, [uuidv4(), date, reason]);
+
+    // Auto-cancel existing bookings on this date
+    const affectedBookings = await dbAll(
+      `SELECT id, user_id FROM bookings WHERE date = $1 AND status IN ('pending', 'confirmed') AND deleted_at IS NULL`,
+      [date]
+    );
+
+    if (affectedBookings.length > 0) {
+      await dbRun(
+        `UPDATE bookings SET status = 'cancelled', cancel_reason = $1 WHERE date = $2 AND status IN ('pending', 'confirmed') AND deleted_at IS NULL`,
+        [reason, date]
+      );
+
+      // Create notifications for affected users
+      const uniqueUsers = [...new Set(affectedBookings.map(b => b.user_id))];
+      for (const userId of uniqueUsers) {
+        await dbRun(
+          `INSERT INTO notifications (id, user_id, title, message) VALUES ($1, $2, $3, $4)`,
+          [uuidv4(), userId, 'Pemesanan Dibatalkan Oleh Sistem', `Pemesanan ruangan Anda pada tanggal ${date} dibatalkan otomatis karena kebijakan penutupan fasilitas. Alasan: ${reason}`]
+        );
+      }
+    }
+
+    await audit({ actorId: req.user.id, actorName: req.user.name, action: 'ADD_BLACKOUT', resource: date, ip: req.ip, after: { date, reason, cancelledBookingsCount: affectedBookings.length } });
+    res.status(201).json({ success: true, message: `Blackout date ${date} ditambahkan, ${affectedBookings.length} booking dibatalkan.` });
   } catch (err) { next(err); }
 };
 

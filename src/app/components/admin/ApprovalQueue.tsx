@@ -233,18 +233,18 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
                   <td className="px-6 py-5">{statusBadge(booking.status)}</td>
                   <td className="px-6 py-5">
                     {booking.status === "pending" && (
-                      <div className="flex gap-3 justify-end opacity-80 transition-opacity duration-300">
+                      <div className="flex gap-3 justify-end opacity-100 transition-opacity duration-300">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleApprove(booking.id); }}
                           disabled={actionLoading === booking.id}
-                          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-500 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition-all shadow-sm hover:shadow-md hover:shadow-emerald-500/20 active:scale-95 dark:bg-emerald-600"
+                          className="px-4 py-2 text-xs bg-emerald-50 hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:text-white text-emerald-700 border border-emerald-200 rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-sm hover:shadow-emerald-500/20 active:scale-95 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30 disabled:opacity-50"
                         >
-                          {actionLoading === booking.id ? <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check size={14} />}
+                          {actionLoading === booking.id ? <div className="w-3.5 h-3.5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /> : <Check size={14} />}
                           Setuju
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setRejectModal(booking.id); }}
-                          className="flex items-center justify-center gap-1.5 px-4 py-2 border border-rose-200 text-rose-600 text-[11px] font-bold uppercase tracking-wider rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all active:scale-95 dark:bg-rose-500/30 dark:text-rose-400 dark:border-rose-500/30"
+                          className="px-4 py-2 text-xs bg-rose-50 hover:bg-rose-500 dark:hover:bg-rose-600 hover:text-white text-rose-600 border border-rose-200 rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-sm hover:shadow-rose-500/20 active:scale-95 dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30 disabled:opacity-50"
                         >
                           <X size={14} />
                           Tolak
@@ -468,7 +468,7 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
                       setRejectModal(selectedApprovalBooking.id);
                       setSelectedApprovalBooking(null);
                     }}
-                    className="px-5 py-2.5 border border-rose-200 text-rose-600 bg-white rounded-xl text-sm font-bold hover:bg-rose-50 dark:hover:bg-rose-500/10 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm dark:bg-rose-500/30 dark:text-rose-400 dark:border-rose-500/30"
+                    className="px-5 py-2.5 text-sm bg-rose-50 hover:bg-rose-500 dark:hover:bg-rose-600 hover:text-white text-rose-600 border border-rose-200 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow-rose-500/20 active:scale-95 dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30"
                   >
                     <X size={16} /> Tolak
                   </button>
@@ -478,9 +478,9 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
                       setSelectedApprovalBooking(null);
                     }}
                     disabled={actionLoading === selectedApprovalBooking.id}
-                    className="px-5 py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-sm hover:shadow-md hover:shadow-emerald-500/20 active:scale-95 dark:bg-emerald-600"
+                    className="px-5 py-2.5 text-sm bg-emerald-50 hover:bg-emerald-500 dark:hover:bg-emerald-600 hover:text-white text-emerald-700 border border-emerald-200 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow-emerald-500/20 active:scale-95 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30 disabled:opacity-50"
                   >
-                    {actionLoading === selectedApprovalBooking.id ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check size={16} />}
+                    {actionLoading === selectedApprovalBooking.id ? <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /> : <Check size={16} />}
                     Setujui
                   </button>
                 </>

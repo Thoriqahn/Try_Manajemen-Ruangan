@@ -73,13 +73,18 @@ export function DailyView({
   onNavigate,
   onBack,
   filterButton,
-  filterPanel
+  filterPanel,
+  blackoutDates,
+  userRole
 }: {
   selectedDay: string;
+  filteredRooms: any[];
+  onNavigate: (page: string, data?: any) => void;
   onBack: () => void;
   filterButton?: React.ReactNode;
   filterPanel?: React.ReactNode;
   blackoutDates: string[];
+  userRole?: string;
 }) {
   const [drag, setDrag] = useState<DragState | null>(null);
   const [bookingData, setBookingData] = useState<{ room: any; startTime: string; endTime: string } | null>(null);
@@ -320,7 +325,14 @@ export function DailyView({
                     onClick={() => onNavigate("room-detail", { roomId: room.id })}
                   >
                     <div className="text-sm text-gray-800 leading-tight transition-colors dark:text-slate-100" style={{ fontWeight: 600 }} title={room.name}>{room.name}</div>
-                    <div className="flex items-center gap-1.5 mt-1">
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      {room.room_type === 'digital' ? (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 text-[9px] font-bold tracking-wider uppercase transition-colors dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-500/20">Digital</span>
+                      ) : room.room_type === 'hybrid' ? (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200 text-[9px] font-bold tracking-wider uppercase transition-colors dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-500/20">Hybrid</span>
+                      ) : (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 text-[9px] font-bold tracking-wider uppercase transition-colors dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">Fisik</span>
+                      )}
                       <span className="flex items-center gap-0.5 text-xs text-gray-400 transition-colors dark:text-slate-500">
                         <MapPin size={10} />{room.floor_name || "Lantai"}
                       </span>
@@ -755,7 +767,7 @@ function BookingModal({ room, date, startTime, endTime, onClose, onConfirm }: {
     agenda: "",
     endTime: endTime || "",
     participants: "",
-    notes: "",
+    suratTerkait: "" as any,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -775,6 +787,7 @@ function BookingModal({ room, date, startTime, endTime, onClose, onConfirm }: {
         end_time: form.endTime,
         agenda: form.agenda,
         participants: parseInt(form.participants) || 1,
+        surat_terkait: form.suratTerkait || undefined,
       });
       setSuccess(true);
     } catch (e: any) {
@@ -890,14 +903,24 @@ function BookingModal({ room, date, startTime, endTime, onClose, onConfirm }: {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>Catatan <span className="text-gray-400 text-xs transition-colors dark:text-slate-500">(opsional)</span></label>
-            <textarea
-              value={form.notes}
-              onChange={e => setForm({ ...form, notes: e.target.value })}
-              placeholder="Kebutuhan tambahan, layout, dll."
-              rows={2}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 resize-none transition-colors dark:bg-slate-800 dark:border-slate-700"
+            <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>
+              Surat Terkait <span className="text-gray-400 text-xs font-normal transition-colors dark:text-slate-500">(opsional, max 2MB)</span>
+            </label>
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file && file.size > 2 * 1024 * 1024) {
+                  alert("File terlalu besar. Maksimal 2MB.");
+                  e.target.value = "";
+                } else {
+                  setForm({ ...form, suratTerkait: file });
+                }
+              }}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 transition-colors dark:bg-slate-800 dark:border-slate-700"
             />
+            <p className="text-[10px] text-gray-400 mt-1 transition-colors dark:text-slate-500">Unggah file surat edaran, memo, atau referensi terkait untuk mendukung urgensi peminjaman.</p>
           </div>
         </div>
 

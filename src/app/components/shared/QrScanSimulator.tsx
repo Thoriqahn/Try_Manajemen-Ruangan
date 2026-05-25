@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { QrCode, X, AlertTriangle, Play, Copy, Check, Camera } from "lucide-react";
 import { bookingService, Booking, Attendee } from "../../services/bookingService";
 import { roomService } from "../../services/roomService";
@@ -27,6 +27,36 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
   const [activeTab, setActiveTab] = useState<"camera" | "manual" | "attendees">("camera");
 
   const currentUser = UserStore.get();
+
+  // Drag state for floating button
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const isClickRef = useRef(true);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.target.setPointerCapture(e.pointerId);
+    setIsDragging(true);
+    isClickRef.current = true;
+    dragStartRef.current = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    };
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    isClickRef.current = false; // Not a click if it moves
+    setPosition({
+      x: e.clientX - dragStartRef.current.x,
+      y: e.clientY - dragStartRef.current.y
+    });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.target.releasePointerCapture(e.pointerId);
+    setIsDragging(false);
+  };
 
   const addLog = (msg: string) => {
     const time = new Date().toLocaleTimeString("id-ID");
@@ -223,16 +253,34 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
   return (
     <>
       {/* Floating Action Button (Desktop Only) */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="hidden lg:flex fixed bottom-6 right-6 z-50 px-6 py-4 bg-gradient-to-tr from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgb(16,185,129,0.4)] hover:-translate-y-1 active:scale-95 transition-all items-center gap-3 animate-bounce shadow-emerald-500/50"
-        title="Check-In QR Code Pintu"
+      <div 
+        className="hidden lg:flex fixed bottom-6 right-6 z-50"
+        style={{
+           transform: `translate(${position.x}px, ${position.y}px)`,
+           cursor: isDragging ? 'grabbing' : 'grab',
+           touchAction: 'none'
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
       >
-        <QrCode size={24} className="animate-pulse" />
-        <span className="text-sm font-bold uppercase tracking-wider">
-          Tap QR Check-In
-        </span>
-      </button>
+        <button
+          onClick={(e) => {
+            if (!isClickRef.current) {
+              e.preventDefault();
+              return;
+            }
+            setIsOpen(true);
+          }}
+          className={`flex px-6 py-4 bg-gradient-to-tr from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgb(16,185,129,0.4)] items-center gap-3 shadow-emerald-500/50 select-none ${isDragging ? '' : 'hover:-translate-y-1 active:scale-95 transition-all animate-bounce'}`}
+          title="Check-In QR Code Pintu"
+        >
+          <QrCode size={24} className={isDragging ? '' : 'animate-pulse'} />
+          <span className="text-sm font-bold uppercase tracking-wider">
+            Tap QR Check-In
+          </span>
+        </button>
+      </div>
 
       {/* Simulator Modal Backdrop */}
       {isOpen && (

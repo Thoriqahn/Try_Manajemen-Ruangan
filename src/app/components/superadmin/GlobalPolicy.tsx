@@ -10,6 +10,9 @@ export function GlobalPolicy() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  
+  // Blackout Modal States
+  const [blackoutModal, setBlackoutModal] = useState<{ isOpen: boolean; date: string; reason: string }>({ isOpen: false, date: "", reason: "" });
 
   useEffect(() => {
     policyService.get().then((res: any) => {
@@ -34,8 +37,23 @@ export function GlobalPolicy() {
       setBlackoutDates(prev => prev.filter(d => d !== date));
       try { await policyService.removeBlackout(date); } catch (e: any) { alert(e.message); setBlackoutDates(prev => [...prev, date]); }
     } else {
-      setBlackoutDates(prev => [...prev, date]);
-      try { await policyService.addBlackout(date); } catch (e: any) { alert(e.message); setBlackoutDates(prev => prev.filter(d => d !== date)); }
+      setBlackoutModal({ isOpen: true, date, reason: "" });
+    }
+  };
+
+  const handleConfirmBlackout = async () => {
+    const { date, reason } = blackoutModal;
+    if (!reason.trim()) {
+      alert("Alasan penutupan harus diisi.");
+      return;
+    }
+    setBlackoutModal({ isOpen: false, date: "", reason: "" });
+    setBlackoutDates(prev => [...prev, date]);
+    try { 
+      await policyService.addBlackout(date, reason); 
+    } catch (e: any) { 
+      alert(e.message); 
+      setBlackoutDates(prev => prev.filter(d => d !== date)); 
     }
   };
 
@@ -51,7 +69,7 @@ export function GlobalPolicy() {
   const TooltipWrapper = ({ text, children }: { text: string; children: React.ReactNode }) => (
     <div className="relative group inline-flex items-center gap-1">
       {children}
-      <div className="absolute bottom-full left-0 mb-2 w-56 bg-gray-800 text-white text-xs rounded-xl px-3 py-2 transition-opacity pointer-events-none z-10 shadow-lg transition-all duration-300">{text}</div>
+      <div className="absolute bottom-full left-0 mb-2 w-56 bg-gray-800 text-white text-xs rounded-xl px-3 py-2 opacity-0 group-hover:opacity-100 pointer-events-none z-10 shadow-lg transition-all duration-300">{text}</div>
     </div>
   );
 
@@ -160,6 +178,55 @@ export function GlobalPolicy() {
           {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Menerapkan...</> : "Terapkan Kebijakan"}
         </button>
       </div>
+
+      {/* Blackout Reason Modal */}
+      {blackoutModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200 transition-colors dark:bg-slate-900 dark:border-slate-800">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 transition-colors dark:bg-red-500/20 dark:text-red-400">
+                  <Calendar size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800 transition-colors dark:text-slate-100">Tutup Tanggal {blackoutModal.date}</h3>
+                  <p className="text-xs text-slate-500 transition-colors dark:text-slate-400">Masukkan alasan penutupan global (akan dikirim ke user)</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider transition-colors dark:text-slate-300">Alasan Penutupan</label>
+                  <textarea
+                    value={blackoutModal.reason}
+                    onChange={(e) => setBlackoutModal(prev => ({ ...prev, reason: e.target.value }))}
+                    placeholder="Contoh: Libur Nasional / Maintenance Gedung"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10 transition-all resize-none dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+                    rows={3}
+                    autoFocus
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 transition-colors dark:bg-slate-900 dark:border-slate-800">
+              <button 
+                onClick={() => setBlackoutModal({ isOpen: false, date: "", reason: "" })}
+                className="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={handleConfirmBlackout}
+                disabled={!blackoutModal.reason.trim()}
+                className="px-5 py-2 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              >
+                Terapkan Penutupan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
