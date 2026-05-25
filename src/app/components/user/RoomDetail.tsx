@@ -555,12 +555,12 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                           >
                             {booked ? (
                               isBlackoutDate(d.full) ? (
-                                <div className="absolute inset-0.5 rounded-xl bg-red-50 border border-red-200 text-red-500 text-[10px] flex items-center justify-center shadow-sm select-none transition-colors duration-300 dark:bg-red-500/10 dark:text-red-400/70 dark:border-red-500/20" style={{ fontWeight: 600 }}>Tutup</div>
+                                <div className="absolute inset-0.5 rounded-xl bg-red-50 border border-red-200 text-red-500 text-[10px] flex items-center justify-center shadow-sm select-none cursor-not-allowed transition-colors duration-300 dark:bg-red-500/10 dark:text-red-400/70 dark:border-red-500/20" style={{ fontWeight: 600 }}>Tutup</div>
                               ) : (() => {
                                 const booking = getBookingForSlot(d.full, time);
                                 return (
                                   <div
-                                    className={`absolute inset-0.5 rounded-xl flex items-center justify-center overflow-hidden border shadow-sm select-none transition-all duration-300 ${
+                                    className={`absolute inset-0.5 rounded-xl flex items-center justify-center overflow-hidden border shadow-sm select-none cursor-not-allowed transition-all duration-300 ${
                                       booking?.status === "pending"
                                         ? "bg-amber-50 dark:bg-amber-500/20 border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-300"
                                         : booking?.status === "ongoing"

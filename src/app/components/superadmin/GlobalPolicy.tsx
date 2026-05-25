@@ -12,10 +12,11 @@ export function GlobalPolicy() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
-    policyService.get().then((data: any) => {
+    policyService.get().then((res: any) => {
+      const data = res.data || {};
       setMaxDuration(data.max_duration_hours || 6);
       setMaxDaysAhead(data.max_days_ahead || 30);
-      setBlackoutDates((data.blackout_dates || []).map((d: any) => d.date || d));
+      setBlackoutDates((data.blackoutDates || []).map((d: any) => d.date || d));
     }).catch(console.error).finally(() => setLoading(false));
   }, []);
 

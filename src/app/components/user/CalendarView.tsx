@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Filter, Info, MapPin, Users, Monitor } from 
 import { timeSlots } from "../shared/mockData";
 import { roomService } from "../../services/roomService";
 import { bookingService } from "../../services/bookingService";
-import { buildingService } from "../../services/index";
+import { buildingService, policyService } from "../../services/index";
 
 interface CalendarViewProps {
   onNavigate: (page: string, data?: any) => void;
@@ -76,11 +76,10 @@ export function DailyView({
   filterPanel
 }: {
   selectedDay: string;
-  filteredRooms: any[];
-  onNavigate: (view: any, opts?: any) => void;
   onBack: () => void;
   filterButton?: React.ReactNode;
   filterPanel?: React.ReactNode;
+  blackoutDates: string[];
 }) {
   const [drag, setDrag] = useState<DragState | null>(null);
   const [bookingData, setBookingData] = useState<{ room: any; startTime: string; endTime: string } | null>(null);
@@ -333,8 +332,9 @@ export function DailyView({
                   </div>
 
                   {timeSlots.map((time, si) => {
+                    const isBlackout = blackoutDates.includes(selectedDay);
                     const booked = isSlotBooked(room.id, si);
-                    const disabled = isPastDay || booked;
+                    const disabled = isPastDay || booked || isBlackout;
                     const booking = getSlotBooking(room.id, si);
                     const selected = isInSelection(room.id, si);
                     const isSelConflict = selected && activeConflict;
@@ -359,7 +359,9 @@ export function DailyView({
                         onMouseUp={() => handleMouseUp(room.id)}
                         onTouchStart={(e) => handleTouchStart(room.id, si, e)}
                       >
-                        {booked && (
+                        {isBlackout ? (
+                          <div className="absolute inset-0.5 rounded-xl bg-red-50 border border-red-200 text-red-500 text-[10px] flex items-center justify-center shadow-sm select-none transition-colors duration-300 dark:bg-red-500/10 dark:text-red-400/70 dark:border-red-500/20" style={{ fontWeight: 600 }}>Tutup</div>
+                        ) : booked ? (
                           <div
                             className={`absolute inset-0.5 rounded-xl flex items-center justify-center overflow-hidden border shadow-sm select-none transition-all duration-300 ${
                               booking?.status === "pending"
@@ -377,8 +379,8 @@ export function DailyView({
                               </span>
                             )}
                           </div>
-                        )}
-                        {selected && !booked && (
+                        ) : null}
+                        {selected && !booked && !isBlackout && (
                           <div className={`absolute inset-0.5 rounded-xl border border-blue-400 bg-blue-50 dark:bg-blue-500/20 dark:border-blue-500/50 flex items-center justify-center transition-all duration-300 shadow-md scale-[1.02] z-10`}>
                             {si === (drag ? Math.min(drag.startIdx, drag.endIdx) : si) && (
                               <span className={`text-blue-800 dark:text-blue-300 font-bold ${isSelConflict ? "" : "animate-pulse"}`} style={{ fontSize: "10px", fontWeight: 700 }}>
@@ -449,17 +451,20 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
   const [weekMonday, setWeekMonday] = useState(getMondayOfWeek(today));
   const [rooms, setRooms] = useState<any[]>([]);
   const [myBookings, setMyBookings] = useState<any[]>([]);
+  const [blackoutDates, setBlackoutDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchCalendarData = useCallback(async () => {
     setLoading(true);
     try {
-      const [roomsRes, bookingsRes] = await Promise.all([
+      const [roomsRes, bookingsRes, policyRes] = await Promise.all([
         roomService.list({ status: "active" }),
         bookingService.list({ limit: 100, own_only: "true" }),
+        policyService.get().catch(() => ({ data: { blackoutDates: [] } }))
       ]);
       setRooms(roomsRes.data || []);
       setMyBookings(bookingsRes.data || []);
+      setBlackoutDates((policyRes.data?.blackoutDates || []).map((d: any) => d.date || d));
     } catch (e) {
       console.error(e);
     } finally {
@@ -531,6 +536,7 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
           </button>
         }
         filterPanel={showFilters ? <FilterPanel /> : undefined}
+        blackoutDates={blackoutDates}
       />
     );
   }
@@ -542,50 +548,59 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
     const bookings = getBookingsForDate(dateStr);
     const isToday = dateStr === todayStr;
     const isPast = date < today && !isToday;
+    const isBlackout = blackoutDates.includes(dateStr);
 
     return (
       <button
-        onClick={() => !isPast && setSelectedDay(dateStr)}
+        onClick={() => !isPast && !isBlackout && setSelectedDay(dateStr)}
+        disabled={isPast || isBlackout}
         className={`w-full text-left border-r border-b border-gray-100 dark:border-slate-800 last:border-r-0 transition-colors group ${
           compact ? "p-1 min-h-[70px]" : "p-2 sm:p-2.5 min-h-[80px] sm:min-h-[96px]"
-        } ${isPast ? "cursor-not-allowed bg-gray-50/70 dark:bg-slate-800/40" : isToday ? "bg-blue-50/70 dark:bg-blue-900/20" : "bg-white dark:bg-slate-900 hover:bg-blue-50/30 dark:hover:bg-slate-800/50"}`}
+        } ${isBlackout ? "cursor-not-allowed bg-red-50/50 dark:bg-red-900/10" : isPast ? "cursor-not-allowed bg-gray-50/70 dark:bg-slate-800/40" : isToday ? "bg-blue-50/70 dark:bg-blue-900/20" : "bg-white dark:bg-slate-900 hover:bg-blue-50/30 dark:hover:bg-slate-800/50"}`}
       >
         <div className="flex items-start justify-between mb-1">
           <span className={`text-xs sm:text-sm transition-colors ${
             isToday ? "w-6 h-6 flex items-center justify-center rounded-full bg-blue-600 text-white" :
             !inCurrentMonth ? "text-gray-300" :
-            isPast ? "text-gray-400 dark:text-slate-500" : "text-gray-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+            isPast ? "text-gray-400 dark:text-slate-500" : 
+            isBlackout ? "text-red-500 dark:text-red-400" : "text-gray-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400"
           }`} style={{ fontWeight: isToday ? 700 : 500 }}>
             {date.getDate()}
           </span>
-          {bookings.length > 0 && !compact && (
+          {bookings.length > 0 && !compact && !isBlackout && (
             <span className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-full w-5 h-5 flex items-center justify-center font-bold transition-colors dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/50" style={{ fontSize: "10px" }}>{bookings.length}</span>
           )}
         </div>
         {!compact ? (
           <div className="space-y-1 mt-1">
-            {bookings.slice(0, 2).map((b, i) => (
-              <div 
-                key={i} 
-                className={`rounded-md px-1.5 py-1 hidden sm:flex flex-col border shadow-sm transition-colors duration-300 ${
-                  b.status === "pending"
-                    ? "bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30"
-                    : b.status === "ongoing"
-                    ? "bg-emerald-500 dark:bg-emerald-500/30 text-white dark:text-emerald-300 border-emerald-600 dark:border-emerald-400/40"
-                    : "bg-blue-600 dark:bg-blue-500/30 text-white dark:text-blue-300 border-blue-700 dark:border-blue-400/40"
-                }`} 
-              >
-                {b.room_name && (
-                  <span className="text-[8px] uppercase tracking-wider opacity-90 truncate mb-0.5" style={{ fontWeight: 800 }}>
-                    {b.room_name}
-                  </span>
-                )}
-                <span className="text-[10px] truncate" style={{ fontWeight: 600, lineHeight: 1.2 }}>
-                  {b.status === "pending" ? "⏳ " : ""}{b.agenda}
-                </span>
+            {isBlackout ? (
+              <div className="rounded-md px-1.5 py-1 hidden sm:flex flex-col border shadow-sm transition-colors duration-300 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20 items-center justify-center font-semibold text-[10px]">
+                Tutup
               </div>
-            ))}
-            {bookings.length > 0 && (
+            ) : (
+              bookings.slice(0, 2).map((b, i) => (
+                <div 
+                  key={i} 
+                  className={`rounded-md px-1.5 py-1 hidden sm:flex flex-col border shadow-sm transition-colors duration-300 ${
+                    b.status === "pending"
+                      ? "bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30"
+                      : b.status === "ongoing"
+                      ? "bg-emerald-500 dark:bg-emerald-500/30 text-white dark:text-emerald-300 border-emerald-600 dark:border-emerald-400/40"
+                      : "bg-blue-600 dark:bg-blue-500/30 text-white dark:text-blue-300 border-blue-700 dark:border-blue-400/40"
+                  }`} 
+                >
+                  {b.room_name && (
+                    <span className="text-[8px] uppercase tracking-wider opacity-90 truncate mb-0.5" style={{ fontWeight: 800 }}>
+                      {b.room_name}
+                    </span>
+                  )}
+                  <span className="text-[10px] truncate" style={{ fontWeight: 600, lineHeight: 1.2 }}>
+                    {b.status === "pending" ? "⏳ " : ""}{b.agenda}
+                  </span>
+                </div>
+              ))
+            )}
+            {bookings.length > 0 && !isBlackout && (
               <div className="sm:hidden flex gap-1 mt-1 flex-wrap">
                 {bookings.slice(0, 4).map((b, i) => (
                   <div 

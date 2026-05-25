@@ -38,7 +38,11 @@ const addBlackout = async (req, res, next) => {
   try {
     const { date, reason } = req.body;
     if (!date) return res.status(400).json({ success: false, message: 'Tanggal diperlukan' });
-    await dbRun('INSERT INTO blackout_dates (id, date, reason) VALUES ($1,$2,$3) ON CONFLICT (date) DO NOTHING', [uuidv4(), date, reason || null]);
+    await dbRun(`
+      INSERT INTO blackout_dates (id, date, reason) 
+      VALUES ($1, $2, $3) 
+      ON CONFLICT (date) DO UPDATE SET deleted_at = NULL, reason = EXCLUDED.reason
+    `, [uuidv4(), date, reason || null]);
     await audit({ actorId: req.user.id, actorName: req.user.name, action: 'ADD_BLACKOUT', resource: date, ip: req.ip, after: { date, reason } });
     res.status(201).json({ success: true, message: `Blackout date ${date} ditambahkan` });
   } catch (err) { next(err); }
