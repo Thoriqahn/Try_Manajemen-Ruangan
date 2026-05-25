@@ -114,4 +114,16 @@ router.post('/:id/force-cancel', authGuard, roleGuard('admin', 'superadmin'), ct
  */
 router.get('/:id/attendees', authGuard, ctrl.getBookingAttendees);
 
+/**
+ * @openapi
+ * /api/bookings/{id}/zoom-join:
+ *   post:
+ *     summary: POST /:id/zoom-join
+ *     tags: [Bookings]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
+router.post('/:id/zoom-join', authGuard, ctrl.logZoomJoin);
+
 module.exports = router;

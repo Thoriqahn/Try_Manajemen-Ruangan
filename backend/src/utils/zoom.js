@@ -25,14 +25,25 @@ const getAccessToken = async () => {
   const tokenUrl = `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${account_id}`;
   const auth = Buffer.from(`${client_id}:${client_secret_encrypted}`).toString('base64');
 
-  const response = await axios.post(tokenUrl, null, {
-    headers: { Authorization: `Basic ${auth}` },
-    timeout: 10000,
-  });
+  try {
+    const response = await axios.post(tokenUrl, null, {
+      headers: { 
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      timeout: 10000,
+    });
 
-  cachedToken = response.data.access_token;
-  tokenExpiresAt = Date.now() + (response.data.expires_in * 1000);
-  return cachedToken;
+    cachedToken = response.data.access_token;
+    tokenExpiresAt = Date.now() + (response.data.expires_in * 1000);
+    return cachedToken;
+  } catch (err) {
+    if (err.response && err.response.data) {
+      const zoomMsg = err.response.data.reason || err.response.data.errorMessage || err.response.data.error || 'Unknown error';
+      throw new Error(`Zoom API: ${zoomMsg}`);
+    }
+    throw err;
+  }
 };
 
 /**

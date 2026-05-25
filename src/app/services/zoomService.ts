@@ -29,7 +29,7 @@ export const zoomService = {
   },
 
   async saveConfig(data: ZoomConfig) {
-    return api.post<{ success: boolean }>('/zoom/config', data);
+    return api.put<{ success: boolean }>('/zoom/config', data);
   },
 
   async testConnection() {

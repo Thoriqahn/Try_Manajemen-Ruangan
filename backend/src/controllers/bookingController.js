@@ -735,17 +735,66 @@ const checkInBooking = async (req, res, next) => {
 const getBookingAttendees = async (req, res, next) => {
   try {
     const attendees = await dbAll(
-      `SELECT id, user_id, user_name, scanned_at 
+      `SELECT id, user_id, user_name, email, institution, position, signature, attendance_type, scanned_at 
        FROM meeting_attendees 
        WHERE booking_id = $1 
        ORDER BY scanned_at ASC`,
       [req.params.id]
     );
 
+    const logs = await dbAll(
+      `SELECT user_id, action, created_at 
+       FROM meeting_attendee_logs 
+       WHERE booking_id = $1 
+       ORDER BY created_at ASC`,
+      [req.params.id]
+    );
+
+    // Map logs to attendees
+    const attendeesWithLogs = attendees.map(att => {
+      if (att.user_id) {
+        att.logs = logs.filter(l => l.user_id === att.user_id).map(l => ({
+          action: l.action,
+          timestamp: l.created_at
+        }));
+      } else {
+        att.logs = [];
+      }
+      return att;
+    });
+
     res.status(200).json({
       success: true,
-      data: attendees
+      data: attendeesWithLogs
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/v1/bookings/:id/zoom-join
+const logZoomJoin = async (req, res, next) => {
+  try {
+    const bookingId = req.params.id;
+    const userId = req.user.id;
+    const userName = req.user.name;
+
+    // Log the action
+    await dbRun(
+      `INSERT INTO meeting_attendee_logs (booking_id, user_id, action) VALUES ($1, $2, $3)`,
+      [bookingId, userId, 'zoom_join']
+    );
+
+    // Make sure they are in the attendees list as online
+    await dbRun(`
+      INSERT INTO meeting_attendees (id, booking_id, user_id, user_name, attendance_type, scanned_at)
+      VALUES ($1, $2, $3, $4, 'online', NOW())
+      ON CONFLICT (booking_id, user_id, email) DO UPDATE SET
+        attendance_type = 'online',
+        scanned_at = NOW()
+    `, [uuidv4(), bookingId, userId, userName]);
+
+    res.status(200).json({ success: true, message: 'Zoom join recorded' });
   } catch (err) {
     next(err);
   }
@@ -753,5 +802,5 @@ const getBookingAttendees = async (req, res, next) => {
 
 module.exports = { 
   listBookings, getBooking, createBooking, updateBooking, cancelBooking, 
-  approveBooking, rejectBooking, forceCancel, checkInBooking, getBookingAttendees 
+  approveBooking, rejectBooking, forceCancel, checkInBooking, getBookingAttendees, logZoomJoin 
 };

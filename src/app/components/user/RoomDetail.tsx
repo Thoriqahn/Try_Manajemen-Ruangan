@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, MapPin, Users, Clock, Monitor, Wifi, Volume2, Zap, Calendar, RefreshCw } from "lucide-react";
+import { ArrowLeft, MapPin, Users, Clock, Monitor, Wifi, Volume2, Zap, Calendar, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { roomService, Room } from "../../services/roomService";
 import { bookingService, Booking } from "../../services/bookingService";
 import { TokenStore } from "../../services/apiClient";
@@ -482,16 +482,16 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
 
         {activeTab === "schedule" && (
           <div className="p-6">
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden transition-colors dark:bg-slate-900 dark:border-slate-700">
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between transition-colors dark:border-slate-800">
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm backdrop-blur-md transition-colors duration-300 dark:bg-slate-900/90 dark:border-slate-700/50">
+              <div className="p-5 border-b border-gray-100 flex items-center justify-between transition-colors duration-300 dark:border-slate-800/50">
                 <div>
-                  <h3 className="text-gray-700 transition-colors dark:text-slate-200" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Jadwal Mingguan</h3>
-                  <p className="text-xs text-gray-400 mt-0.5 transition-colors dark:text-slate-500">Tarik/drag rentang waktu kosong untuk membooking</p>
+                  <h3 className="text-gray-700 transition-colors duration-300 dark:text-slate-200" style={{ fontWeight: 600, fontSize: "0.9rem" }}>Jadwal Mingguan</h3>
+                  <p className="text-xs text-gray-400 mt-0.5 transition-colors duration-300 dark:text-slate-500">Tarik/drag rentang waktu kosong untuk membooking</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setCurrentWeekOffset(o => o - 1)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors dark:bg-slate-800 dark:text-slate-500">‹</button>
-                  <button onClick={() => setCurrentWeekOffset(0)} className="px-2 py-1 text-xs bg-gray-100 rounded-lg text-gray-600 transition-colors dark:bg-slate-800 dark:text-slate-300">Minggu Ini</button>
-                  <button onClick={() => setCurrentWeekOffset(o => o + 1)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors dark:bg-slate-800 dark:text-slate-500">›</button>
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => setCurrentWeekOffset(o => o - 1)} className="p-2 hover:bg-gray-100 rounded-xl text-gray-500 transition-all duration-300 dark:hover:bg-slate-800 dark:text-slate-400"><ChevronLeft size={16} /></button>
+                  <button onClick={() => setCurrentWeekOffset(0)} className="px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-100 transition-all duration-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700" style={{ fontWeight: 500 }}>Minggu Ini</button>
+                  <button onClick={() => setCurrentWeekOffset(o => o + 1)} className="p-2 hover:bg-gray-100 rounded-xl text-gray-500 transition-all duration-300 dark:hover:bg-slate-800 dark:text-slate-400"><ChevronRight size={16} /></button>
                 </div>
               </div>
               <div 
@@ -499,19 +499,19 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                 onMouseUp={handleDragEnd}
                 onMouseLeave={() => { if (isDragging) setIsDragging(false); }}
               >
-                <div style={{ minWidth: "600px" }}>
-                  <div className="grid border-b border-gray-200 transition-colors dark:border-slate-700" style={{ gridTemplateColumns: "80px repeat(5, 1fr)" }}>
+                <div style={{ minWidth: "700px" }}>
+                  <div className="grid border-b border-gray-200 transition-colors duration-300 dark:border-slate-700" style={{ gridTemplateColumns: "80px repeat(5, 1fr)" }}>
                     <div className="p-3" />
                     {weekDays.map(d => (
-                      <div key={d.full} className="p-3 text-center border-l border-gray-100 transition-colors dark:border-slate-800">
-                        <div className="text-xs text-gray-400 transition-colors dark:text-slate-500" style={{ fontWeight: 500 }}>{d.label}</div>
-                        <div className="text-sm text-gray-700 transition-colors dark:text-slate-200" style={{ fontWeight: 600 }}>{d.date}</div>
+                      <div key={d.full} className="p-4 text-center border-l border-gray-100 transition-colors duration-300 dark:border-slate-800/50">
+                        <div className="text-xs text-gray-400 transition-colors duration-300 dark:text-slate-500" style={{ fontWeight: 500 }}>{d.label}</div>
+                        <div className="text-sm text-gray-700 mt-0.5 transition-colors duration-300 dark:text-slate-200" style={{ fontWeight: 700 }}>{d.date}</div>
                       </div>
                     ))}
                   </div>
                   {timeSlots.map(time => (
-                    <div key={time} className="grid border-b border-gray-50" style={{ gridTemplateColumns: "80px repeat(5, 1fr)" }}>
-                      <div className="px-3 py-2 text-xs text-gray-400 text-right transition-colors dark:text-slate-500" style={{ fontWeight: 500 }}>{time}</div>
+                    <div key={time} className="grid border-b border-gray-50 transition-colors duration-300 dark:border-slate-800/30" style={{ gridTemplateColumns: "80px repeat(5, 1fr)" }}>
+                      <div className="px-3 py-2.5 text-xs text-gray-400 text-right transition-colors duration-300 dark:text-slate-500" style={{ fontWeight: 500 }}>{time}</div>
                       {weekDays.map(d => {
                         const isPastDay = d.full < new Date().toISOString().split("T")[0];
                         const booked = isBooked(d.full, time);
@@ -521,10 +521,10 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                         return (
                           <div
                             key={d.full}
-                            className="border-l border-gray-100 h-10 relative transition-colors dark:border-slate-800"
+                            className="border-l border-gray-100 h-11 relative transition-colors duration-300 dark:border-slate-800/50"
                             onMouseDown={(e) => {
                               if (!disabled) {
-                                e.preventDefault(); // Prevent text/ghost dragging in browser
+                                e.preventDefault();
                                 setIsDragging(true);
                                 setDragStart({ date: d.full, time });
                                 setDragEnd({ date: d.full, time });
@@ -532,7 +532,6 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                             }}
                             onMouseEnter={() => {
                               if (isDragging && dragStart && dragStart.date === d.full) {
-                                // Concurrency overlap prevention: restrict dragging beyond booked slots
                                 const startIdx = timeSlots.indexOf(dragStart.time);
                                 const currIdx = timeSlots.indexOf(time);
                                 const minIdx = Math.min(startIdx, currIdx);
@@ -547,22 +546,22 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                           >
                             {booked ? (
                               isBlackoutDate(d.full) ? (
-                                <div className="absolute inset-0.5 rounded bg-gray-100 border border-gray-200 text-gray-400 text-[10px] font-medium flex items-center justify-center shadow-sm select-none transition-colors dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700">Libur/Tutup</div>
+                                <div className="absolute inset-0.5 rounded-xl bg-red-50/50 border border-red-100 text-red-400 text-[10px] flex items-center justify-center shadow-sm select-none transition-colors duration-300 dark:bg-red-500/10 dark:text-red-400/70 dark:border-red-500/20" style={{ fontWeight: 600 }}>Libur</div>
                               ) : (() => {
                                 const booking = getBookingForSlot(d.full, time);
                                 return (
                                   <div
-                                    className={`absolute inset-0.5 rounded flex items-center justify-center overflow-hidden border shadow-sm select-none ${
+                                    className={`absolute inset-0.5 rounded-xl flex items-center justify-center overflow-hidden border shadow-sm select-none transition-all duration-300 ${
                                       booking?.status === "pending"
-                                        ? "bg-amber-50 dark:bg-amber-900/20 border-amber-600 text-white"
+                                        ? "bg-amber-50 dark:bg-amber-500/20 border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-300"
                                         : booking?.status === "ongoing"
-                                        ? "bg-emerald-600 border-emerald-700 text-white"
-                                        : "bg-[#1E3A5F] border-[#132742] text-white"
+                                        ? "bg-emerald-500 dark:bg-emerald-500/30 border-emerald-600 dark:border-emerald-400/40 text-white dark:text-emerald-300"
+                                        : "bg-blue-600 dark:bg-blue-500/30 border-blue-700 dark:border-blue-400/40 text-white dark:text-blue-300"
                                     }`}
                                     title={booking ? `${booking.agenda} (${booking.userName || "Pemesan"}) - ${booking.status === "pending" ? "Menunggu Persetujuan" : "Disetujui"}` : "Terbooking"}
                                   >
                                     {booking && time === booking.startTime && (
-                                      <span className="text-white truncate px-1 text-center font-bold" style={{ fontSize: "9px", fontWeight: 700 }}>
+                                      <span className="truncate px-2 text-center" style={{ fontSize: "10px", fontWeight: 700 }}>
                                         {booking.status === "pending" ? "⏳ " : ""}
                                         {booking.agenda}
                                       </span>
@@ -571,21 +570,20 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                                 );
                               })()
                             ) : isPastDay ? (
-                              <div className="absolute inset-0.5 rounded flex items-center justify-center border border-gray-100 bg-gray-50/50 text-gray-300 cursor-not-allowed transition-colors select-none dark:bg-slate-900/50 dark:text-slate-600 dark:border-slate-800">
+                              <div className="absolute inset-0.5 rounded-xl flex items-center justify-center border border-gray-100/50 bg-gray-50/50 text-gray-300 cursor-not-allowed transition-colors duration-300 select-none dark:bg-slate-900/30 dark:text-slate-600 dark:border-slate-800/30">
                                 <span className="text-[10px]" style={{ fontWeight: 600 }}>-</span>
                               </div>
                             ) : (
                               <div
-                                className={`absolute inset-0.5 rounded transition-all cursor-pointer flex items-center justify-center border text-center px-1 ${
+                                className={`absolute inset-0.5 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center border text-center px-1 ${
                                   isInDrag
-                                    ? "bg-amber-100 dark:bg-amber-500/20 dark:bg-amber-500/30 border-amber-400 text-amber-800 dark:text-amber-300 font-semibold shadow-md scale-[1.01] z-10 animate-pulse"
-                                    : "hover:bg-green-50 dark:bg-green-500/10 dark:bg-green-500/20 dark:bg-green-500/30 dark:hover:bg-green-900/20 border-transparent hover:border-green-200 dark:border-green-500/30 dark:hover:border-green-800/50 text-transparent hover:text-green-600 dark:text-green-400 dark:hover:text-green-400"
+                                    ? "bg-blue-50 dark:bg-blue-500/20 border-blue-400 dark:border-blue-500/50 text-blue-800 dark:text-blue-300 shadow-md scale-[1.02] z-10"
+                                    : "bg-transparent dark:bg-transparent border-transparent hover:border-blue-200 dark:hover:border-blue-500/30 hover:bg-blue-50/50 dark:hover:bg-blue-500/10 text-transparent hover:text-blue-600 dark:hover:text-blue-400"
                                 }`}
                               >
                                 <span className="text-[10px]" style={{ fontWeight: 600 }}>
                                   {isInDrag ? (
                                     <span className="flex items-center gap-1">
-                                      <span>⏳</span>
                                       {dragLabel}
                                     </span>
                                   ) : "+ Booking"}
@@ -599,12 +597,13 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                   ))}
                 </div>
               </div>
-              <div className="p-4 border-t border-gray-100 flex flex-wrap gap-4 text-xs text-gray-500 bg-gray-50/50 transition-colors dark:text-slate-400 dark:border-slate-800">
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-50 transition-colors dark:bg-amber-900/20" /><span>⏳ Menunggu Persetujuan</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#1E3A5F]" /><span>✅ Disetujui (Terkonfirmasi)</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-emerald-600" /><span>⚡ Sedang Berjalan</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-100 border border-amber-400 transition-colors duration-300 dark:bg-amber-500/30" /><span>Pilihan Anda (Proses Request)</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-white border border-gray-200 transition-colors dark:bg-slate-900 dark:border-slate-700" /><span>Tersedia</span></div>
+              <div className="p-5 border-t border-gray-100 flex flex-wrap gap-x-5 gap-y-3 text-xs text-gray-500 bg-gray-50/50 transition-colors duration-300 dark:text-slate-400 dark:border-slate-800/50 dark:bg-slate-900/50">
+                <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-amber-50 border border-amber-300 transition-colors duration-300 dark:bg-amber-500/20 dark:border-amber-500/30" /><span style={{ fontWeight: 500 }}>Menunggu Persetujuan</span></div>
+                <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-blue-600 border border-blue-700 transition-colors duration-300 dark:bg-blue-500/30 dark:border-blue-400/40" /><span style={{ fontWeight: 500 }}>Disetujui</span></div>
+                <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-emerald-500 border border-emerald-600 transition-colors duration-300 dark:bg-emerald-500/30 dark:border-emerald-400/40" /><span style={{ fontWeight: 500 }}>Sedang Berjalan</span></div>
+                <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-red-50/50 border border-red-100 transition-colors duration-300 dark:bg-red-500/10 dark:border-red-500/20" /><span style={{ fontWeight: 500 }}>Libur / Tutup</span></div>
+                <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-transparent border border-gray-200 transition-colors duration-300 dark:border-slate-700" /><span style={{ fontWeight: 500 }}>Tersedia</span></div>
+                <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-blue-50 border border-blue-400 transition-colors duration-300 dark:bg-blue-500/20 dark:border-blue-500/50" /><span style={{ fontWeight: 500 }}>Pilihan Anda</span></div>
               </div>
             </div>
           </div>
@@ -742,7 +741,7 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
           </p>
           {(form.meetingType === "online" || form.meetingType === "hybrid") && (
             <p className="text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2 mb-4 transition-colors dark:bg-blue-900/20 dark:text-blue-400">
-              🔗 Link Zoom akan tersedia setelah booking disetujui. Cek halaman "Booking Saya".
+              🔗 Link Zoom akan tersedia setelah booking disetujui. Cek halaman "Dashboard Saya".
             </p>
           )}
           <button onClick={onConfirm} className="w-full py-3 bg-[#1E3A5F] text-white rounded-xl text-sm">Tutup</button>

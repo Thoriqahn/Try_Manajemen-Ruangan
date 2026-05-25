@@ -75,10 +75,6 @@ export function RoomList({ onNavigate }: RoomListProps) {
   const hasVc = (room: any) =>
     room.facilities?.some((f: any) => f.facility_type === "video_conference" && f.quantity > 0);
 
-  const statusBadge = (status: string) => {
-    if (status === "active") return <span className="px-2.5 py-1 bg-emerald-100/90 border border-emerald-200 text-emerald-700 text-[10px] font-bold tracking-wider uppercase rounded-md backdrop-blur-sm transition-colors dark:bg-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/30">Aktif</span>;
-    return <span className="px-2.5 py-1 bg-slate-100/90 border border-slate-200 text-slate-500 text-[10px] font-bold tracking-wider uppercase rounded-md backdrop-blur-sm transition-colors dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">Nonaktif</span>;
-  };
 
   return (
     <div className="p-6 space-y-6 transition-colors duration-300">
@@ -197,7 +193,6 @@ export function RoomList({ onNavigate }: RoomListProps) {
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300" />
-                <div className="absolute top-4 left-4 z-10">{statusBadge(room.status)}</div>
                 <div className="absolute top-4 right-4 z-10">
                   {room.approval_type === "manual" ? (
                     <span className="px-2.5 py-1 bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-md backdrop-blur-md shadow-sm border border-amber-500/30 transition-colors dark:bg-amber-500/30 dark:text-amber-400">Perlu Approval</span>

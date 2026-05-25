@@ -87,6 +87,7 @@ app.use('/api/audit', require('./routes/audit'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/zoom', require('./routes/zoom'));
 app.use('/api/v1/workspaces', require('./routes/workspaces'));
+app.use('/api/public', require('./routes/public'));
 
 // ─── Health Check ────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

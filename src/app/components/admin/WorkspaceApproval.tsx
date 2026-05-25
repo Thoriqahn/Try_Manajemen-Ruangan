@@ -98,10 +98,10 @@ export function WorkspaceApproval({ onNavigate, isSuperAdmin = false }: Workspac
   };
 
   const statusBadge = (status: string) => {
-    if (status === "PENDING") return <span className="px-3 py-1.5 bg-amber-100/90 text-amber-700 border border-amber-200 text-[10px] rounded-lg font-bold uppercase tracking-widest backdrop-blur-sm transition-colors dark:bg-amber-500/30 dark:text-amber-400 dark:border-amber-500/30">⏳ Menunggu</span>;
-    if (status === "APPROVED") return <span className="px-3 py-1.5 bg-emerald-100/90 text-emerald-700 border border-emerald-200 text-[10px] rounded-lg font-bold uppercase tracking-widest backdrop-blur-sm transition-colors dark:bg-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/30">✓ Disetujui</span>;
-    if (status === "REJECTED") return <span className="px-3 py-1.5 bg-rose-100/90 text-rose-700 border border-rose-200 text-[10px] rounded-lg font-bold uppercase tracking-widest backdrop-blur-sm transition-colors dark:bg-rose-500/30 dark:text-rose-400 dark:border-rose-500/30">✗ Ditolak</span>;
-    return <span className="px-3 py-1.5 bg-slate-100/90 text-slate-500 border border-slate-200 text-[10px] rounded-lg font-bold uppercase tracking-widest backdrop-blur-sm transition-colors dark:bg-slate-800/80 dark:text-slate-400 dark:border-slate-700">{status}</span>;
+    if (status === "PENDING") return <span className="whitespace-nowrap px-3 py-1.5 bg-amber-100/90 text-amber-700 border border-amber-200 text-[10px] rounded-lg font-bold uppercase tracking-widest backdrop-blur-sm transition-colors dark:bg-amber-500/30 dark:text-amber-400 dark:border-amber-500/30">⏳ Menunggu</span>;
+    if (status === "APPROVED") return <span className="whitespace-nowrap px-3 py-1.5 bg-emerald-100/90 text-emerald-700 border border-emerald-200 text-[10px] rounded-lg font-bold uppercase tracking-widest backdrop-blur-sm transition-colors dark:bg-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/30">✓ Disetujui</span>;
+    if (status === "REJECTED") return <span className="whitespace-nowrap px-3 py-1.5 bg-rose-100/90 text-rose-700 border border-rose-200 text-[10px] rounded-lg font-bold uppercase tracking-widest backdrop-blur-sm transition-colors dark:bg-rose-500/30 dark:text-rose-400 dark:border-rose-500/30">✗ Ditolak</span>;
+    return <span className="whitespace-nowrap px-3 py-1.5 bg-slate-100/90 text-slate-500 border border-slate-200 text-[10px] rounded-lg font-bold uppercase tracking-widest backdrop-blur-sm transition-colors dark:bg-slate-800/80 dark:text-slate-400 dark:border-slate-700">{status}</span>;
   };
 
   return (

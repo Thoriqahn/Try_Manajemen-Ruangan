@@ -337,11 +337,30 @@ async function initSchema() {
   await dbRun(`CREATE TABLE IF NOT EXISTS meeting_attendees (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
     booking_id TEXT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
     user_name TEXT NOT NULL,
+    email TEXT,
+    institution TEXT,
+    position TEXT,
+    signature TEXT,
+    attendance_type TEXT DEFAULT 'offline',
     scanned_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(booking_id, user_id)
+    UNIQUE(booking_id, user_id, email)
   )`);
+
+  // Migrate existing meeting_attendees table
+  try {
+    await dbRun(`ALTER TABLE meeting_attendees ALTER COLUMN user_id DROP NOT NULL`);
+    await dbRun(`ALTER TABLE meeting_attendees ADD COLUMN IF NOT EXISTS email TEXT`);
+    await dbRun(`ALTER TABLE meeting_attendees ADD COLUMN IF NOT EXISTS institution TEXT`);
+    await dbRun(`ALTER TABLE meeting_attendees ADD COLUMN IF NOT EXISTS position TEXT`);
+    await dbRun(`ALTER TABLE meeting_attendees ADD COLUMN IF NOT EXISTS signature TEXT`);
+    await dbRun(`ALTER TABLE meeting_attendees ADD COLUMN IF NOT EXISTS attendance_type TEXT DEFAULT 'offline'`);
+    await dbRun(`ALTER TABLE meeting_attendees DROP CONSTRAINT IF EXISTS meeting_attendees_booking_id_user_id_key`);
+    await dbRun(`ALTER TABLE meeting_attendees ADD CONSTRAINT meeting_attendees_booking_id_user_id_email_key UNIQUE(booking_id, user_id, email)`);
+  } catch (err) {
+    console.log('Migration info (meeting_attendees updates):', err.message);
+  }
 
   await dbRun(`CREATE TABLE IF NOT EXISTS zoom_meeting_logs (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
@@ -354,6 +373,14 @@ async function initSchema() {
     status TEXT NOT NULL CHECK(status IN ('success','failed')),
     error_message TEXT,
     api_response TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  )`);
+
+  await dbRun(`CREATE TABLE IF NOT EXISTS meeting_attendee_logs (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
+    booking_id TEXT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    action TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
   )`);
 

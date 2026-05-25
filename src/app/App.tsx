@@ -71,11 +71,16 @@ const defaultPage: Record<Role, Page> = {
   superadmin: "sa-rooms",
 };
 
+import PublicAttendance from "./pages/PublicAttendance";
+import QrRedirect from "./pages/QrRedirect";
+
 export default function App() {
+  const isPresensiPath = window.location.pathname.startsWith('/presensi/');
+
   const [authPage, setAuthPage] = useState<"login" | "register" | "forgot-password">("login");
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [nav, setNav] = useState<NavState>({ page: "calendar" });
-  const [initializing, setInitializing] = useState(true);
+  const [initializing, setInitializing] = useState(!isPresensiPath);
 
   // Restore session from localStorage on mount
   useEffect(() => {
@@ -113,6 +118,25 @@ export default function App() {
   const handleNavigate = (page: string, data?: any) => {
     setNav({ page: page as Page, data });
   };
+
+  if (isPresensiPath) {
+    return (
+      <>
+        <PublicAttendance />
+        <Toaster position="top-center" closeButton richColors />
+      </>
+    );
+  }
+
+  const isQrPath = window.location.pathname.startsWith('/qr/');
+  if (isQrPath) {
+    return (
+      <>
+        <QrRedirect />
+        <Toaster position="top-center" closeButton richColors />
+      </>
+    );
+  }
 
   if (initializing) {
     return (

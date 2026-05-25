@@ -260,12 +260,12 @@ function DailyView({
         <p className="text-xs text-blue-600 transition-colors duration-300 dark:text-blue-400">Tahan & seret kolom waktu untuk memilih durasi booking</p>
       </div>
 
-      <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center gap-4 text-xs text-gray-500 flex-shrink-0 overflow-x-auto transition-colors dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
-        <div className="flex items-center gap-1.5 shrink-0"><div className="w-4 h-3 rounded bg-amber-50 transition-colors dark:bg-amber-900/20" /><span>⏳ Menunggu Persetujuan</span></div>
-        <div className="flex items-center gap-1.5 shrink-0"><div className="w-4 h-3 rounded bg-[#1E3A5F]" /><span>✅ Disetujui (Terkonfirmasi)</span></div>
-        <div className="flex items-center gap-1.5 shrink-0"><div className="w-4 h-3 rounded bg-emerald-600" /><span>⚡ Sedang Berjalan</span></div>
-        <div className="flex items-center gap-1.5 shrink-0"><div className="w-4 h-3 rounded bg-white border border-gray-200 transition-colors dark:bg-slate-900 dark:border-slate-700" /><span>Tersedia</span></div>
-        <div className="flex items-center gap-1.5 shrink-0"><div className="w-4 h-3 rounded bg-amber-100 border border-amber-400 transition-colors duration-300 dark:bg-amber-500/30" /><span>Pilihan Anda (Proses Request)</span></div>
+      <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center gap-x-5 gap-y-2 text-xs text-gray-500 flex-shrink-0 overflow-x-auto transition-colors duration-300 dark:bg-slate-900/50 dark:text-slate-400 dark:border-slate-800/50">
+        <div className="flex items-center gap-2 shrink-0"><div className="w-4 h-3.5 rounded-md bg-amber-50 border border-amber-300 transition-colors duration-300 dark:bg-amber-500/20 dark:border-amber-500/30" /><span style={{ fontWeight: 500 }}>Menunggu Persetujuan</span></div>
+        <div className="flex items-center gap-2 shrink-0"><div className="w-4 h-3.5 rounded-md bg-blue-600 border border-blue-700 transition-colors duration-300 dark:bg-blue-500/30 dark:border-blue-400/40" /><span style={{ fontWeight: 500 }}>Disetujui</span></div>
+        <div className="flex items-center gap-2 shrink-0"><div className="w-4 h-3.5 rounded-md bg-emerald-500 border border-emerald-600 transition-colors duration-300 dark:bg-emerald-500/30 dark:border-emerald-400/40" /><span style={{ fontWeight: 500 }}>Sedang Berjalan</span></div>
+        <div className="flex items-center gap-2 shrink-0"><div className="w-4 h-3.5 rounded-md bg-transparent border border-gray-200 transition-colors duration-300 dark:border-slate-700" /><span style={{ fontWeight: 500 }}>Tersedia</span></div>
+        <div className="flex items-center gap-2 shrink-0"><div className="w-4 h-3.5 rounded-md bg-blue-50 border border-blue-400 transition-colors duration-300 dark:bg-blue-500/20 dark:border-blue-500/50" /><span style={{ fontWeight: 500 }}>Pilihan Anda</span></div>
       </div>
 
       <div className="flex-1 overflow-auto select-none bg-white transition-colors dark:bg-slate-900">
@@ -349,17 +349,17 @@ function DailyView({
                       >
                         {booked && (
                           <div
-                            className={`absolute inset-0.5 rounded flex items-center justify-center overflow-hidden border ${
+                            className={`absolute inset-0.5 rounded-xl flex items-center justify-center overflow-hidden border shadow-sm select-none transition-all duration-300 ${
                               booking?.status === "pending"
-                                ? "bg-amber-50 dark:bg-amber-900/20 border-amber-600 text-white"
+                                ? "bg-amber-50 dark:bg-amber-500/20 border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-300"
                                 : booking?.status === "ongoing"
-                                ? "bg-emerald-600 border-emerald-700 text-white"
-                                : "bg-[#1E3A5F] border-[#132742] text-white"
+                                ? "bg-emerald-500 dark:bg-emerald-500/30 border-emerald-600 dark:border-emerald-400/40 text-white dark:text-emerald-300"
+                                : "bg-blue-600 dark:bg-blue-500/30 border-blue-700 dark:border-blue-400/40 text-white dark:text-blue-300"
                             }`}
                             title={booking ? `${booking.agenda} (${booking.userName || "Pemesan"}) - ${booking.status === "pending" ? "Menunggu Persetujuan" : "Disetujui"}` : "Terbooking"}
                           >
                             {booking && toMins(time) === toMins(booking.startTime) && (
-                              <span className="text-white truncate px-1 text-center font-bold" style={{ fontSize: "9px", fontWeight: 700 }}>
+                              <span className="truncate px-1 text-center font-bold" style={{ fontSize: "10px", fontWeight: 700 }}>
                                 {booking.status === "pending" ? "⏳ " : ""}
                                 {booking.agenda}
                               </span>
@@ -367,10 +367,10 @@ function DailyView({
                           </div>
                         )}
                         {selected && !booked && (
-                          <div className={`absolute inset-0.5 rounded border border-amber-400 bg-amber-100/80 flex items-center justify-center`}>
+                          <div className={`absolute inset-0.5 rounded-xl border border-blue-400 bg-blue-50 dark:bg-blue-500/20 dark:border-blue-500/50 flex items-center justify-center transition-all duration-300 shadow-md scale-[1.02] z-10`}>
                             {si === (drag ? Math.min(drag.startIdx, drag.endIdx) : si) && (
-                              <span className={`text-xs text-amber-800 dark:text-amber-300 animate-pulse font-bold`} style={{ fontSize: "10px", fontWeight: 700 }}>
-                                {isSelConflict ? "✗" : "⏳"}
+                              <span className={`text-blue-800 dark:text-blue-300 font-bold ${isSelConflict ? "" : "animate-pulse"}`} style={{ fontSize: "10px", fontWeight: 700 }}>
+                                {isSelConflict ? "✗" : "+ Booking"}
                               </span>
                             )}
                           </div>
@@ -527,10 +527,10 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
         } ${isPast ? "cursor-not-allowed bg-gray-50/70" : isToday ? "bg-blue-50/70" : "bg-white dark:bg-slate-900 hover:bg-blue-50/30"}`}
       >
         <div className="flex items-start justify-between mb-1">
-          <span className={`text-xs sm:text-sm w-6 h-6 flex items-center justify-center rounded-full transition-all group-hover:bg-blue-100 dark:bg-blue-500/20 dark:bg-blue-500/30 ${
-            isToday ? "bg-blue-600 text-white group-hover:bg-blue-600" :
+          <span className={`text-xs sm:text-sm transition-colors ${
+            isToday ? "w-6 h-6 flex items-center justify-center rounded-full bg-blue-600 text-white" :
             !inCurrentMonth ? "text-gray-300" :
-            isPast ? "text-gray-400 dark:text-slate-500" : "text-gray-700 dark:text-slate-200"
+            isPast ? "text-gray-400 dark:text-slate-500" : "text-gray-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400"
           }`} style={{ fontWeight: isToday ? 700 : 500 }}>
             {date.getDate()}
           </span>
@@ -539,49 +539,49 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
           )}
         </div>
         {!compact ? (
-          <div className="space-y-0.5">
+          <div className="space-y-1 mt-1">
             {bookings.slice(0, 2).map((b, i) => (
               <div 
                 key={i} 
-                className={`text-xs rounded px-1.5 py-0.5 truncate hidden sm:block border ${
+                className={`rounded-md px-1.5 py-0.5 truncate hidden sm:block border shadow-sm transition-colors duration-300 ${
                   b.status === "pending"
-                    ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50"
+                    ? "bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30"
                     : b.status === "ongoing"
-                    ? "bg-emerald-50 dark:bg-emerald-500/10 dark:bg-emerald-500/20 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30"
-                    : "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50"
+                    ? "bg-emerald-500 dark:bg-emerald-500/30 text-white dark:text-emerald-300 border-emerald-600 dark:border-emerald-400/40"
+                    : "bg-blue-600 dark:bg-blue-500/30 text-white dark:text-blue-300 border-blue-700 dark:border-blue-400/40"
                 }`} 
                 style={{ fontSize: "10px", fontWeight: 600 }}
               >
-                {b.status === "pending" ? "⏳ " : b.status === "ongoing" ? "⚡ " : "✅ "}
+                {b.status === "pending" ? "⏳ " : ""}
                 {b.agenda}
               </div>
             ))}
             {bookings.length > 0 && (
-              <div className="sm:hidden flex gap-0.5 mt-0.5 flex-wrap">
+              <div className="sm:hidden flex gap-1 mt-1 flex-wrap">
                 {bookings.slice(0, 4).map((b, i) => (
                   <div 
                     key={i} 
                     className={`w-1.5 h-1.5 rounded-full ${
-                      b.status === "pending" ? "bg-amber-50 dark:bg-amber-900/20" :
-                      b.status === "ongoing" ? "bg-emerald-500 dark:bg-emerald-600" : "bg-blue-50 dark:bg-blue-900/20"
+                      b.status === "pending" ? "bg-amber-400 dark:bg-amber-400" :
+                      b.status === "ongoing" ? "bg-emerald-500 dark:bg-emerald-400" : "bg-blue-600 dark:bg-blue-400"
                     }`} 
                   />
                 ))}
               </div>
             )}
             {bookings.length > 2 && (
-              <div className="text-xs text-gray-400 hidden sm:block pl-1 transition-colors dark:text-slate-500" style={{ fontSize: "10px" }}>+{bookings.length - 2} lainnya</div>
+              <div className="text-gray-400 hidden sm:block pl-1 transition-colors duration-300 dark:text-slate-500" style={{ fontSize: "10px", fontWeight: 500 }}>+{bookings.length - 2} lainnya</div>
             )}
           </div>
         ) : (
           bookings.length > 0 && (
-            <div className="flex gap-0.5 flex-wrap mt-0.5">
+            <div className="flex gap-1 flex-wrap mt-1">
               {bookings.slice(0, 3).map((b, i) => (
                 <div 
                   key={i} 
                   className={`w-1.5 h-1.5 rounded-full ${
-                    b.status === "pending" ? "bg-amber-50 dark:bg-amber-900/20" :
-                    b.status === "ongoing" ? "bg-emerald-500 dark:bg-emerald-600" : "bg-blue-50 dark:bg-blue-900/20"
+                    b.status === "pending" ? "bg-amber-400 dark:bg-amber-400" :
+                    b.status === "ongoing" ? "bg-emerald-500 dark:bg-emerald-400" : "bg-blue-600 dark:bg-blue-400"
                   }`} 
                 />
               ))}
@@ -669,7 +669,7 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
                 return (
                   <div key={i} className="py-2 text-center border-r border-gray-100 last:border-r-0 transition-colors dark:border-slate-800">
                     <div className="text-xs text-gray-400 mb-0.5 transition-colors dark:text-slate-500" style={{ fontWeight: 600 }}>{DAY_NAMES_SHORT[i]}</div>
-                    <div className={`w-7 h-7 flex items-center justify-center rounded-full mx-auto text-xs ${isToday ? "bg-blue-600 text-white font-bold" : "text-gray-700 dark:text-slate-200"}`}>
+                    <div className={`mx-auto text-xs ${isToday ? "w-7 h-7 flex items-center justify-center rounded-full bg-blue-600 text-white font-bold" : "text-gray-700 dark:text-slate-200 font-semibold mb-1"}`}>
                       {date.getDate()}
                     </div>
                   </div>
@@ -689,11 +689,12 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
         </>
       )}
 
-      <div className="hidden lg:flex gap-4 text-xs text-gray-400 pt-2 transition-colors dark:text-slate-500">
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-blue-50 border border-blue-200 transition-colors dark:bg-blue-900/20 dark:border-blue-800/50" /><span>Hari ini</span></div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-blue-100 border border-blue-300 transition-colors duration-300 dark:bg-blue-500/30 dark:border-blue-500/40" /><span>Ada booking</span></div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-white border border-gray-200 transition-colors dark:bg-slate-900 dark:border-slate-700" /><span>Tersedia</span></div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-gray-50 border border-gray-100 transition-colors dark:bg-slate-800 dark:border-slate-800" /><span>Sudah lewat</span></div>
+      <div className="hidden lg:flex flex-wrap gap-5 text-xs text-gray-500 pt-3 transition-colors duration-300 dark:text-slate-400">
+        <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-blue-600 border border-blue-700 transition-colors duration-300 dark:bg-blue-500/30 dark:border-blue-400/40" /><span style={{ fontWeight: 500 }}>Hari ini</span></div>
+        <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-white border border-gray-200 shadow-sm transition-colors duration-300 dark:bg-slate-900 dark:border-slate-700" /><span style={{ fontWeight: 500 }}>Tersedia</span></div>
+        <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-md bg-gray-50/70 border border-gray-100 transition-colors duration-300 dark:bg-gray-800/50 dark:border-slate-800/50" /><span style={{ fontWeight: 500 }}>Sudah lewat</span></div>
+        <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-full bg-blue-600 transition-colors duration-300 dark:bg-blue-400" /><span style={{ fontWeight: 500 }}>Ada booking (Disetujui)</span></div>
+        <div className="flex items-center gap-2"><div className="w-3.5 h-3.5 rounded-full bg-amber-400 transition-colors duration-300 dark:bg-amber-400" /><span style={{ fontWeight: 500 }}>Ada booking (Menunggu)</span></div>
       </div>
     </div>
   );

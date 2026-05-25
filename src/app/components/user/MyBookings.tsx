@@ -3,7 +3,7 @@ import {
   Search, Calendar, MapPin, Clock, AlertTriangle, Video, ExternalLink, 
   Armchair, ArrowRight, CheckCircle2, Sparkles, X, Building, Check, 
   CheckSquare, Info, Map, User, UserCheck, HelpCircle, BarChart2, ShieldAlert,
-  QrCode, Camera, ChevronLeft, ChevronRight, XCircle
+  QrCode, Camera, ChevronLeft, ChevronRight, XCircle, Copy, Download
 } from "lucide-react";
 import { bookingService } from "../../services/bookingService";
 import { workspaceService, AssignedDesk, PendingRequest, DeskNode } from "../../services/workspaceService";
@@ -468,6 +468,71 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
     }
   };
 
+  const handleExportAttendance = () => {
+    if (!attendeesList || attendeesList.length === 0) return;
+    
+    let tableHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8" />
+        <style>
+          table { border-collapse: collapse; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: middle; }
+          th { background-color: #4f46e5; color: white; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>ID Pegawai</th>
+              <th>Tipe Kehadiran</th>
+              <th>Instansi</th>
+              <th>Jabatan</th>
+              <th>Email</th>
+              <th>Waktu Hadir</th>
+              <th>Tanda Tangan</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    attendeesList.forEach(a => {
+      const time = new Date(a.scanned_at).toLocaleString("id-ID");
+      const sigImg = a.signature ? `<img src="${a.signature}" height="50" style="object-fit: contain;" />` : '';
+      tableHtml += `
+        <tr>
+          <td>${a.user_name || ''}</td>
+          <td>${a.user_id ? a.user_id.split('-').pop() : ''}</td>
+          <td>${a.attendance_type || ''}</td>
+          <td>${a.institution || ''}</td>
+          <td>${a.position || ''}</td>
+          <td>${a.email || ''}</td>
+          <td>${time}</td>
+          <td style="height: 60px; text-align: center;">${sigImg}</td>
+        </tr>
+      `;
+    });
+
+    tableHtml += `
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([tableHtml], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Data_Presensi_${attendeesModal}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("File Excel berhasil diunduh");
+  };
+
   // Metrik Statistik
   const totalRapatBulanIni = bookings.filter(b => b.status === 'completed' || b.status === 'confirmed').length;
   const nextMeeting = bookings.find(b => ["confirmed", "ongoing"].includes(b.status));
@@ -787,11 +852,11 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                       
                       <div className="flex-1 min-w-0 space-y-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${cfg.bg}`}>
+                          <span className={`whitespace-nowrap w-max px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${cfg.bg}`}>
                             {cfg.label}
                           </span>
                           {mtBadge && booking.meeting_type && booking.meeting_type !== "offline" && (
-                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${mtBadge.bg} flex items-center gap-1.5`}>
+                            <span className={`whitespace-nowrap w-max px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${mtBadge.bg} flex items-center gap-1.5`}>
                               {mtBadge.icon} {mtBadge.label}
                             </span>
                           )}
@@ -893,7 +958,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                         )}
 
                         {/* Attendees List Button for Ongoing/Past */}
-                        {(activeTab === "ongoing" || activeTab === "past") && booking.meeting_type !== "online" && (
+                        {(activeTab === "ongoing" || activeTab === "past") && (
                           <button
                             onClick={() => handleOpenAttendees(booking.id)}
                             className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm bg-white hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 border border-slate-200 group dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
@@ -904,25 +969,52 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                           </button>
                         )}
 
-                        {/* Zoom Link Trigger Button */}
-                        {booking.zoom_join_url && (booking.meeting_type === "online" || booking.meeting_type === "hybrid") && (
-                          <a
-                            href={zoomStatus.enabled ? booking.zoom_join_url : undefined}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => { if (!zoomStatus.enabled) e.preventDefault(); }}
-                            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
-                              zoomStatus.enabled
-                                ? "bg-indigo-600 hover:bg-indigo-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white cursor-pointer hover:shadow-md hover:-translate-y-0.5"
-                                : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700"
-                            }`}
-                            title={zoomStatus.label}
-                          >
-                            <Video size={14} />
-                            <span>{zoomStatus.label}</span>
-                            {zoomStatus.enabled && <ExternalLink size={12} />}
-                          </a>
-                        )}
+                        {/* Attendance Link Copy Button (Only for Online/Hybrid) */}
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          {(booking.meeting_type === "online" || booking.meeting_type === "hybrid") && (
+                            <button
+                              onClick={() => {
+                                const url = `${window.location.origin}/presensi/${booking.id}`;
+                                navigator.clipboard.writeText(url);
+                                toast.success("Link presensi berhasil disalin!");
+                              }}
+                              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
+                              title="Salin Link Presensi Publik"
+                            >
+                              <Copy size={14} />
+                              <span>Salin Link Presensi</span>
+                            </button>
+                          )}
+                          
+                          {/* Zoom Link Trigger Button (Host & Internal) */}
+                          {booking.zoom_join_url && (booking.meeting_type === "online" || booking.meeting_type === "hybrid") && (
+                            <a
+                              href={zoomStatus.enabled ? booking.zoom_join_url : undefined}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => { 
+                                if (!zoomStatus.enabled) e.preventDefault(); 
+                                else {
+                                  // Log zoom join for internal user
+                                  fetch(`/api/v1/bookings/${booking.id}/zoom-join`, {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                                  });
+                                }
+                              }}
+                              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                                zoomStatus.enabled
+                                  ? "bg-indigo-600 hover:bg-indigo-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white cursor-pointer hover:shadow-md hover:-translate-y-0.5"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700"
+                              }`}
+                              title={zoomStatus.label}
+                            >
+                              <Video size={14} />
+                              <span>{zoomStatus.label}</span>
+                              {zoomStatus.enabled && <ExternalLink size={12} />}
+                            </a>
+                          )}
+                        </div>
 
                         {activeTab === "upcoming" && (
                           <button
@@ -1318,7 +1410,33 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                             {isFirst && <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-wider transition-colors dark:bg-amber-500/30 dark:text-amber-400 dark:border-amber-500/20">Hadir Pertama</span>}
                           </div>
                           <span className="text-sm font-bold text-slate-800 line-clamp-1 transition-colors dark:text-slate-100">{attendee.user_name}</span>
-                          <span className="text-[10px] text-slate-500 mt-1 uppercase tracking-wide font-medium transition-colors dark:text-slate-400">ID: {attendee.user_id.split('-').pop()}</span>
+                          {attendee.user_id && <span className="text-[10px] text-slate-500 mt-1 uppercase tracking-wide font-medium transition-colors dark:text-slate-400">ID: {attendee.user_id.split('-').pop()}</span>}
+                          {(!attendee.user_id && (attendee.institution || attendee.position || attendee.email)) && (
+                            <div className="mt-2 space-y-1 border-t border-slate-100 pt-2 dark:border-slate-700/50">
+                              {attendee.institution && <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400"><strong className="text-slate-600 dark:text-slate-300">Instansi:</strong> {attendee.institution}</p>}
+                              {attendee.position && <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400"><strong className="text-slate-600 dark:text-slate-300">Jabatan:</strong> {attendee.position}</p>}
+                              {attendee.email && <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400"><strong className="text-slate-600 dark:text-slate-300">Email:</strong> {attendee.email}</p>}
+                              {attendee.signature && (
+                                <div className="mt-1.5">
+                                  <p className="text-[9px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Tanda Tangan:</p>
+                                  <img src={attendee.signature} alt="Tanda Tangan" className="h-10 object-contain bg-slate-50 rounded border border-slate-200/50 p-1 dark:bg-slate-800 dark:border-slate-700" />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {attendee.attendance_type && (
+                            <span className="text-[10px] text-slate-500 mt-2 inline-flex uppercase tracking-wide font-medium">Tipe: <strong className="ml-1 text-slate-700 dark:text-slate-300">{attendee.attendance_type}</strong></span>
+                          )}
+                          {attendee.logs && attendee.logs.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/50 flex flex-col gap-1">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Log Aktivitas Zoom:</span>
+                              {attendee.logs.map((log: any, i: number) => (
+                                <div key={i} className="text-[10px] text-indigo-500 font-medium">
+                                  {log.action === 'zoom_join' ? 'Masuk Rapat' : log.action} - {new Date(log.timestamp).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -1327,8 +1445,20 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
               )}
             </div>
             
-            <div className="p-5 bg-white border-t border-slate-200 text-center text-xs text-slate-500 transition-colors dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
-              Total peserta tercatat hadir: <strong className="text-slate-800 font-bold transition-colors dark:text-slate-100">{attendeesList.length} orang</strong>
+            <div className="p-5 bg-white border-t border-slate-200 flex items-center justify-between text-xs transition-colors dark:bg-slate-900 dark:border-slate-800">
+              <div className="text-slate-500 dark:text-slate-400">
+                Total hadir: <strong className="text-slate-800 font-bold transition-colors dark:text-slate-100">{attendeesList.length} orang</strong>
+              </div>
+              
+              {attendeesList.length > 0 && (
+                <button
+                  onClick={handleExportAttendance}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg border border-indigo-200 transition-colors dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/20"
+                >
+                  <Download size={14} />
+                  <span>Download CSV</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

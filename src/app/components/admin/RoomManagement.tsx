@@ -145,7 +145,8 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
     ctx.fill();
 
     // Load QR Code from api.qrserver.com
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${room.qr_token || room.id}`;
+    const qrData = encodeURIComponent(`${window.location.origin}/qr/${room.qr_token || room.id}`);
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${qrData}`;
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
