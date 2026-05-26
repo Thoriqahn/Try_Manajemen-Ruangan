@@ -102,7 +102,7 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
   };
 
   return (
-    <div className={`h-full bg-[#1E3A5F] dark:bg-slate-950 border-r border-[#2A4E85] dark:border-slate-800 flex flex-col transition-all duration-300 ${collapsed ? "w-[72px]" : "w-72"}`}>
+    <div className={`h-full bg-[#1E3A5F] dark:bg-slate-950 border-r border-[#2A4E85] dark:border-slate-800 flex flex-col transition-all duration-300 rounded-tr-[2rem] overflow-hidden shadow-lg dark:shadow-none ${collapsed ? "w-[72px]" : "w-72"}`}>
       {/* Logo */}
       <div className="p-5 border-b border-[#2A4E85] dark:border-slate-800/60 flex items-center gap-3">
         <div className="flex items-center gap-3">

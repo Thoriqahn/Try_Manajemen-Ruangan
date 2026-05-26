@@ -26,6 +26,7 @@ export function RoomList({ onNavigate }: RoomListProps) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterBuildingId, setFilterBuildingId] = useState("all");
+  const [filterFloor, setFilterFloor] = useState("all");
   const [filterCapacity, setFilterCapacity] = useState("all");
   const [showFilter, setShowFilter] = useState(false);
   const [showMapModal, setShowMapModal] = useState<any>(null); // holds building data
@@ -59,9 +60,14 @@ export function RoomList({ onNavigate }: RoomListProps) {
     fetchData();
   }, []);
 
+  const floors = ["all", ...Array.from(new Set(
+    rooms.filter(r => filterBuildingId === "all" || r.building_id === filterBuildingId).map(r => r.floor_name).filter(Boolean)
+  ))];
+
   const filtered = rooms.filter(r => {
     if (search && !r.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (filterBuildingId !== "all" && r.building_id !== filterBuildingId) return false;
+    if (filterFloor !== "all" && r.floor_name !== filterFloor) return false;
     const maxCap = r.layouts?.length ? Math.max(...r.layouts.map((l: any) => l.capacity)) : 0;
     if (filterCapacity === "small" && maxCap > 15) return false;
     if (filterCapacity === "medium" && (maxCap <= 15 || maxCap > 50)) return false;
@@ -120,7 +126,7 @@ export function RoomList({ onNavigate }: RoomListProps) {
           <div className="flex-1 min-w-[200px]">
             <label className="block text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1.5 transition-colors dark:text-slate-400">Gedung</label>
             <div className="flex items-center gap-2">
-              <select value={filterBuildingId} onChange={(e) => setFilterBuildingId(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 dark:focus:border-emerald-500 bg-white text-slate-800 font-medium transition-colors shadow-sm dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+              <select value={filterBuildingId} onChange={(e) => { setFilterBuildingId(e.target.value); setFilterFloor("all"); }} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 dark:focus:border-emerald-500 bg-white text-slate-800 font-medium transition-colors shadow-sm dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
                 <option value="all">Semua Gedung</option>
                 {buildings.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
@@ -135,6 +141,12 @@ export function RoomList({ onNavigate }: RoomListProps) {
               )}
             </div>
           </div>
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1.5 transition-colors dark:text-slate-400">Lantai</label>
+            <select value={filterFloor} onChange={(e) => setFilterFloor(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 dark:focus:border-emerald-500 bg-white text-slate-800 font-medium transition-colors shadow-sm dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
+              {floors.map((f: any) => <option key={f} value={f}>{f === "all" ? "Semua Lantai" : f}</option>)}
+            </select>
+          </div>
           <div className="flex-1 min-w-[200px]">
             <label className="block text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1.5 transition-colors dark:text-slate-400">Kapasitas</label>
             <select value={filterCapacity} onChange={(e) => setFilterCapacity(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 dark:focus:border-emerald-500 bg-white text-slate-800 font-medium transition-colors shadow-sm dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
@@ -145,7 +157,7 @@ export function RoomList({ onNavigate }: RoomListProps) {
             </select>
           </div>
           <div className="flex items-end">
-            <button onClick={() => { setFilterBuildingId("all"); setFilterCapacity("all"); setSearch(""); }} className="h-[42px] px-5 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl border border-rose-200 transition-all dark:bg-rose-500/30 dark:text-rose-400 dark:border-rose-500/30">
+            <button onClick={() => { setFilterBuildingId("all"); setFilterFloor("all"); setFilterCapacity("all"); setSearch(""); }} className="h-[42px] px-5 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl border border-rose-200 transition-all dark:bg-rose-500/30 dark:text-rose-400 dark:border-rose-500/30">
               Reset Filter
             </button>
           </div>

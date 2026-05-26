@@ -119,27 +119,18 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
         {/* Status filter tabs */}
         <div className="flex gap-1 bg-slate-100/80 p-1.5 rounded-2xl w-fit max-w-full flex-shrink-0 backdrop-blur-md shadow-inner transition-colors overflow-x-auto custom-scrollbar dark:bg-slate-800/80">
-          {(["all", "pending", "confirmed", "rejected"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setFilter(tab)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${
-                filter === tab 
-                  ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-emerald-400 shadow-sm" 
-                  : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"
-              }`}
-            >
-              {tab === "all" ? "Semua" : tab === "pending" ? "Menunggu" : tab === "confirmed" ? "Disetujui" : "Ditolak"}
-              <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wider transition-colors ${
-                tab === "pending" ? "bg-amber-100 dark:bg-amber-500/20 dark:bg-amber-500/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30" :
-                tab === "confirmed" ? "bg-emerald-100 dark:bg-emerald-500/20 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30" :
-                tab === "rejected" ? "bg-rose-100 dark:bg-rose-500/20 dark:bg-rose-500/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30" :
-                "bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-500"
-              }`}>
-                {counts[tab]}
-              </span>
-            </button>
-          ))}
+          <button onClick={() => setFilter("all")} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${filter === "all" ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-emerald-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"}`}>
+            Semua<span className="text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wider transition-colors bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-500">{counts.all}</span>
+          </button>
+          <button onClick={() => setFilter("pending")} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${filter === "pending" ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-emerald-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"}`}>
+            Menunggu<span className="text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wider transition-colors bg-amber-100 dark:bg-amber-500/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30">{counts.pending}</span>
+          </button>
+          <button onClick={() => setFilter("confirmed")} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${filter === "confirmed" ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-emerald-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"}`}>
+            Disetujui<span className="text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wider transition-colors bg-emerald-100 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">{counts.confirmed}</span>
+          </button>
+          <button onClick={() => setFilter("rejected")} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${filter === "rejected" ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-emerald-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"}`}>
+            Ditolak<span className="text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wider transition-colors bg-rose-100 dark:bg-rose-500/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30">{counts.rejected}</span>
+          </button>
         </div>
 
         {/* SuperAdmin Admin Filter dropdown */}

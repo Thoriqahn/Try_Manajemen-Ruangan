@@ -304,9 +304,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
           <div className="flex items-center gap-2 mt-1.5">
             <MapPin size={14} className="text-white/80" />
             <span className="text-white/90 text-sm">{room.room_type === 'digital' ? "Virtual Rapat · Zoom" : room.room_type === 'hybrid' ? `Hybrid · ${room.floor_name} · ${room.building_name}` : `${room.floor_name} · ${room.building_name}`}</span>
-            <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${room.status === "active" ? "bg-green-50 dark:bg-green-900/20/90 text-white" : "bg-gray-50 dark:bg-slate-8000/90 text-white"}`} style={{ fontWeight: 500 }}>
-              {room.status === "active" ? "Aktif" : "Nonaktif"}
-            </span>
+
           </div>
         </div>
       </div>
@@ -530,7 +528,13 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                         return (
                           <div
                             key={d.full}
-                            className="border-l border-gray-100 h-11 relative transition-colors duration-300 dark:border-slate-800/50"
+                            className={`border-l border-gray-100 h-11 relative transition-colors duration-300 dark:border-slate-800/50 ${
+                              disabled
+                                ? "cursor-not-allowed bg-slate-50/30 dark:bg-slate-950/30"
+                                : isInDrag
+                                ? "cursor-crosshair bg-amber-50/50 dark:bg-amber-500/20"
+                                : "cursor-crosshair hover:bg-green-50/50 dark:hover:bg-green-900/20"
+                            }`}
                             onMouseDown={(e) => {
                               if (!disabled) {
                                 e.preventDefault();
@@ -582,20 +586,18 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                               <div className="absolute inset-0.5 rounded-xl flex items-center justify-center border border-gray-100/50 bg-gray-50/50 text-gray-300 cursor-not-allowed transition-colors duration-300 select-none dark:bg-slate-900/30 dark:text-slate-600 dark:border-slate-800/30">
                                 <span className="text-[10px]" style={{ fontWeight: 600 }}>-</span>
                               </div>
+                            ) : isInDrag ? (
+                              <div className="absolute inset-0.5 rounded-xl border border-blue-400 bg-blue-50 dark:bg-blue-500/20 dark:border-blue-500/50 flex items-center justify-center transition-all duration-300 shadow-md scale-[1.02] z-10">
+                                {dragStart?.time === time && (
+                                  <span className="text-blue-800 dark:text-blue-300 font-bold animate-pulse flex items-center gap-1" style={{ fontSize: "10px", fontWeight: 700 }}>
+                                    {dragLabel}
+                                  </span>
+                                )}
+                              </div>
                             ) : (
-                              <div
-                                className={`absolute inset-0.5 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center border text-center px-1 ${
-                                  isInDrag
-                                    ? "bg-blue-50 dark:bg-blue-500/20 border-blue-400 dark:border-blue-500/50 text-blue-800 dark:text-blue-300 shadow-md scale-[1.02] z-10"
-                                    : "bg-transparent dark:bg-transparent border-transparent hover:border-blue-200 dark:hover:border-blue-500/30 hover:bg-blue-50/50 dark:hover:bg-blue-500/10 text-transparent hover:text-blue-600 dark:hover:text-blue-400"
-                                }`}
-                              >
+                              <div className="absolute inset-0.5 rounded-xl transition-all duration-300 cursor-crosshair flex items-center justify-center border border-transparent bg-transparent dark:bg-transparent hover:border-green-200 dark:hover:border-green-500/30 text-transparent hover:text-green-600 dark:hover:text-green-400 text-center px-1">
                                 <span className="text-[10px]" style={{ fontWeight: 600 }}>
-                                  {isInDrag ? (
-                                    <span className="flex items-center gap-1">
-                                      {dragLabel}
-                                    </span>
-                                  ) : "+ Booking"}
+                                  + Booking
                                 </span>
                               </div>
                             )}

@@ -722,9 +722,9 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
         {/* Pending seating request warning alert */}
         {!seatingLoading && pendingRequest && (
           <div className="mt-5 bg-amber-50 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-3 animate-pulse transition-colors dark:bg-amber-900/20">
-            <AlertTriangle className="text-amber-400 flex-shrink-0" size={18} />
-            <div className="text-xs text-amber-200">
-              Permintaan relokasi Anda ke meja <strong className="text-white underline">{pendingRequest.desk_id}</strong> di <strong className="text-white">{pendingRequest.room_name}</strong> diajukan pada {new Date(pendingRequest.created_at).toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' })} sedang dalam antrean peninjauan oleh Admin.
+            <AlertTriangle className="text-amber-600 dark:text-amber-400 flex-shrink-0" size={18} />
+            <div className="text-xs text-amber-800 dark:text-amber-200">
+              Permintaan relokasi Anda ke meja <strong className="text-amber-950 dark:text-white underline">{pendingRequest.desk_id}</strong> di <strong className="text-amber-950 dark:text-white">{pendingRequest.room_name}</strong> diajukan pada {new Date(pendingRequest.created_at).toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' })} sedang dalam antrean peninjauan oleh Admin.
             </div>
           </div>
         )}
@@ -732,21 +732,21 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
         {/* Resolved seating request alert (Approved or Rejected) */}
         {!seatingLoading && resolvedRequest && !pendingRequest && (
           <div className={`mt-5 border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 ${
-            resolvedRequest.status === 'APPROVED' ? 'bg-emerald-500/10 dark:bg-emerald-500/20 dark:bg-emerald-500/30 border-emerald-500/20' : 'bg-red-500/10 dark:bg-red-500/20 dark:bg-red-500/30 border-red-500/20'
+            resolvedRequest.status === 'APPROVED' ? 'bg-emerald-50 dark:bg-emerald-500/30 border-emerald-500/20' : 'bg-red-50 dark:bg-red-500/30 border-red-500/20'
           }`}>
             {resolvedRequest.status === 'APPROVED' ? (
-              <CheckCircle2 className="text-emerald-400 flex-shrink-0" size={18} />
+              <CheckCircle2 className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" size={18} />
             ) : (
-              <XCircle className="text-red-400 flex-shrink-0" size={18} />
+              <XCircle className="text-red-600 dark:text-red-400 flex-shrink-0" size={18} />
             )}
             
-            <div className={`text-xs flex-1 ${resolvedRequest.status === 'APPROVED' ? 'text-emerald-200' : 'text-red-200'}`}>
-              Pengajuan Anda untuk meja kerja <strong className="text-white underline">{resolvedRequest.desk_id}</strong> di <strong className="text-white">{resolvedRequest.room_name}</strong> telah <strong className={resolvedRequest.status === 'APPROVED' ? 'text-emerald-300' : 'text-red-300'}>{resolvedRequest.status === 'APPROVED' ? 'DISETUJUI' : 'DITOLAK'}</strong> oleh Admin.
+            <div className={`text-xs flex-1 ${resolvedRequest.status === 'APPROVED' ? 'text-emerald-800 dark:text-emerald-200' : 'text-red-800 dark:text-red-200'}`}>
+              Pengajuan Anda untuk meja kerja <strong className="text-emerald-950 dark:text-white underline">{resolvedRequest.desk_id}</strong> di <strong className="text-emerald-950 dark:text-white">{resolvedRequest.room_name}</strong> telah <strong className={resolvedRequest.status === 'APPROVED' ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}>{resolvedRequest.status === 'APPROVED' ? 'DISETUJUI' : 'DITOLAK'}</strong> oleh Admin.
               
               {resolvedRequest.status === 'REJECTED' && resolvedRequest.rationale && (
-                <div className="mt-1 bg-red-900/30 p-2 rounded-lg border border-red-500/10">
-                  <span className="font-bold block text-[10px] text-red-300 mb-0.5 uppercase tracking-wide">Alasan Penolakan:</span>
-                  <span className="text-white/90 italic">{resolvedRequest.rationale}</span>
+                <div className="mt-1 bg-red-100 dark:bg-red-900/30 p-2 rounded-lg border border-red-500/10">
+                  <span className="font-bold block text-[10px] text-red-800 dark:text-red-300 mb-0.5 uppercase tracking-wide">Alasan Penolakan:</span>
+                  <span className="text-red-900 dark:text-white/90 italic">{resolvedRequest.rationale}</span>
                 </div>
               )}
             </div>
@@ -755,8 +755,8 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
               onClick={() => setResolvedRequest(null)}
               className={`px-3 py-1.5 text-[10px] font-bold border rounded-lg transition-colors ml-auto sm:ml-0 whitespace-nowrap ${
                 resolvedRequest.status === 'APPROVED' 
-                  ? 'text-emerald-300 hover:text-white border-emerald-400/30 hover:bg-emerald-500/20 dark:bg-emerald-500/30' 
-                  : 'text-red-300 hover:text-white border-red-400/30 hover:bg-red-500/20 dark:bg-red-500/30'
+                  ? 'text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-white border-emerald-400/30 hover:bg-emerald-100 dark:bg-emerald-500/30 dark:hover:bg-emerald-500/40' 
+                  : 'text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-white border-red-400/30 hover:bg-red-100 dark:bg-red-500/30 dark:hover:bg-red-500/40'
               }`}
             >
               Tutup Peringatan
