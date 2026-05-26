@@ -152,7 +152,7 @@ const getActiveBookingByQr = async (req, res, next) => {
       const bookingStart = new Date(`${todayStr}T${b.start_time}:00`);
       const bookingEnd = new Date(`${todayStr}T${b.end_time}:00`);
       
-      const earlyLimit = new Date(bookingStart.getTime() - 15 * 60 * 1000); // 15 mins early
+      const earlyLimit = new Date(bookingStart.getTime() - 10 * 60 * 1000); // 10 mins early (aligned with check-in window)
       
       if (now >= earlyLimit && now <= bookingEnd) {
         targetBooking = b;

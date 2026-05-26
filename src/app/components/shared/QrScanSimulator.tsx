@@ -183,7 +183,7 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
     try {
       const res = await bookingService.checkIn(selectedBooking.room_id, qrTokenInput, simulatedUserId || undefined);
       if (res.success) {
-        toast.success("Check-In Berhasil!");
+        toast.success(res.message || "Check-In Berhasil!");
         addLog(`✅ SERVER SUCCESS: ${res.message || "Check-in berhasil dilakukan"}`);
         addLog(`   Data Booking ID: ${res.data?.booking_id}`);
         addLog(`   Status Booking berubah menjadi: ${res.data?.status}`);
@@ -202,14 +202,21 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
 
   const handleCameraScan = async (result: any) => {
     if (result && result.length > 0 && !submitting) {
-      const token = result[0].rawValue;
+      let token = result[0].rawValue;
+      
+      // Extract token from URL if the QR code contains a full URL (e.g., http://domain/qr/uuid or /public/qr/uuid)
+      if (token && (token.includes('/qr/') || token.includes('/public/qr/'))) {
+        const parts = token.split('/qr/');
+        token = parts[parts.length - 1].split('?')[0].split('#')[0]; // Remove query params and hash
+      }
+      
       setSubmitting(true);
       addLog(`Membaca QR Token dari Kamera: ${token.slice(0, 8)}...`);
 
       try {
         const res = await bookingService.checkIn(undefined, token, simulatedUserId || undefined);
         if (res.success) {
-          toast.success("Check-In via Kamera Berhasil!");
+          toast.success(res.message || "Berhasil!");
           addLog(`✅ SUCCESS: ${res.message}`);
           loadBookings();
           

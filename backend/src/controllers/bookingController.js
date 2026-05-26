@@ -687,10 +687,13 @@ const checkInBooking = async (req, res, next) => {
         const payloadBefore = JSON.stringify({ is_checked_in: false, status: 'confirmed' });
         const payloadAfter = JSON.stringify({ is_checked_in: true, status: 'ongoing' });
 
+        const actorLabel = (simulate_user_id && req.user.role === 'superadmin')
+          ? `${targetUserName} (Simulated by ${req.user.name})`
+          : targetUserName;
         await client.query(
           `INSERT INTO audit_logs (id, actor_id, actor_name, action, resource, payload_before, payload_after)
            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [auditId, targetUserId, `${targetUserName} (Simulated)`, action, resource, payloadBefore, payloadAfter]
+          [auditId, targetUserId, actorLabel, action, resource, payloadBefore, payloadAfter]
         );
 
         responseMessage = 'Check-in ruangan berhasil, Anda tercatat hadir.';
@@ -779,20 +782,29 @@ const logZoomJoin = async (req, res, next) => {
     const userId = req.user.id;
     const userName = req.user.name;
 
-    // Log the action
+    // Log the join action
     await dbRun(
       `INSERT INTO meeting_attendee_logs (booking_id, user_id, action) VALUES ($1, $2, $3)`,
       [bookingId, userId, 'zoom_join']
     );
 
-    // Make sure they are in the attendees list as online
-    await dbRun(`
-      INSERT INTO meeting_attendees (id, booking_id, user_id, user_name, attendance_type, scanned_at)
-      VALUES ($1, $2, $3, $4, 'online', NOW())
-      ON CONFLICT (booking_id, user_id, email) DO UPDATE SET
-        attendance_type = 'online',
-        scanned_at = NOW()
-    `, [uuidv4(), bookingId, userId, userName]);
+    // Make sure they are in the attendees list as online (manual check to avoid NULL conflict)
+    const existing = await dbGet(
+      'SELECT id FROM meeting_attendees WHERE booking_id = $1 AND user_id = $2',
+      [bookingId, userId]
+    );
+    if (existing) {
+      await dbRun(
+        'UPDATE meeting_attendees SET attendance_type = $1, scanned_at = NOW() WHERE id = $2',
+        ['online', existing.id]
+      );
+    } else {
+      await dbRun(
+        `INSERT INTO meeting_attendees (id, booking_id, user_id, user_name, attendance_type, scanned_at)
+         VALUES ($1, $2, $3, $4, 'online', NOW())`,
+        [uuidv4(), bookingId, userId, userName]
+      );
+    }
 
     res.status(200).json({ success: true, message: 'Zoom join recorded' });
   } catch (err) {
@@ -800,7 +812,25 @@ const logZoomJoin = async (req, res, next) => {
   }
 };
 
+// POST /api/v1/bookings/:id/zoom-leave
+const logZoomLeave = async (req, res, next) => {
+  try {
+    const bookingId = req.params.id;
+    const userId = req.user.id;
+
+    // Log the leave action
+    await dbRun(
+      `INSERT INTO meeting_attendee_logs (booking_id, user_id, action) VALUES ($1, $2, $3)`,
+      [bookingId, userId, 'zoom_leave']
+    );
+
+    res.status(200).json({ success: true, message: 'Zoom leave recorded' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = { 
   listBookings, getBooking, createBooking, updateBooking, cancelBooking, 
-  approveBooking, rejectBooking, forceCancel, checkInBooking, getBookingAttendees, logZoomJoin 
+  approveBooking, rejectBooking, forceCancel, checkInBooking, getBookingAttendees, logZoomJoin, logZoomLeave 
 };

@@ -314,7 +314,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
       <div className="bg-white border-b border-gray-200 px-6 py-1 grid grid-cols-2 sm:grid-cols-4 gap-4 flex-shrink-0 items-center transition-colors dark:bg-slate-900 dark:border-slate-700">
         {[
           { icon: <Users size={18} className="text-blue-500 transition-colors duration-300 dark:text-blue-400" />, label: "Kapasitas", value: room.room_type === 'digital' ? "s.d. 100 orang" : layouts.length > 0 ? `s.d. ${Math.max(...layouts.map((l: any) => l.capacity || 0))} orang` : "–" },
-          { icon: <Clock size={18} className="text-purple-500 transition-colors duration-300 dark:text-purple-400" />, label: "Operasional", value: room.operational_start ? `${room.operational_start} – ${room.operational_end}` : "24 Jam" },
+          { icon: <Clock size={18} className="text-purple-500 transition-colors duration-300 dark:text-purple-400" />, label: "Operasional", value: room.hours_start ? `${room.hours_start} – ${room.hours_end}` : "24 Jam" },
           { icon: <Calendar size={18} className="text-green-500 transition-colors duration-300 dark:text-green-400" />, label: "Sistem Booking", value: room.approval_type === "instant" ? "Instan" : "Perlu Approval" },
           { icon: <Monitor size={18} className="text-orange-500 transition-colors duration-300 dark:text-orange-400" />, label: room.room_type === 'digital' ? "Platform" : room.room_type === 'hybrid' ? "Mode" : "Layout", value: room.room_type === 'digital' ? "Zoom Premium" : room.room_type === 'hybrid' ? "Fisik + Zoom" : `${layouts.length} tipe` },
         ].map((s, i) => (
@@ -549,10 +549,13 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                         })();
 
                         const isOutsideOpHours = (() => {
-                          if (!room?.operationalHours) return false;
+                          if (!room?.restrict_hours) return false;
+                          const hStart = room.hours_start;
+                          const hEnd = room.hours_end;
+                          if (!hStart || !hEnd) return false;
                           const slotMins = parseMins(time);
-                          const startMins = parseMins(room.operationalHours.start);
-                          const endMins = parseMins(room.operationalHours.end);
+                          const startMins = parseMins(hStart);
+                          const endMins = parseMins(hEnd);
                           return slotMins < startMins || slotMins >= endMins;
                         })();
 
@@ -610,7 +613,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                                         ? "bg-emerald-500 dark:bg-emerald-500/30 border-emerald-600 dark:border-emerald-400/40 text-white dark:text-emerald-300"
                                         : "bg-blue-600 dark:bg-blue-500/30 border-blue-700 dark:border-blue-400/40 text-white dark:text-blue-300"
                                     }`}
-                                    title={booking ? `${booking.agenda} (${booking.userName || "Pemesan"}) - ${booking.status === "pending" ? "Menunggu Persetujuan" : "Disetujui"}` : "Terbooking"}
+                                    title={booking ? (booking.isOwn === false ? `${booking.agenda} (${booking.userName || "Pemesan"}) - Booked` : `${booking.agenda} (${booking.userName || "Pemesan"}) - ${booking.status === "pending" ? "Menunggu Persetujuan" : "Disetujui"}`) : "Terbooking"}
                                     onClick={(e) => { e.stopPropagation(); setViewBooking(booking); }}
                                     onMouseDown={(e) => e.stopPropagation()}
                                     onTouchStart={(e) => e.stopPropagation()}
@@ -656,6 +659,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                 <div className="flex items-center gap-2 shrink-0"><div className="w-3.5 h-3.5 rounded-md bg-amber-50 border border-amber-300 transition-colors duration-300 dark:bg-amber-500/20 dark:border-amber-500/30" /><span style={{ fontWeight: 500 }}>Menunggu Persetujuan</span></div>
                 <div className="flex items-center gap-2 shrink-0"><div className="w-3.5 h-3.5 rounded-md bg-blue-600 border border-blue-700 transition-colors duration-300 dark:bg-blue-500/30 dark:border-blue-400/40" /><span style={{ fontWeight: 500 }}>Disetujui</span></div>
                 <div className="flex items-center gap-2 shrink-0"><div className="w-3.5 h-3.5 rounded-md bg-emerald-500 border border-emerald-600 transition-colors duration-300 dark:bg-emerald-500/30 dark:border-emerald-400/40" /><span style={{ fontWeight: 500 }}>Sedang Berjalan</span></div>
+                <div className="flex items-center gap-2 shrink-0"><div className="w-3.5 h-3.5 rounded-md bg-gray-500 border border-gray-600 transition-colors duration-300 dark:bg-gray-700 dark:border-gray-600" /><span style={{ fontWeight: 500 }}>Booked</span></div>
                 <div className="flex items-center gap-2 shrink-0"><div className="w-3.5 h-3.5 rounded-md bg-red-50 border border-red-200 transition-colors duration-300 dark:bg-red-500/10 dark:border-red-500/20" /><span style={{ fontWeight: 500 }}>Tutup</span></div>
                 <div className="flex items-center gap-2 shrink-0"><div className="w-3.5 h-3.5 rounded-md bg-slate-200/70 border border-slate-300 transition-colors duration-300 dark:bg-slate-800/40 dark:border-slate-700/50" /><span style={{ fontWeight: 500 }}>Sudah Lewat</span></div>
               </div>
@@ -752,7 +756,9 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status</label>
                   <div className="mt-1">
-                    {viewBooking.status === "pending" ? (
+                    {viewBooking.isOwn === false ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-gray-700 border border-gray-200 text-[10px] font-bold transition-colors dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">Booked</span>
+                    ) : viewBooking.status === "pending" ? (
                       <span className="inline-flex items-center px-2 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold transition-colors dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-500/20">Menunggu</span>
                     ) : viewBooking.status === "ongoing" ? (
                       <span className="inline-flex items-center px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold transition-colors dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-500/20">Berjalan</span>

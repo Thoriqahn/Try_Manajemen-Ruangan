@@ -101,4 +101,12 @@ export const bookingService = {
   async getAttendees(bookingId: string) {
     return api.get<Attendee[]>(`/bookings/${bookingId}/attendees`);
   },
+
+  async logZoomJoin(bookingId: string) {
+    return api.post(`/bookings/${bookingId}/zoom-join`);
+  },
+
+  async logZoomLeave(bookingId: string) {
+    return api.post(`/bookings/${bookingId}/zoom-leave`);
+  },
 };

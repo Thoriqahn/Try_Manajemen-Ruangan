@@ -662,7 +662,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                   {!pendingRequest && (
                     <button
                       onClick={() => setIsSeatingModalOpen(true)}
-                      className="px-3 py-1.5 bg-blue-50 hover:bg-blue-50 text-blue-100 hover:text-white border border-blue-400/30 rounded-lg text-[10px] font-bold transition-all shadow-sm flex items-center gap-1 ml-2 dark:bg-blue-900/20/40"
+                      className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg text-[10px] font-bold transition-all shadow-sm flex items-center gap-1 ml-2 backdrop-blur-sm"
                     >
                       Ganti Tempat Duduk
                       <ArrowRight size={10} />
@@ -995,11 +995,8 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                               onClick={(e) => { 
                                 if (!zoomStatus.enabled) e.preventDefault(); 
                                 else {
-                                  // Log zoom join for internal user
-                                  fetch(`/api/v1/bookings/${booking.id}/zoom-join`, {
-                                    method: 'POST',
-                                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                                  });
+                                  // Log zoom join for internal user via proper service
+                                  bookingService.logZoomJoin(booking.id).catch(() => {});
                                 }
                               }}
                               className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${

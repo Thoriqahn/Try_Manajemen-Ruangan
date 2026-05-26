@@ -126,4 +126,16 @@ router.get('/:id/attendees', authGuard, ctrl.getBookingAttendees);
  */
 router.post('/:id/zoom-join', authGuard, ctrl.logZoomJoin);
 
+/**
+ * @openapi
+ * /api/bookings/{id}/zoom-leave:
+ *   post:
+ *     summary: POST /:id/zoom-leave
+ *     tags: [Bookings]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
+router.post('/:id/zoom-leave', authGuard, ctrl.logZoomLeave);
+
 module.exports = router;

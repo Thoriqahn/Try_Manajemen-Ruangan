@@ -377,10 +377,14 @@ export function DailyView({
                     const isBlackout = blackoutDates.includes(selectedDay);
                     
                     const isOutsideOpHours = (() => {
-                      if (!room.operationalHours) return false;
+                      const restrictHours = room.restrict_hours || room.restrictHours;
+                      if (!restrictHours) return false;
+                      const hStart = room.hours_start || room.hoursStart;
+                      const hEnd = room.hours_end || room.hoursEnd;
+                      if (!hStart || !hEnd) return false;
                       const slotMins = toMins(time);
-                      const startMins = toMins(room.operationalHours.start);
-                      const endMins = toMins(room.operationalHours.end);
+                      const startMins = toMins(hStart);
+                      const endMins = toMins(hEnd);
                       return slotMins < startMins || slotMins >= endMins;
                     })();
 
@@ -434,7 +438,7 @@ export function DailyView({
                                 ? "bg-emerald-500 dark:bg-emerald-500/30 border-emerald-600 dark:border-emerald-400/40 text-white dark:text-emerald-300"
                                 : "bg-blue-600 dark:bg-blue-500/30 border-blue-700 dark:border-blue-400/40 text-white dark:text-blue-300"
                             }`}
-                            title={booking ? `${booking.agenda} (${booking.userName || "Pemesan"}) - ${booking.status === "pending" ? "Menunggu Persetujuan" : "Disetujui"}` : "Terbooking"}
+                            title={booking ? (booking.isOwn === false ? `${booking.agenda} (${booking.userName || "Pemesan"}) - Booked` : `${booking.agenda} (${booking.userName || "Pemesan"}) - ${booking.status === "pending" ? "Menunggu Persetujuan" : "Disetujui"}`) : "Terbooking"}
                             onMouseDown={(e) => e.stopPropagation()}
                             onTouchStart={(e) => e.stopPropagation()}
                             onClick={(e) => { e.stopPropagation(); setViewBooking(booking); }}
@@ -522,7 +526,9 @@ export function DailyView({
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status</label>
                   <div className="mt-1">
-                    {viewBooking.status === "pending" ? (
+                    {viewBooking.isOwn === false ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-gray-700 border border-gray-200 text-[10px] font-bold transition-colors dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">Booked</span>
+                    ) : viewBooking.status === "pending" ? (
                       <span className="inline-flex items-center px-2 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold transition-colors dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-500/20">Menunggu</span>
                     ) : viewBooking.status === "ongoing" ? (
                       <span className="inline-flex items-center px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold transition-colors dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-500/20">Berjalan</span>
