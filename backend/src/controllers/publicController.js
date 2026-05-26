@@ -49,32 +49,41 @@ const submitPublicAttendance = async (req, res, next) => {
     }
 
     // Check if booking exists
-    const booking = await dbGet(`SELECT id, status, meeting_type, zoom_join_url, zoom_passcode FROM bookings WHERE id = $1`, [bookingId]);
+    const booking = await dbGet(
+      `SELECT b.id, b.status, b.meeting_type, b.zoom_join_url, b.zoom_passcode, b.date, b.start_time, b.end_time
+       FROM bookings b WHERE b.id = $1`,
+      [bookingId]
+    );
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Rapat tidak ditemukan' });
     }
 
-    // Insert or update attendance
-    const id = uuidv4();
-    const query = `
-      INSERT INTO meeting_attendees (id, booking_id, user_name, email, institution, position, signature, attendance_type, scanned_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-      ON CONFLICT (booking_id, user_id, email) DO UPDATE SET
-        user_name = EXCLUDED.user_name,
-        institution = EXCLUDED.institution,
-        position = EXCLUDED.position,
-        signature = EXCLUDED.signature,
-        attendance_type = EXCLUDED.attendance_type,
-        scanned_at = NOW()
-    `;
+    // Bug #5: Time window validation — attendance only allowed during booking time
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const bookingStart = new Date(`${booking.date}T${booking.start_time}:00`);
+    const bookingEnd = new Date(`${booking.date}T${booking.end_time}:00`);
 
-    // user_id is implicit NULL in the conflict target if not specified for external attendees, 
-    // but the conflict constraint meeting_attendees_booking_id_user_id_email_key handles it.
-    // Wait, ON CONFLICT works if the exact unique constraint matches.
-    // If the unique constraint is UNIQUE(booking_id, user_id, email), then ON CONFLICT (booking_id, user_id, email) should be used.
-    // Wait, in postgres, NULLs are distinct. So if user_id is NULL, two rows with the same email and booking_id might not conflict.
-    // Let's just do a manual check or insert.
-    
+    if (todayStr !== booking.date) {
+      return res.status(403).json({
+        success: false,
+        message: `Presensi hanya dapat dilakukan pada hari pelaksanaan rapat (${booking.date})`
+      });
+    }
+    if (now < bookingStart) {
+      const minsLeft = Math.ceil((bookingStart.getTime() - now.getTime()) / 60000);
+      return res.status(403).json({
+        success: false,
+        message: `Rapat belum dimulai. Presensi dibuka dalam ${minsLeft} menit lagi.`
+      });
+    }
+    if (now > bookingEnd) {
+      return res.status(403).json({
+        success: false,
+        message: 'Rapat telah selesai. Batas waktu presensi sudah berakhir.'
+      });
+    }
+
     // Check existing
     const existing = await dbGet(`SELECT id FROM meeting_attendees WHERE booking_id = $1 AND email = $2`, [bookingId, email]);
     
@@ -87,6 +96,7 @@ const submitPublicAttendance = async (req, res, next) => {
       `, [name, institution, position, signature, attendance_type || 'offline', existing.id]);
     } else {
       // Insert
+      const id = uuidv4();
       await dbRun(`
         INSERT INTO meeting_attendees (id, booking_id, user_name, email, institution, position, signature, attendance_type, scanned_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
@@ -94,25 +104,21 @@ const submitPublicAttendance = async (req, res, next) => {
     }
 
     // Prepare response
-    const responseData = {
-      message: 'Presensi berhasil disimpan'
-    };
+    const responseData = { message: 'Presensi berhasil disimpan' };
 
-    // If meeting is online/hybrid and user chose online, return Zoom link
-    if ((booking.meeting_type === 'hybrid' || booking.meeting_type === 'digital') && attendance_type === 'online') {
+    // Bug #2-related: Return Zoom link for online attendees if meeting is online/hybrid
+    if ((booking.meeting_type === 'hybrid' || booking.meeting_type === 'online' || booking.meeting_type === 'digital') && attendance_type === 'online') {
       responseData.zoom_join_url = booking.zoom_join_url;
       responseData.zoom_passcode = booking.zoom_passcode;
     }
 
-    res.json({
-      success: true,
-      ...responseData
-    });
+    res.json({ success: true, ...responseData });
 
   } catch (err) {
     next(err);
   }
 };
+
 
 /**
  * Get active booking by QR token

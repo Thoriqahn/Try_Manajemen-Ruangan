@@ -8,6 +8,8 @@ interface SidebarProps {
   onNavigate: (page: string) => void;
   onLogout: () => void;
   collapsed?: boolean;
+  userName?: string;
+  userEmail?: string;
 }
 
 interface NavItem {
@@ -22,7 +24,7 @@ interface NavGroup {
   items: NavItem[];
 }
 
-export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, collapsed = false }: SidebarProps) {
+export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, collapsed = false, userName, userEmail }: SidebarProps) {
   const [expandedGroups, setExpandedGroups] = useState<string[]>(["user", "admin", "superadmin"]);
   const navRef = useRef<HTMLElement>(null);
   const [canScrollUp, setCanScrollUp] = useState(false);
@@ -183,10 +185,10 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <div className="text-white dark:text-slate-200 text-sm font-semibold truncate">
-                {role === "superadmin" ? "Super Admin" : role === "admin" ? "Admin Ruangan" : "Budi Santoso"}
+                {userName || (role === "superadmin" ? "Super Admin" : role === "admin" ? "Admin Ruangan" : "Pengguna")}
               </div>
               <div className="text-blue-200/70 dark:text-slate-500 text-xs truncate font-medium mt-0.5">
-                {role === "superadmin" ? "superadmin@oikn.go.id" : role === "admin" ? "admin@oikn.go.id" : "user@oikn.go.id"}
+                {userEmail || (role === "superadmin" ? "superadmin@oikn.go.id" : role === "admin" ? "admin@oikn.go.id" : "user@oikn.go.id")}
               </div>
             </div>
           )}

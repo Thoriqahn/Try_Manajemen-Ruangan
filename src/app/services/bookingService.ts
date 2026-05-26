@@ -109,4 +109,9 @@ export const bookingService = {
   async logZoomLeave(bookingId: string) {
     return api.post(`/bookings/${bookingId}/zoom-leave`);
   },
+
+  async getMyAttendances() {
+    return api.get<Booking[]>('/bookings/attendances/mine');
+  },
 };
+

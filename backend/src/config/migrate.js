@@ -429,13 +429,17 @@ async function seedData() {
     { id: 'u-admin2', name: 'Sari Dewi, M.T.', email: 'sari.dewi@oikn.go.id', role: 'ADMIN_RAPAT', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80' },
     { id: 'u-admin3', name: 'Bima Pradana, M.B.A.', email: 'bima.pradana@oikn.go.id', role: 'ADMIN_RAPAT', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80' },
     { id: 'u-admin4', name: 'Rina Kusuma, S.E.', email: 'rina.kusuma@oikn.go.id', role: 'ADMIN_KERJA', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80' },
+    { id: 'u-admin5', name: 'Fajar Nugroho, S.T.', email: 'fajar.nugroho@oikn.go.id', role: 'ADMIN_RAPAT', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&q=80' },
     { id: 'u-user1', name: 'Budi Santoso, M.Eng.', email: 'user@oikn.go.id', role: 'USER', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80' },
     { id: 'u-user2', name: 'Dewi Rahayu, S.I.P.', email: 'dewi.rahayu@oikn.go.id', role: 'USER', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80' },
     { id: 'u-user3', name: 'Eko Prasetyo, S.H.', email: 'eko.prasetyo@oikn.go.id', role: 'USER', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100&q=80' },
     { id: 'u-user4', name: 'Siti Aminah, M.Si.', email: 'siti.aminah@oikn.go.id', role: 'USER', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80' },
     { id: 'u-user5', name: 'Rian Hidayat, B.Eng.', email: 'rian.hidayat@oikn.go.id', role: 'USER', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&q=80' },
+    { id: 'u-user6', name: 'Dimas Anggara', email: 'dimas@oikn.go.id', role: 'USER', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&q=80' },
+    { id: 'u-user7', name: 'Rina Melati', email: 'rina@oikn.go.id', role: 'USER', status: 'active', avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&q=80' },
     { id: 'u-api1', name: 'Admin Sistem IKNOW Core', email: 'api-iknow@system.oikn.go.id', role: 'USER', status: 'active' }
   ];
+
   for (const u of users) {
     await dbRun(
       `INSERT INTO users (id, name, email, password_hash, role, status, avatar_url) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
@@ -498,6 +502,7 @@ async function seedData() {
     { room_id: 'r4', layout_type: 'Individual Booths', capacity: 8 },
     { room_id: 'r5', layout_type: 'PC Training Lab', capacity: 40 },
     { room_id: 'r6', layout_type: 'Studio Setup', capacity: 6 },
+    { room_id: 'r7', layout_type: 'Open Plan Workspace', capacity: 30 },
   ];
   for (const l of layouts) {
     await dbRun(`INSERT INTO room_layouts (id, room_id, layout_type, capacity) VALUES ($1,$2,$3,$4)`,
@@ -512,6 +517,7 @@ async function seedData() {
     { room_id: 'r4', items: [['tv_monitor',1],['projector',0],['video_conference',0],['sound_system',0],['whiteboard',1],['outlet',8]] },
     { room_id: 'r5', items: [['tv_monitor',2],['projector',2],['video_conference',1],['sound_system',2],['whiteboard',2],['outlet',45]] },
     { room_id: 'r6', items: [['tv_monitor',1],['projector',0],['video_conference',0],['sound_system',2],['whiteboard',1],['outlet',12]] },
+    { room_id: 'r7', items: [['tv_monitor',2],['projector',0],['video_conference',0],['sound_system',0],['whiteboard',4],['outlet',60]] },
   ];
   for (const f of facilities) {
     for (const [type, qty] of f.items) {

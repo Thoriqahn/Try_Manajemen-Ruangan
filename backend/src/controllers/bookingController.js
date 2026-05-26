@@ -830,7 +830,44 @@ const logZoomLeave = async (req, res, next) => {
   }
 };
 
+// GET /api/v1/attendances/mine — meetings where the current user is listed as attendee (even as a guest)
+const getMyAttendances = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user.email;
+
+    // Find all bookings where this user appears in meeting_attendees (by user_id or email)
+    const rows = await dbAll(`
+      SELECT DISTINCT
+        b.id, b.agenda, b.date, b.start_time, b.end_time, b.status,
+        b.meeting_type, b.room_id, b.user_id as booker_id,
+        r.name as room_name, bld.name as building_name, f.name as floor_name,
+        ma.scanned_at, ma.attendance_type, ma.user_name as attendee_name
+      FROM meeting_attendees ma
+      JOIN bookings b ON ma.booking_id = b.id
+      LEFT JOIN rooms r ON b.room_id = r.id
+      LEFT JOIN buildings bld ON r.building_id = bld.id
+      LEFT JOIN floors f ON r.floor_id = f.id
+      WHERE (ma.user_id = $1 OR ma.email = $2)
+        AND b.user_id != $1
+        AND b.deleted_at IS NULL
+      ORDER BY ma.scanned_at DESC
+    `, [userId, userEmail]);
+
+    // Mark each as an "attended_as_guest" booking
+    const attended = rows.map(r => ({
+      ...r,
+      is_guest_attendance: true,
+      // Synthesize a display status based on time
+      status: r.status
+    }));
+
+    res.json({ success: true, data: attended });
+  } catch (err) { next(err); }
+};
+
 module.exports = { 
   listBookings, getBooking, createBooking, updateBooking, cancelBooking, 
-  approveBooking, rejectBooking, forceCancel, checkInBooking, getBookingAttendees, logZoomJoin, logZoomLeave 
+  approveBooking, rejectBooking, forceCancel, checkInBooking, getBookingAttendees, 
+  logZoomJoin, logZoomLeave, getMyAttendances
 };

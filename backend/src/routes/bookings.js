@@ -14,6 +14,8 @@ const { validateCheckIn } = require('../middleware/validation');
  *         description: Success response
  */
 router.get('/', authGuard, ctrl.listBookings);
+router.get('/attendances/mine', authGuard, ctrl.getMyAttendances);
+
 /**
  * @openapi
  * /api/bookings:

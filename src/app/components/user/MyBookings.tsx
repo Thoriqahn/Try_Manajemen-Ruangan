@@ -202,12 +202,18 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const res = await bookingService.list({ own_only: "true" });
-      if (res.success && res.data) {
-        setBookings(res.data);
-      } else {
-        setBookings([]);
-      }
+      const [ownRes, guestRes] = await Promise.allSettled([
+        bookingService.list({ own_only: "true" }),
+        bookingService.getMyAttendances(),
+      ]);
+
+      const ownBookings = (ownRes.status === 'fulfilled' && ownRes.value.success) ? ownRes.value.data || [] : [];
+      const guestAttended = (guestRes.status === 'fulfilled' && guestRes.value.success) ? guestRes.value.data || [] : [];
+
+      // Merge: guest attendances that aren't already in own bookings
+      const ownIds = new Set(ownBookings.map((b: any) => b.id));
+      const uniqueGuest = guestAttended.filter((g: any) => !ownIds.has(g.id));
+      setBookings([...ownBookings, ...uniqueGuest]);
     } catch (err) {
       console.error("Failed to fetch bookings:", err);
       setBookings([]);
@@ -250,11 +256,11 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
     return () => window.removeEventListener('menara:checkin-success', handleCheckInSuccess);
   }, []);
 
-  // Refresh every minute for zoom button timing and status check
+  // Bug #3: Refresh every 30s — refetch from API so DB status 'ongoing' propagates after owner checks in
   useEffect(() => {
     const interval = setInterval(() => {
-      setBookings(prev => [...prev]); // trigger re-render for time checks
-    }, 60000);
+      fetchBookings(); // full refetch ensures ongoing status from DB is reflected
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -384,10 +390,20 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
     }
   };
 
+  // Bug #3 fix: For guest attendances, map them to the right category
   const getBookingCategory = (b: any) => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
     
+    // Guest attendances that are done go to history
+    if (b.is_guest_attendance) {
+      const bookingEnd = new Date(`${b.date}T${b.end_time}:00`);
+      if (now > bookingEnd) return "past";
+      const bookingStart = new Date(`${b.date}T${b.start_time}:00`);
+      if (now >= bookingStart && now <= bookingEnd) return "ongoing";
+      return "upcoming";
+    }
+
     if (["completed", "cancelled", "rejected", "CANCELLED_NOSHOW"].includes(b.status)) {
       return "past";
     }
@@ -410,6 +426,13 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
       return "upcoming";
     }
     return "past";
+  };
+
+  // Bug #3: Get effective display status (time-based for confirmed bookings)
+  const getEffectiveStatus = (b: any): string => {
+    if (b.is_guest_attendance) return 'completed'; // display as completed for guests
+    if (b.status === 'confirmed' && getBookingCategory(b) === 'ongoing') return 'ongoing';
+    return b.status;
   };
 
   const tabBookings = bookings.filter(b => {
@@ -842,9 +865,13 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
               </div>
             ) : (
               tabBookings.map((booking) => {
-                const cfg = statusConfig[booking.status] || statusConfig.completed;
+                const effectiveStatus = getEffectiveStatus(booking);
+                const cfg = statusConfig[effectiveStatus] || statusConfig.completed;
                 const mtBadge = meetingTypeBadge[booking.meeting_type || "offline"];
                 const zoomStatus = getZoomButtonStatus(booking);
+                // Bug #2: For hybrid, non-owners must wait for room claim (is_checked_in) before Zoom is active
+                const isOwner = booking.booker_id === currentUser?.id || booking.user_id === currentUser?.id;
+                const zoomGatedByOwner = (booking.meeting_type === 'hybrid') && !isOwner && !booking.is_checked_in;
 
                 return (
                   <div key={booking.id} className="p-5 md:p-6 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors duration-300">
@@ -855,7 +882,13 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                           <span className={`whitespace-nowrap w-max px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${cfg.bg}`}>
                             {cfg.label}
                           </span>
+                          {booking.is_guest_attendance && (
+                            <span className="whitespace-nowrap w-max px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-violet-50 dark:bg-violet-500/20 border border-violet-200 dark:border-violet-500/30 text-violet-700 dark:text-violet-400 flex items-center gap-1">
+                              <UserCheck size={10} /> Hadir Sebagai Tamu
+                            </span>
+                          )}
                           {mtBadge && booking.meeting_type && booking.meeting_type !== "offline" && (
+
                             <span className={`whitespace-nowrap w-max px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${mtBadge.bg} flex items-center gap-1.5`}>
                               {mtBadge.icon} {mtBadge.label}
                             </span>
@@ -957,17 +990,15 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                           </button>
                         )}
 
-                        {/* Attendees List Button for Ongoing/Past */}
-                        {(activeTab === "ongoing" || activeTab === "past") && (
-                          <button
-                            onClick={() => handleOpenAttendees(booking.id)}
-                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm bg-white hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 border border-slate-200 group dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
-                            title="Lihat Daftar Hadir"
-                          >
-                            <UserCheck size={14} className="text-emerald-500 group-hover:scale-110 transition-transform transition-colors dark:text-emerald-400" />
-                            <span>Presensi</span>
-                          </button>
-                        )}
+                        {/* Bug #4: Attendees List Button — visible on ALL tabs for all bookings */}
+                        <button
+                          onClick={() => handleOpenAttendees(booking.id)}
+                          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm bg-white hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 border border-slate-200 group dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+                          title="Lihat Daftar Hadir"
+                        >
+                          <UserCheck size={14} className="text-emerald-500 group-hover:scale-110 transition-transform transition-colors dark:text-emerald-400" />
+                          <span>Presensi</span>
+                        </button>
 
                         {/* Attendance Link Copy Button (Only for Online/Hybrid) */}
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -986,30 +1017,39 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                             </button>
                           )}
                           
-                          {/* Zoom Link Trigger Button (Host & Internal) */}
+                          {/* Bug #2: Zoom Link — hybrid non-owners wait for room claim by the booker first */}
                           {booking.zoom_join_url && (booking.meeting_type === "online" || booking.meeting_type === "hybrid") && (
-                            <a
-                              href={zoomStatus.enabled ? booking.zoom_join_url : undefined}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => { 
-                                if (!zoomStatus.enabled) e.preventDefault(); 
-                                else {
-                                  // Log zoom join for internal user via proper service
-                                  bookingService.logZoomJoin(booking.id).catch(() => {});
-                                }
-                              }}
-                              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
-                                zoomStatus.enabled
-                                  ? "bg-indigo-600 hover:bg-indigo-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white cursor-pointer hover:shadow-md hover:-translate-y-0.5"
-                                  : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700"
-                              }`}
-                              title={zoomStatus.label}
-                            >
-                              <Video size={14} />
-                              <span>{zoomStatus.label}</span>
-                              {zoomStatus.enabled && <ExternalLink size={12} />}
-                            </a>
+                            zoomGatedByOwner ? (
+                              <div
+                                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30 cursor-not-allowed"
+                                title="Menunggu pembuat booking membuka ruangan (check-in QR) terlebih dahulu"
+                              >
+                                <Video size={14} />
+                                <span>Menunggu Host Buka Ruangan</span>
+                              </div>
+                            ) : (
+                              <a
+                                href={zoomStatus.enabled ? booking.zoom_join_url : undefined}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => { 
+                                  if (!zoomStatus.enabled) e.preventDefault(); 
+                                  else {
+                                    bookingService.logZoomJoin(booking.id).catch(() => {});
+                                  }
+                                }}
+                                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                                  zoomStatus.enabled
+                                    ? "bg-indigo-600 hover:bg-indigo-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white cursor-pointer hover:shadow-md hover:-translate-y-0.5"
+                                    : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700"
+                                }`}
+                                title={zoomStatus.label}
+                              >
+                                <Video size={14} />
+                                <span>{zoomStatus.label}</span>
+                                {zoomStatus.enabled && <ExternalLink size={12} />}
+                              </a>
+                            )
                           )}
                         </div>
 

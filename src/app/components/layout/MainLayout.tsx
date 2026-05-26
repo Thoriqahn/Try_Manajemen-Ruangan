@@ -190,6 +190,8 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
           onNavigate={(page) => { onNavigate(page); setMobileOpen(false); }}
           onLogout={onLogout}
           collapsed={sidebarCollapsed}
+          userName={currentUser?.name}
+          userEmail={currentUser?.email}
         />
       </div>
 
