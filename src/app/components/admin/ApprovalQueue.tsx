@@ -14,7 +14,7 @@ const Shimmer = ({ className }: { className?: string }) => (
 );
 
 export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueueProps) {
-  const [filter, setFilter] = useState<"all" | "pending" | "confirmed" | "rejected">("pending");
+  const [filter, setFilter] = useState<"all" | "pending" | "confirmed" | "ongoing" | "rejected">("pending");
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [rejectModal, setRejectModal] = useState<string | null>(null);
@@ -86,12 +86,14 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
     all: bookings.length,
     pending: bookings.filter(b => b.status === "pending").length,
     confirmed: bookings.filter(b => b.status === "confirmed").length,
+    ongoing: bookings.filter(b => b.status === "ongoing").length,
     rejected: bookings.filter(b => b.status === "rejected").length,
   };
 
   const statusBadge = (status: string) => {
     if (status === "pending") return <span className="px-2.5 py-1 bg-amber-100/90 text-amber-700 border border-amber-200 text-[10px] font-bold tracking-wider uppercase rounded-md backdrop-blur-sm transition-colors whitespace-nowrap w-max dark:bg-amber-500/30 dark:text-amber-400 dark:border-amber-500/30">⏳ Menunggu</span>;
     if (status === "confirmed") return <span className="px-2.5 py-1 bg-emerald-100/90 text-emerald-700 border border-emerald-200 text-[10px] font-bold tracking-wider uppercase rounded-md backdrop-blur-sm transition-colors whitespace-nowrap w-max dark:bg-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/30">✓ Disetujui</span>;
+    if (status === "ongoing") return <span className="px-2.5 py-1 bg-indigo-100/90 text-indigo-700 border border-indigo-200 text-[10px] font-bold tracking-wider uppercase rounded-md backdrop-blur-sm transition-colors whitespace-nowrap w-max dark:bg-indigo-500/30 dark:text-indigo-400 dark:border-indigo-500/30">▶ Berlangsung</span>;
     return <span className="px-2.5 py-1 bg-rose-100/90 text-rose-700 border border-rose-200 text-[10px] font-bold tracking-wider uppercase rounded-md backdrop-blur-sm transition-colors whitespace-nowrap w-max dark:bg-rose-500/30 dark:text-rose-400 dark:border-rose-500/30">✗ Ditolak</span>;
   };
 
@@ -127,6 +129,9 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
           </button>
           <button onClick={() => setFilter("confirmed")} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${filter === "confirmed" ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-emerald-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"}`}>
             Disetujui<span className="text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wider transition-colors bg-emerald-100 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">{counts.confirmed}</span>
+          </button>
+          <button onClick={() => setFilter("ongoing")} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${filter === "ongoing" ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-emerald-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"}`}>
+            Berlangsung<span className="text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wider transition-colors bg-indigo-100 dark:bg-indigo-500/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30">{counts.ongoing}</span>
           </button>
           <button onClick={() => setFilter("rejected")} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${filter === "rejected" ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-emerald-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"}`}>
             Ditolak<span className="text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wider transition-colors bg-rose-100 dark:bg-rose-500/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30">{counts.rejected}</span>

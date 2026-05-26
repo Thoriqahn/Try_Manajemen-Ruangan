@@ -1,5 +1,5 @@
 import { Building2, Calendar, LayoutGrid, BookOpen, CheckSquare, Clock, Settings, Users, Globe, ShieldCheck, Activity, BarChart2, LogOut, ChevronDown, ChevronRight, Video } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface SidebarProps {
   role: "user" | "admin" | "superadmin";
@@ -24,6 +24,23 @@ interface NavGroup {
 
 export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, collapsed = false }: SidebarProps) {
   const [expandedGroups, setExpandedGroups] = useState<string[]>(["user", "admin", "superadmin"]);
+  const navRef = useRef<HTMLElement>(null);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+
+  const checkScroll = () => {
+    if (navRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = navRef.current;
+      setCanScrollUp(scrollTop > 0);
+      setCanScrollDown(Math.ceil(scrollTop + clientHeight) < scrollHeight);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener("resize", checkScroll);
+    return () => window.removeEventListener("resize", checkScroll);
+  }, [expandedGroups, role]);
 
   const toggleGroup = (group: string) => {
     setExpandedGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
@@ -102,9 +119,9 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
   };
 
   return (
-    <div className={`h-full bg-[#1E3A5F] dark:bg-slate-950 border-r border-[#2A4E85] dark:border-slate-800 flex flex-col transition-all duration-300 rounded-tr-[2rem] overflow-hidden shadow-lg dark:shadow-none ${collapsed ? "w-[72px]" : "w-72"}`}>
+    <div className={`h-full bg-[#2A4E85] dark:bg-slate-950 border-r border-[#1e3a63] dark:border-slate-800 flex flex-col transition-all duration-300 rounded-tr-[2rem] overflow-hidden shadow-lg dark:shadow-none ${collapsed ? "w-[72px]" : "w-72"}`}>
       {/* Logo */}
-      <div className="p-5 border-b border-[#2A4E85] dark:border-slate-800/60 flex items-center gap-3">
+      <div className="p-5 border-b border-[#1e3a63] dark:border-slate-800/60 flex items-center gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-500/20">
             <Building2 className="w-5 h-5 text-white" />
@@ -112,35 +129,50 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-white font-bold tracking-tight text-lg leading-tight">Menara</span>
-              <span className="text-indigo-400 text-[10px] font-semibold uppercase tracking-widest">OIKN Space</span>
+              <span className="text-indigo-200 text-[10px] font-semibold uppercase tracking-widest">OIKN Space</span>
             </div>
           )}
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
-        {groups.map((group, gi) => (
-          <div key={gi}>
-            {!collapsed && (
-              <button
-                onClick={() => toggleGroup(groupKeys[gi])}
-                className="w-full flex items-center justify-between px-2 mb-2 text-blue-200/60 dark:text-slate-500 text-[11px] font-bold uppercase tracking-wider hover:text-white dark:hover:text-slate-300 transition-colors"
-              >
-                <span>{group.title}</span>
-                {expandedGroups.includes(groupKeys[gi]) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </button>
-            )}
-            {(collapsed || expandedGroups.includes(groupKeys[gi])) && (
-              <div className="space-y-1">
-                {group.items.map((item) => (
-                  <NavLink key={item.page} item={item} />
-                ))}
-              </div>
-            )}
+      <div className="relative flex-1 min-h-0">
+        <div className={`absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-[#2A4E85] dark:from-slate-950 to-transparent pointer-events-none transition-opacity duration-300 z-10 ${canScrollUp ? 'opacity-100' : 'opacity-0'}`} />
+        
+        <nav 
+          ref={navRef}
+          onScroll={checkScroll}
+          className="h-full overflow-y-auto p-4 space-y-6 custom-scrollbar relative"
+        >
+          {groups.map((group, gi) => (
+            <div key={gi}>
+              {!collapsed && (
+                <button
+                  onClick={() => toggleGroup(groupKeys[gi])}
+                  className="w-full flex items-center justify-between px-2 mb-2 text-blue-200/60 dark:text-slate-500 text-[11px] font-bold uppercase tracking-wider hover:text-white dark:hover:text-slate-300 transition-colors"
+                >
+                  <span>{group.title}</span>
+                  {expandedGroups.includes(groupKeys[gi]) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </button>
+              )}
+              {(collapsed || expandedGroups.includes(groupKeys[gi])) && (
+                <div className="space-y-1">
+                  {group.items.map((item) => (
+                    <NavLink key={item.page} item={item} />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </nav>
+
+        <div className={`absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#2A4E85] dark:from-slate-950 to-transparent pointer-events-none transition-opacity duration-300 z-10 ${canScrollDown ? 'opacity-100' : 'opacity-0'}`} />
+        {canScrollDown && (
+          <div className="absolute bottom-2 left-0 right-0 flex justify-center pointer-events-none animate-bounce z-20">
+            <ChevronDown size={16} className="text-blue-200/50 dark:text-slate-500" />
           </div>
-        ))}
-      </nav>
+        )}
+      </div>
 
       {/* User profile & logout */}
       <div className="p-4 border-t border-[#2A4E85] dark:border-slate-800/60 bg-[#162C4A] dark:bg-slate-950/50">

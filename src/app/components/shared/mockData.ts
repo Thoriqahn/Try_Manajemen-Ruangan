@@ -226,12 +226,11 @@ export const mockApiTokens = [
   { id: "t3", name: "Test Integration", clientId: "client_test_123", access: "Read-Only", status: "revoked", lastUsed: "2025-05-17 11:30", requests: 42 },
 ];
 
-export const timeSlots = [
-  "07:00", "07:30", "08:00", "08:30", "09:00", "09:30",
-  "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
-  "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
-  "16:00", "16:30", "17:00", "17:30", "18:00",
-];
+export const timeSlots = Array.from({ length: 48 }, (_, i) => {
+  const h = Math.floor(i / 2).toString().padStart(2, "0");
+  const m = (i % 2 === 0) ? "00" : "30";
+  return `${h}:${m}`;
+});
 
 export const weekDays = [
   { label: "Sen", date: "19 Mei", full: "Senin, 19 Mei 2025" },

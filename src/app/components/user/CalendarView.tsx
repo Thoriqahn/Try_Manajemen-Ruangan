@@ -1,9 +1,10 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Filter, Info, MapPin, Users, Monitor } from "lucide-react";
 import { timeSlots } from "../shared/mockData";
 import { roomService } from "../../services/roomService";
 import { bookingService } from "../../services/bookingService";
 import { buildingService, policyService } from "../../services/index";
+import { UserStore } from "../../services/apiClient";
 
 interface CalendarViewProps {
   onNavigate: (page: string, data?: any) => void;
@@ -88,6 +89,7 @@ export function DailyView({
 }) {
   const [drag, setDrag] = useState<DragState | null>(null);
   const [bookingData, setBookingData] = useState<{ room: any; startTime: string; endTime: string } | null>(null);
+  const [viewBooking, setViewBooking] = useState<any>(null);
   const [availabilityMap, setAvailabilityMap] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
   const isDragging = useRef(false);
@@ -125,8 +127,27 @@ export function DailyView({
     loadAvailability();
   }, [loadAvailability]);
 
+  const visibleTimeSlots = useMemo(() => {
+    const today = new Date();
+    const todayStr = formatDate(today);
+    const allSlots: string[] = [];
+    for (let h = 0; h < 24; h++) {
+      const hh = h.toString().padStart(2, '0');
+      allSlots.push(`${hh}:00`);
+      allSlots.push(`${hh}:30`);
+    }
+    
+    if (selectedDay === todayStr) {
+      let currentMins = today.getHours() * 60 + today.getMinutes();
+      let startMins = Math.floor(currentMins / 30) * 30 - 30;
+      if (startMins < 0) startMins = 0;
+      return allSlots.filter(t => toMins(t) >= startMins);
+    }
+    return allSlots;
+  }, [selectedDay]);
+
   const isSlotBooked = useCallback((roomId: string, slotIdx: number) => {
-    const time = timeSlots[slotIdx];
+    const time = visibleTimeSlots[slotIdx];
     const bookings = availabilityMap[roomId] || [];
     return bookings.some(b => {
       const slotM = toMins(time);
@@ -137,7 +158,7 @@ export function DailyView({
   }, [availabilityMap]);
 
   const getSlotBooking = useCallback((roomId: string, slotIdx: number) => {
-    const time = timeSlots[slotIdx];
+    const time = visibleTimeSlots[slotIdx];
     const bookings = availabilityMap[roomId] || [];
     return bookings.find(b => {
       const slotM = toMins(time);
@@ -181,9 +202,9 @@ export function DailyView({
     const hi = Math.max(drag.startIdx, drag.endIdx);
     if (!rangeHasConflict(roomId, lo, hi)) {
       const room = filteredRooms.find(r => r.id === roomId);
-      const startTime = timeSlots[lo];
-      const endIdx = Math.min(hi + 1, timeSlots.length - 1);
-      const endTime = timeSlots[endIdx];
+      const startTime = visibleTimeSlots[lo];
+      const endIdx = Math.min(hi + 1, visibleTimeSlots.length - 1);
+      const endTime = visibleTimeSlots[endIdx];
       setBookingData({ room, startTime, endTime });
     }
     setDrag(null);
@@ -220,9 +241,9 @@ export function DailyView({
     const hi = Math.max(drag.startIdx, drag.endIdx);
     if (!rangeHasConflict(drag.roomId, lo, hi)) {
       const room = filteredRooms.find(r => r.id === drag.roomId);
-      const startTime = timeSlots[lo];
-      const endIdx = Math.min(hi + 1, timeSlots.length - 1);
-      const endTime = timeSlots[endIdx];
+      const startTime = visibleTimeSlots[lo];
+      const endIdx = Math.min(hi + 1, visibleTimeSlots.length - 1);
+      const endTime = visibleTimeSlots[endIdx];
       setBookingData({ room, startTime, endTime });
     }
     setDrag(null);
@@ -280,6 +301,7 @@ export function DailyView({
         <div className="flex items-center gap-2 shrink-0"><div className="w-4 h-3.5 rounded-md bg-amber-50 border border-amber-300 transition-colors duration-300 dark:bg-amber-500/20 dark:border-amber-500/30" /><span style={{ fontWeight: 500 }}>Menunggu Persetujuan</span></div>
         <div className="flex items-center gap-2 shrink-0"><div className="w-4 h-3.5 rounded-md bg-blue-600 border border-blue-700 transition-colors duration-300 dark:bg-blue-500/30 dark:border-blue-400/40" /><span style={{ fontWeight: 500 }}>Disetujui</span></div>
         <div className="flex items-center gap-2 shrink-0"><div className="w-4 h-3.5 rounded-md bg-emerald-500 border border-emerald-600 transition-colors duration-300 dark:bg-emerald-500/30 dark:border-emerald-400/40" /><span style={{ fontWeight: 500 }}>Sedang Berjalan</span></div>
+        <div className="flex items-center gap-2 shrink-0"><div className="w-4 h-3.5 rounded-md bg-gray-500 border border-gray-600 transition-colors duration-300 dark:bg-gray-700 dark:border-gray-600" /><span style={{ fontWeight: 500 }}>Booked</span></div>
         <div className="flex items-center gap-2 shrink-0"><div className="w-4 h-3.5 rounded-md bg-red-50 border border-red-200 transition-colors duration-300 dark:bg-red-500/10 dark:border-red-500/20" /><span style={{ fontWeight: 500 }}>Tutup</span></div>
         <div className="flex items-center gap-2 shrink-0"><div className="w-4 h-3.5 rounded-md bg-slate-200/70 border border-slate-300 transition-colors duration-300 dark:bg-slate-800/40 dark:border-slate-700/50" /><span style={{ fontWeight: 500 }}>Sudah Lewat</span></div>
       </div>
@@ -291,12 +313,12 @@ export function DailyView({
             <p className="text-sm text-gray-400 transition-colors dark:text-slate-500">Memuat jadwal ruangan...</p>
           </div>
         ) : (
-          <div style={{ minWidth: `${LEFT_W + timeSlots.length * SLOT_W}px` }}>
+          <div style={{ minWidth: `${LEFT_W + visibleTimeSlots.length * SLOT_W}px` }}>
             <div className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm flex transition-colors dark:bg-slate-900 dark:border-slate-700">
               <div className="shrink-0 border-r border-gray-200 bg-gray-50 flex items-end px-3 pb-2 transition-colors dark:bg-slate-800 dark:border-slate-700" style={{ width: LEFT_W }}>
                 <span className="text-xs text-gray-400 transition-colors dark:text-slate-500" style={{ fontWeight: 600 }}>Ruangan</span>
               </div>
-              {timeSlots.map((t, i) => (
+              {visibleTimeSlots.map((t, i) => (
                 <div
                   key={t}
                   className={`shrink-0 border-r border-gray-100 dark:border-slate-800 last:border-r-0 flex items-end justify-center pb-1.5 ${i % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-gray-50/50 dark:bg-slate-800/30"}`}
@@ -333,6 +355,14 @@ export function DailyView({
                       ) : (
                         <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 text-[9px] font-bold tracking-wider uppercase transition-colors dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">Fisik</span>
                       )}
+                      {(() => {
+                        const isInstant = room.approval_type === 'instant' || room.approvalType === 'instant';
+                        return isInstant ? (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[9px] font-bold tracking-wider uppercase transition-colors dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-500/20" title="Booking Langsung Disetujui">Instan</span>
+                        ) : (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-bold tracking-wider uppercase transition-colors dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-500/20" title="Memerlukan Persetujuan Admin">Persetujuan</span>
+                        );
+                      })()}
                       <span className="flex items-center gap-0.5 text-xs text-gray-400 transition-colors dark:text-slate-500">
                         <MapPin size={10} />{room.floor_name || "Lantai"}
                       </span>
@@ -343,10 +373,28 @@ export function DailyView({
                     </div>
                   </div>
 
-                  {timeSlots.map((time, si) => {
+                  {visibleTimeSlots.map((time, si) => {
                     const isBlackout = blackoutDates.includes(selectedDay);
+                    
+                    const isOutsideOpHours = (() => {
+                      if (!room.operationalHours) return false;
+                      const slotMins = toMins(time);
+                      const startMins = toMins(room.operationalHours.start);
+                      const endMins = toMins(room.operationalHours.end);
+                      return slotMins < startMins || slotMins >= endMins;
+                    })();
+
+                    const isPastTime = (() => {
+                      const today = new Date();
+                      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                      if (selectedDay < todayStr) return true;
+                      if (selectedDay > todayStr) return false;
+                      const currentMins = today.getHours() * 60 + today.getMinutes();
+                      return toMins(time) < currentMins;
+                    })();
+
                     const booked = isSlotBooked(room.id, si);
-                    const disabled = isPastDay || booked || isBlackout;
+                    const disabled = isPastTime || booked || isBlackout || isOutsideOpHours;
                     const booking = getSlotBooking(room.id, si);
                     const selected = isInSelection(room.id, si);
                     const isSelConflict = selected && activeConflict;
@@ -371,18 +419,25 @@ export function DailyView({
                         onMouseUp={() => handleMouseUp(room.id)}
                         onTouchStart={(e) => handleTouchStart(room.id, si, e)}
                       >
-                        {isBlackout ? (
+                        {isOutsideOpHours ? (
+                          <div className="absolute inset-0.5 rounded-xl bg-red-50 border border-red-200 text-red-500 text-[10px] flex items-center justify-center shadow-sm select-none transition-colors duration-300 dark:bg-red-500/10 dark:text-red-400/70 dark:border-red-500/20" style={{ fontWeight: 600 }}>Tutup</div>
+                        ) : isBlackout ? (
                           <div className="absolute inset-0.5 rounded-xl bg-red-50 border border-red-200 text-red-500 text-[10px] flex items-center justify-center shadow-sm select-none transition-colors duration-300 dark:bg-red-500/10 dark:text-red-400/70 dark:border-red-500/20" style={{ fontWeight: 600 }}>Tutup</div>
                         ) : booked ? (
                           <div
-                            className={`absolute inset-0.5 rounded-xl flex items-center justify-center overflow-hidden border shadow-sm select-none transition-all duration-300 ${
-                              booking?.status === "pending"
+                            className={`absolute inset-0.5 rounded-xl flex items-center justify-center overflow-hidden border shadow-sm select-none transition-all duration-300 cursor-pointer hover:opacity-90 active:scale-[0.98] ${
+                              booking && booking.isOwn === false
+                                ? "bg-gray-500 dark:bg-gray-700 border-gray-600 dark:border-gray-600 text-white"
+                                : booking?.status === "pending"
                                 ? "bg-amber-50 dark:bg-amber-500/20 border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-300"
                                 : booking?.status === "ongoing"
                                 ? "bg-emerald-500 dark:bg-emerald-500/30 border-emerald-600 dark:border-emerald-400/40 text-white dark:text-emerald-300"
                                 : "bg-blue-600 dark:bg-blue-500/30 border-blue-700 dark:border-blue-400/40 text-white dark:text-blue-300"
                             }`}
                             title={booking ? `${booking.agenda} (${booking.userName || "Pemesan"}) - ${booking.status === "pending" ? "Menunggu Persetujuan" : "Disetujui"}` : "Terbooking"}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); setViewBooking(booking); }}
                           >
                             {booking && toMins(time) === toMins(booking.startTime) && (
                               <span className="truncate px-1 text-center font-bold" style={{ fontSize: "10px", fontWeight: 700 }}>
@@ -391,8 +446,10 @@ export function DailyView({
                               </span>
                             )}
                           </div>
+                        ) : isPastTime ? (
+                          <div className="absolute inset-0.5 rounded-xl bg-slate-200/70 border border-slate-300 transition-colors duration-300 dark:bg-slate-800/40 dark:border-slate-700/50 flex items-center justify-center text-slate-400 dark:text-slate-500 text-[10px] font-bold shadow-inner select-none">Lewat</div>
                         ) : null}
-                        {selected && !booked && !isBlackout && (
+                        {selected && !booked && !isBlackout && !isPastTime && !isOutsideOpHours && (
                           <div className={`absolute inset-0.5 rounded-xl border border-blue-400 bg-blue-50 dark:bg-blue-500/20 dark:border-blue-500/50 flex items-center justify-center transition-all duration-300 shadow-md scale-[1.02] z-10`}>
                             {si === (drag ? Math.min(drag.startIdx, drag.endIdx) : si) && (
                               <span className={`text-blue-800 dark:text-blue-300 font-bold ${isSelConflict ? "" : "animate-pulse"}`} style={{ fontSize: "10px", fontWeight: 700 }}>
@@ -447,6 +504,54 @@ export function DailyView({
             loadAvailability();
           }}
         />
+      )}
+
+      {viewBooking && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setViewBooking(null)}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800/60 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+              <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">Informasi Booking</h3>
+              <button onClick={() => setViewBooking(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">✕</button>
+            </div>
+            <div className="p-6 space-y-5">
+              <div className="flex gap-4 items-start">
+                <div className="flex-1">
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Pemesan</label>
+                  <div className="text-slate-800 dark:text-slate-200 font-semibold mt-1">{viewBooking.userName || "Pemesan tidak diketahui"}</div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Status</label>
+                  <div className="mt-1">
+                    {viewBooking.status === "pending" ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold transition-colors dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-500/20">Menunggu</span>
+                    ) : viewBooking.status === "ongoing" ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold transition-colors dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-500/20">Berjalan</span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold transition-colors dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-500/20">Disetujui</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Agenda Rapat</label>
+                <div className="text-slate-800 dark:text-slate-200 font-semibold mt-1">{viewBooking.agenda || "Tidak ada deskripsi agenda"}</div>
+              </div>
+              <div className="flex gap-6">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Waktu Mulai</label>
+                  <div className="text-slate-800 dark:text-slate-200 font-semibold mt-1 text-lg">{viewBooking.startTime}</div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Waktu Selesai</label>
+                  <div className="text-slate-800 dark:text-slate-200 font-semibold mt-1 text-lg">{viewBooking.endTime}</div>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800/60 flex justify-end">
+              <button onClick={() => setViewBooking(null)} className="px-5 py-2.5 bg-indigo-600 dark:bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 dark:hover:bg-emerald-700 transition-colors">Tutup</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

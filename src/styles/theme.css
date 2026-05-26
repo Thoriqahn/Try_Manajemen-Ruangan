@@ -195,3 +195,37 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--muted-foreground);
 }
+
+@theme {
+  --color-slate-50: #FFF9EA;
+  --color-slate-100: color-mix(in srgb, #FFF9EA 90%, #000000);
+  --color-slate-800: #111111;
+  --color-slate-900: #000000;
+  --color-slate-950: #000000;
+  
+  --color-indigo-50: color-mix(in srgb, #2A4E85 10%, #FFF9EA);
+  --color-indigo-100: color-mix(in srgb, #2A4E85 20%, #FFF9EA);
+  --color-indigo-400: color-mix(in srgb, #2A4E85 70%, white);
+  --color-indigo-500: #2A4E85;
+  --color-indigo-600: color-mix(in srgb, #2A4E85 85%, black);
+  --color-indigo-700: color-mix(in srgb, #2A4E85 70%, black);
+
+  --color-emerald-50: color-mix(in srgb, #618A48 10%, #FFF9EA);
+  --color-emerald-100: color-mix(in srgb, #618A48 20%, #FFF9EA);
+  --color-emerald-400: color-mix(in srgb, #618A48 70%, white);
+  --color-emerald-500: #618A48;
+  --color-emerald-600: color-mix(in srgb, #618A48 85%, black);
+  --color-emerald-700: color-mix(in srgb, #618A48 70%, black);
+
+  --color-amber-50: color-mix(in srgb, #DBAF6C 10%, #FFF9EA);
+  --color-amber-100: color-mix(in srgb, #DBAF6C 20%, #FFF9EA);
+  --color-amber-400: color-mix(in srgb, #DBAF6C 70%, white);
+  --color-amber-500: #DBAF6C;
+  --color-amber-600: color-mix(in srgb, #DBAF6C 85%, black);
+
+  --color-rose-50: color-mix(in srgb, #D83931 10%, #FFF9EA);
+  --color-rose-100: color-mix(in srgb, #D83931 20%, #FFF9EA);
+  --color-rose-400: color-mix(in srgb, #D83931 70%, white);
+  --color-rose-500: #D83931;
+  --color-rose-600: color-mix(in srgb, #D83931 85%, black);
+}

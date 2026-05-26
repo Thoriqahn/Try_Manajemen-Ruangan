@@ -22,6 +22,22 @@ async function seedUsers() {
     );
     console.log('✅ Created User 2: user2@oikn.go.id / password123!');
 
+    // User 3
+    const u3 = uuidv4();
+    await dbRun(
+      `INSERT INTO users (id, name, email, password_hash, role, status) VALUES ($1,$2,$3,$4,$5,$6)`,
+      [u3, 'Dimas Anggara', 'dimas@oikn.go.id', hash, 'USER', 'active']
+    );
+    console.log('✅ Created User 3: dimas@oikn.go.id / password123!');
+
+    // User 4
+    const u4 = uuidv4();
+    await dbRun(
+      `INSERT INTO users (id, name, email, password_hash, role, status) VALUES ($1,$2,$3,$4,$5,$6)`,
+      [u4, 'Rina Melati', 'rina@oikn.go.id', hash, 'USER', 'active']
+    );
+    console.log('✅ Created User 4: rina@oikn.go.id / password123!');
+
     process.exit(0);
   } catch (error) {
     console.error('❌ Failed:', error);

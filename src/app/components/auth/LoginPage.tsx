@@ -191,9 +191,8 @@ export function LoginPage({ onLogin, onNavigate }: LoginPageProps) {
           <p className="text-indigo-800 text-xs font-bold mb-3 uppercase tracking-wider transition-colors dark:text-emerald-400">Mode Demo: Coba Akses Cepat</p>
           <div className="flex gap-2 justify-center flex-wrap">
             {[
-              { label: "Ujicoba 1", email: "ujicoba1@mail.com" },
-              { label: "Ujicoba 2", email: "ujicoba2@mail.com" },
-              { label: "Admin A", email: "admin_a@mail.com" },
+              { label: "Dimas", email: "dimas@oikn.go.id" },
+              { label: "Rina", email: "rina@oikn.go.id" },
               { label: "Pengguna", email: "user@oikn.go.id" },
               { label: "Admin", email: "admin@oikn.go.id" },
               { label: "Super Admin", email: "superadmin@oikn.go.id" },
