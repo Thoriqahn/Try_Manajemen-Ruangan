@@ -1,5 +1,5 @@
 const { dbGet, dbRun, dbAll } = require('../config/database');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 
 /**
  * Get basic public booking information

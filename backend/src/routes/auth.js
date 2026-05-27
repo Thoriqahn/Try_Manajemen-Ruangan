@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const ctrl = require('../controllers/authController');
+const { validateRegister, validateLogin, validateResetPassword } = require('../middleware/validation');
 
 /**
  * @openapi
@@ -11,7 +12,7 @@ const ctrl = require('../controllers/authController');
  *       200:
  *         description: Success response
  */
-router.post('/register', ctrl.register);
+router.post('/register', validateRegister, ctrl.register);
 /**
  * @openapi
  * /api/auth/verify-otp:
@@ -44,7 +45,7 @@ router.post('/resend-otp', ctrl.resendOtp);
  *       200:
  *         description: Success response
  */
-router.post('/login', ctrl.login);
+router.post('/login', validateLogin, ctrl.login);
 /**
  * @openapi
  * /api/auth/logout:
@@ -88,7 +89,7 @@ router.post('/forgot-password', ctrl.forgotPassword);
  *       200:
  *         description: Success response
  */
-router.post('/reset-password', ctrl.resetPassword);
+router.post('/reset-password', validateResetPassword, ctrl.resetPassword);
 
 const { authGuard } = require('../middleware/auth');
 /**

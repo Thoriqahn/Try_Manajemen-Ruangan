@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const ctrl = require('../controllers/bookingController');
 const { authGuard, roleGuard } = require('../middleware/auth');
-const { validateCheckIn } = require('../middleware/validation');
+const { validateCheckIn, validateBooking } = require('../middleware/validation');
 
 /**
  * @openapi
@@ -26,7 +26,7 @@ router.get('/attendances/mine', authGuard, ctrl.getMyAttendances);
  *       200:
  *         description: Success response
  */
-router.post('/', authGuard, ctrl.createBooking);
+router.post('/', authGuard, validateBooking, ctrl.createBooking);
 /**
  * @openapi
  * /api/bookings/check-in:
@@ -59,7 +59,7 @@ router.get('/:id', authGuard, ctrl.getBooking);
  *       200:
  *         description: Success response
  */
-router.put('/:id', authGuard, ctrl.updateBooking);
+router.put('/:id', authGuard, validateBooking, ctrl.updateBooking);
 /**
  * @openapi
  * /api/bookings/{id}:

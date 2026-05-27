@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const helmet = require('helmet');
 const cors = require('cors');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
@@ -11,6 +12,11 @@ const { errorHandler, notFoundHandler } = require('./middleware/error');
 const { initSchema, seedData } = require('./config/migrate');
 
 const app = express();
+
+// ─── Security Headers ────────────────────────────────────────────────────────
+app.use(helmet({
+  crossOriginResourcePolicy: false, // allow cross-origin images
+}));
 
 // ─── CORS ───────────────────────────────────────────────────────────────────
 app.use(cors({

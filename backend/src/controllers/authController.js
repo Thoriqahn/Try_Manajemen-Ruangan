@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 const { dbGet, dbRun } = require('../config/database');
 const { generateTokens, verifyRefreshToken } = require('../utils/jwt');
 const { sendOtpEmail } = require('../utils/email');

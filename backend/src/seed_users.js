@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { dbRun } = require('./config/database');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 
 async function seed() {
   console.log('Seeding extra demo users...');

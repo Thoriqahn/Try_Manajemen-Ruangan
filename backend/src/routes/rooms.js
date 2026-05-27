@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const ctrl = require('../controllers/roomController');
 const { authGuard, roleGuard, optionalAuth } = require('../middleware/auth');
+const { validateRoom } = require('../middleware/validation');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -66,7 +67,7 @@ router.get('/:id/availability', optionalAuth, ctrl.getAvailability);
  *       200:
  *         description: Success response
  */
-router.post('/', authGuard, roleGuard('admin', 'superadmin'), ctrl.createRoom);
+router.post('/', authGuard, roleGuard('admin', 'superadmin'), validateRoom, ctrl.createRoom);
 /**
  * @openapi
  * /api/rooms/{id}:
@@ -77,7 +78,7 @@ router.post('/', authGuard, roleGuard('admin', 'superadmin'), ctrl.createRoom);
  *       200:
  *         description: Success response
  */
-router.put('/:id', authGuard, roleGuard('admin', 'superadmin'), ctrl.updateRoom);
+router.put('/:id', authGuard, roleGuard('admin', 'superadmin'), validateRoom, ctrl.updateRoom);
 /**
  * @openapi
  * /api/rooms/{id}:

@@ -1,5 +1,5 @@
 const { getClient, dbGet, dbAll } = require('../config/database');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 
 /**
  * Endpoint 1: Fetch Spatial Floor Plan
