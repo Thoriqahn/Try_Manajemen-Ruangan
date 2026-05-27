@@ -70,6 +70,7 @@ const listRooms = async (req, res, next) => {
     for (const room of rooms) {
       room.layouts = await dbAll('SELECT * FROM room_layouts WHERE room_id = $1 AND deleted_at IS NULL', [room.id]);
       room.facilities = await dbAll('SELECT * FROM room_facilities WHERE room_id = $1 AND deleted_at IS NULL', [room.id]);
+      room.photos = await dbAll('SELECT * FROM room_photos WHERE room_id = $1 AND deleted_at IS NULL ORDER BY is_primary DESC, created_at ASC', [room.id]);
     }
 
     res.json({ success: true, data: rooms });
@@ -436,4 +437,29 @@ const uploadPhoto = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { listRooms, getRoom, createRoom, updateRoom, deleteRoom, getAvailability, uploadPhoto };
+const deletePhoto = async (req, res, next) => {
+  try {
+    const { id: roomId, photoId } = req.params;
+    
+    const photo = await dbGet('SELECT * FROM room_photos WHERE id=$1 AND room_id=$2 AND deleted_at IS NULL', [photoId, roomId]);
+    if (!photo) return res.status(404).json({ success: false, message: 'Foto tidak ditemukan' });
+
+    // Mark as deleted
+    await dbRun('UPDATE room_photos SET deleted_at=NOW() WHERE id=$1', [photoId]);
+
+    // If it was primary, try to find another one to make primary
+    if (photo.is_primary) {
+      const nextPhoto = await dbGet('SELECT * FROM room_photos WHERE room_id=$1 AND deleted_at IS NULL ORDER BY created_at ASC LIMIT 1', [roomId]);
+      if (nextPhoto) {
+        await dbRun('UPDATE room_photos SET is_primary=true WHERE id=$1', [nextPhoto.id]);
+        await dbRun('UPDATE rooms SET image_url=$1 WHERE id=$2', [nextPhoto.url, roomId]);
+      } else {
+        await dbRun('UPDATE rooms SET image_url=NULL WHERE id=$1', [roomId]);
+      }
+    }
+
+    res.json({ success: true, message: 'Foto berhasil dihapus' });
+  } catch (err) { next(err); }
+};
+
+module.exports = { listRooms, getRoom, createRoom, updateRoom, deleteRoom, getAvailability, uploadPhoto, deletePhoto };

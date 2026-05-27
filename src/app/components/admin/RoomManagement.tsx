@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Edit2, Power, Search, MapPin, Users, AlertTriangle, Check, X, ImagePlus, Star, Trash2, MoveRight, RefreshCw, QrCode } from "lucide-react";
+import { Plus, Edit2, Power, Search, MapPin, Users, AlertTriangle, Check, X, ImagePlus, Star, Trash2, MoveRight, RefreshCw, QrCode, ChevronDown } from "lucide-react";
 import { roomService, Room } from "../../services/roomService";
 import { buildingService, userService } from "../../services/index";
 
@@ -25,6 +25,7 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
   const [selectedAdminFilter, setSelectedAdminFilter] = useState("");
   const [adminList, setAdminList] = useState<any[]>([]);
   const [selectedRoomView, setSelectedRoomView] = useState<any>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const load = async (adminFilterValue?: string) => {
     setLoading(true);
@@ -203,20 +204,23 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
         {isSuperAdmin && (
           <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm p-2 rounded-xl border border-slate-200 transition-colors dark:bg-slate-800/50 dark:border-slate-700">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-2 transition-colors dark:text-slate-400">Filter Admin:</span>
-            <select
-              value={selectedAdminFilter}
-              onChange={e => {
-                const val = e.target.value;
-                setSelectedAdminFilter(val);
-                load(val);
-              }}
-              className="px-4 py-2 border-0 bg-transparent text-sm font-medium text-slate-800 outline-none focus:ring-0 min-w-[200px] transition-colors dark:text-slate-200"
-            >
-              <option value="" className="bg-white transition-colors duration-300 dark:bg-slate-800">Semua Admin Ruangan</option>
-              {adminList.map(admin => (
-                <option key={admin.id} value={admin.id} className="bg-white transition-colors duration-300 dark:bg-slate-800">{admin.name}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedAdminFilter}
+                onChange={e => {
+                  const val = e.target.value;
+                  setSelectedAdminFilter(val);
+                  load(val);
+                }}
+                className="px-4 py-2 border-0 appearance-none bg-transparent text-sm font-medium text-slate-800 outline-none focus:ring-0 min-w-[200px] pr-8 transition-colors dark:text-slate-200"
+              >
+                <option value="" className="bg-white transition-colors duration-300 dark:bg-slate-800">Semua Admin Ruangan</option>
+                {adminList.map(admin => (
+                  <option key={admin.id} value={admin.id} className="bg-white transition-colors duration-300 dark:bg-slate-800">{admin.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none transition-colors dark:text-slate-500" size={14} />
+            </div>
           </div>
         )}
       </div>
@@ -246,7 +250,7 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                   const maxCap = layouts.length > 0 ? Math.max(...layouts.map(l => l.capacity || 0)) : 0;
                   const jmr = room.jenis_manajemen_ruang || "MEETING_ROOM";
                   return (
-                    <tr key={room.id} onClick={() => setSelectedRoomView(room)} className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group ${room.status === "inactive" ? "opacity-60 dark:opacity-40" : ""}`}>
+                    <tr key={room.id} onClick={() => { setSelectedRoomView(room); setCurrentImageIndex(0); }} className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group ${room.status === "inactive" ? "opacity-60 dark:opacity-40" : ""}`}>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 flex items-center justify-center transition-all group-hover:scale-105 duration-300 shadow-sm dark:bg-slate-800">
@@ -385,12 +389,16 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
       {showForm && <RoomFormModal room={editRoom} isSuperAdmin={isSuperAdmin} onClose={() => { setShowForm(false); setEditRoom(null); load(); }} />}
 
       {/* Room Detail View Modal */}
-      {selectedRoomView && (
+      {selectedRoomView && (() => {
+        const displayPhotos = selectedRoomView.photos?.length > 0 
+          ? selectedRoomView.photos 
+          : (selectedRoomView.image_url ? [{ url: selectedRoomView.image_url }] : []);
+        return (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-[50] p-4 animate-in fade-in duration-200" onClick={() => setSelectedRoomView(null)}>
           <div className="bg-white rounded-[2rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 transition-colors dark:bg-slate-900 dark:border-slate-800" onClick={e => e.stopPropagation()}>
-            <div className="relative h-48 sm:h-64 flex-shrink-0 bg-slate-100 transition-colors dark:bg-slate-800">
-              {selectedRoomView.image_url ? (
-                <img src={getImageUrl(selectedRoomView.image_url)} alt={selectedRoomView.name} className="w-full h-full object-cover" />
+            <div className="relative h-48 sm:h-64 flex-shrink-0 bg-slate-100 transition-colors dark:bg-slate-800 group/slider">
+              {displayPhotos.length > 0 ? (
+                <img src={getImageUrl(displayPhotos[currentImageIndex]?.url)} alt={selectedRoomView.name} className="w-full h-full object-cover transition-opacity duration-300" />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 transition-colors duration-300 dark:text-slate-500">
                   <ImagePlus size={48} className="mb-3 opacity-50" />
@@ -398,10 +406,25 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
                 </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <button onClick={() => setSelectedRoomView(null)} className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md transition-all">
+              {displayPhotos.length > 1 && (
+                <>
+                  <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => prev === 0 ? displayPhotos.length - 1 : prev - 1); }} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-all z-10 shadow-lg">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => prev === displayPhotos.length - 1 ? 0 : prev + 1); }} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-all z-10 shadow-lg">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </button>
+                  <div className="absolute bottom-5 right-6 flex gap-1.5 z-10">
+                    {displayPhotos.map((_: any, i: number) => (
+                      <div key={i} className={`w-2 h-2 rounded-full transition-all ${i === currentImageIndex ? "bg-white scale-125" : "bg-white/50"}`} />
+                    ))}
+                  </div>
+                </>
+              )}
+              <button onClick={() => setSelectedRoomView(null)} className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md transition-all z-10">
                 <X size={18} />
               </button>
-              <div className="absolute bottom-5 left-6 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-md shadow-lg border border-slate-200/50 transition-colors dark:bg-slate-900/90 dark:border-slate-700/50">
+              <div className="absolute bottom-5 left-6 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-md shadow-lg border border-slate-200/50 transition-colors z-10 dark:bg-slate-900/90 dark:border-slate-700/50">
                 <span className={`text-[10px] font-bold uppercase tracking-wider ${selectedRoomView.jenis_manajemen_ruang === "WORKSPACE" ? "text-indigo-600 dark:text-indigo-400" : "text-purple-600 dark:text-purple-400"}`}>
                   {selectedRoomView.jenis_manajemen_ruang === "WORKSPACE" ? "WORKSPACE SEATING" : "MEETING ROOM"}
                 </span>
@@ -488,7 +511,8 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
@@ -570,8 +594,17 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
     setLoading(true); setError("");
     try {
       const payload: any = { ...form };
-      if (!form.operational_enabled) { delete payload.operational_start; delete payload.operational_end; }
+      payload.restrict_hours = form.operational_enabled;
+      if (form.operational_enabled) {
+        payload.hours_start = form.operational_start;
+        payload.hours_end = form.operational_end;
+      } else {
+        payload.hours_start = null;
+        payload.hours_end = null;
+      }
       delete payload.operational_enabled;
+      delete payload.operational_start;
+      delete payload.operational_end;
       
       if (form.jenis_manajemen_ruang === 'WORKSPACE') {
         payload.layouts = [];
@@ -690,17 +723,23 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2 transition-colors dark:text-slate-300">Gedung <span className="text-rose-500 transition-colors duration-300 dark:text-rose-400">*</span></label>
-                    <select value={form.building_id} onChange={e => setForm({ ...form, building_id: e.target.value, floor_id: "" })} required className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-slate-50 text-slate-800 transition-all shadow-sm dark:bg-slate-800/50 dark:text-slate-100 dark:border-slate-700">
-                      <option value="" className="bg-white transition-colors duration-300 dark:bg-slate-800">Pilih gedung</option>
-                      {buildings.map((b: any) => <option key={b.id} value={b.id} className="bg-white transition-colors duration-300 dark:bg-slate-800">{b.name}</option>)}
-                    </select>
+                    <div className="relative">
+                      <select value={form.building_id} onChange={e => setForm({ ...form, building_id: e.target.value, floor_id: "" })} required className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none appearance-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-slate-50 text-slate-800 transition-all shadow-sm dark:bg-slate-800/50 dark:text-slate-100 dark:border-slate-700">
+                        <option value="" className="bg-white transition-colors duration-300 dark:bg-slate-800">Pilih gedung</option>
+                        {buildings.map((b: any) => <option key={b.id} value={b.id} className="bg-white transition-colors duration-300 dark:bg-slate-800">{b.name}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none transition-colors dark:text-slate-500" size={18} />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2 transition-colors dark:text-slate-300">Lantai <span className="text-rose-500 transition-colors duration-300 dark:text-rose-400">*</span></label>
-                    <select value={form.floor_id} onChange={e => setForm({ ...form, floor_id: e.target.value })} required disabled={!form.building_id} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-slate-50 text-slate-800 disabled:opacity-50 transition-all shadow-sm dark:bg-slate-800/50 dark:text-slate-100 dark:border-slate-700">
-                      <option value="" className="bg-white transition-colors duration-300 dark:bg-slate-800">Pilih lantai</option>
-                      {floors.map((f: any) => <option key={f.id} value={f.id} className="bg-white transition-colors duration-300 dark:bg-slate-800">{f.name}</option>)}
-                    </select>
+                    <div className="relative">
+                      <select value={form.floor_id} onChange={e => setForm({ ...form, floor_id: e.target.value })} required disabled={!form.building_id} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none appearance-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-slate-50 text-slate-800 disabled:opacity-50 transition-all shadow-sm dark:bg-slate-800/50 dark:text-slate-100 dark:border-slate-700">
+                        <option value="" className="bg-white transition-colors duration-300 dark:bg-slate-800">Pilih lantai</option>
+                        {floors.map((f: any) => <option key={f.id} value={f.id} className="bg-white transition-colors duration-300 dark:bg-slate-800">{f.name}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none transition-colors dark:text-slate-500" size={18} />
+                    </div>
                   </div>
                 </div>
                 {form.room_type === 'hybrid' && (
@@ -730,10 +769,13 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
             {isSuperAdmin && (
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 transition-colors dark:text-slate-300">Admin Ruangan</label>
-                <select value={form.admin_id} onChange={e => setForm({ ...form, admin_id: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-slate-50 text-slate-800 transition-all shadow-sm dark:bg-slate-800/50 dark:text-slate-100 dark:border-slate-700">
-                  <option value="" className="bg-white transition-colors duration-300 dark:bg-slate-800">Tidak di-assign (Dikelola Super Admin)</option>
-                  {admins.map((a: any) => <option key={a.id} value={a.id} className="bg-white transition-colors duration-300 dark:bg-slate-800">{a.name} ({a.email})</option>)}
-                </select>
+                <div className="relative">
+                  <select value={form.admin_id} onChange={e => setForm({ ...form, admin_id: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none appearance-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-slate-50 text-slate-800 transition-all shadow-sm dark:bg-slate-800/50 dark:text-slate-100 dark:border-slate-700">
+                    <option value="" className="bg-white transition-colors duration-300 dark:bg-slate-800">Tidak di-assign (Dikelola Super Admin)</option>
+                    {admins.map((a: any) => <option key={a.id} value={a.id} className="bg-white transition-colors duration-300 dark:bg-slate-800">{a.name} ({a.email})</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none transition-colors dark:text-slate-500" size={18} />
+                </div>
                 <p className="text-xs font-medium text-slate-500 mt-1.5 transition-colors dark:text-slate-400">Jika dipilih, admin ini akan bertanggung jawab mengelola dan menyetujui ruangan ini</p>
               </div>
             )}
@@ -749,15 +791,18 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
               {layouts.map((l, i) => (
                 <div key={i} className="flex flex-col sm:flex-row items-center gap-3">
                   <div className="flex-1 w-full">
-                    <select value={l.type} onChange={e => {
-                      const newL = [...layouts]; newL[i].type = e.target.value; setLayouts(newL);
-                    }} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-slate-50 text-slate-800 transition-all shadow-sm dark:bg-slate-800/50 dark:text-slate-100 dark:border-slate-700">
-                      <option value="Boardroom" className="bg-white transition-colors duration-300 dark:bg-slate-800">Boardroom</option>
-                      <option value="U-Shape" className="bg-white transition-colors duration-300 dark:bg-slate-800">U-Shape</option>
-                      <option value="Classroom" className="bg-white transition-colors duration-300 dark:bg-slate-800">Classroom</option>
-                      <option value="Theater" className="bg-white transition-colors duration-300 dark:bg-slate-800">Theater</option>
-                      <option value="Banquet" className="bg-white transition-colors duration-300 dark:bg-slate-800">Banquet</option>
-                    </select>
+                    <div className="relative w-full">
+                      <select value={l.type} onChange={e => {
+                        const newL = [...layouts]; newL[i].type = e.target.value; setLayouts(newL);
+                      }} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none appearance-none focus:border-indigo-400 dark:focus:border-emerald-500 focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-emerald-500/10 bg-slate-50 text-slate-800 transition-all shadow-sm dark:bg-slate-800/50 dark:text-slate-100 dark:border-slate-700">
+                        <option value="Boardroom" className="bg-white transition-colors duration-300 dark:bg-slate-800">Boardroom</option>
+                        <option value="U-Shape" className="bg-white transition-colors duration-300 dark:bg-slate-800">U-Shape</option>
+                        <option value="Classroom" className="bg-white transition-colors duration-300 dark:bg-slate-800">Classroom</option>
+                        <option value="Theater" className="bg-white transition-colors duration-300 dark:bg-slate-800">Theater</option>
+                        <option value="Banquet" className="bg-white transition-colors duration-300 dark:bg-slate-800">Banquet</option>
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none transition-colors dark:text-slate-500" size={18} />
+                    </div>
                   </div>
                   <div className="w-full sm:w-32">
                     <input type="number" min={1} value={l.capacity} onChange={e => {
@@ -877,11 +922,21 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
                 {(existingPhotos.length > 0 || photos.length > 0) && (
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mt-4">
                     {/* Render Existing Photos */}
-                    {existingPhotos.map((p, i) => (
+                    {existingPhotos.map((p: any, i: number) => (
                       <div key={`existing-${i}`} className="relative aspect-square rounded-xl border border-slate-200 overflow-hidden group shadow-sm transition-colors dark:border-slate-700">
                         <img src={getImageUrl(p.url)} alt="Foto Ruangan" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-sm gap-2">
                           <span className="text-[10px] text-white font-bold bg-black/60 px-2.5 py-1 rounded-md">Tersimpan</span>
+                          <button type="button" onClick={async () => {
+                            if (confirm('Hapus foto ini?')) {
+                              try {
+                                await roomService.deletePhoto(room.id, p.id);
+                                setExistingPhotos(existingPhotos.filter((photo: any) => photo.id !== p.id));
+                              } catch (err) { alert('Gagal menghapus foto'); }
+                            }
+                          }} className="bg-rose-500 text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-rose-600 transition-colors shadow-md flex items-center gap-1">
+                            <Trash2 size={12} /> Hapus
+                          </button>
                         </div>
                       </div>
                     ))}

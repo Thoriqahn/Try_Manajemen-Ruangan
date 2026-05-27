@@ -79,4 +79,8 @@ export const roomService = {
     form.append('photo', file);
     return api.upload(`/rooms/${id}/upload`, form);
   },
+
+  async deletePhoto(roomId: string, photoId: string) {
+    return api.delete(`/rooms/${roomId}/photos/${photoId}`);
+  },
 };

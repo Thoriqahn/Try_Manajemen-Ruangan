@@ -101,4 +101,16 @@ router.delete('/:id', authGuard, roleGuard('admin', 'superadmin'), ctrl.deleteRo
  */
 router.post('/:id/upload', authGuard, roleGuard('admin', 'superadmin'), upload.single('photo'), ctrl.uploadPhoto);
 
+/**
+ * @openapi
+ * /api/rooms/{id}/photos/{photoId}:
+ *   delete:
+ *     summary: DELETE /:id/photos/:photoId
+ *     tags: [Rooms]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
+router.delete('/:id/photos/:photoId', authGuard, roleGuard('admin', 'superadmin'), ctrl.deletePhoto);
+
 module.exports = router;

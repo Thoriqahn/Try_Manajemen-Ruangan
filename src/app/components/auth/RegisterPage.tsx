@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, Building2, Check, X } from "lucide-react";
 import { authService } from "../../services/authService";
+import { ThemeToggle } from "../layout/ThemeToggle";
 
 interface RegisterPageProps {
   onNavigate: (page: string) => void;
@@ -122,6 +123,9 @@ export function RegisterPage({ onNavigate, onLogin }: RegisterPageProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden font-sans transition-colors duration-300 dark:bg-slate-950">
+      <div className="absolute top-4 right-4 z-50 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 rounded-xl shadow-sm">
+        <ThemeToggle />
+      </div>
       {/* Background decorations */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-600/10 blur-[120px] transition-colors duration-300 dark:bg-emerald-600/10" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-500/10 blur-[120px] transition-colors duration-300 dark:bg-indigo-600/10" />
