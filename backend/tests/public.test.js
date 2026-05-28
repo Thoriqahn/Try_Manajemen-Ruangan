@@ -26,9 +26,10 @@ describe('Public API Endpoints', () => {
 
     // 2. Create ongoing booking (from 1 hour ago to 1 hour from now)
     const now = new Date();
-    const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-    const start = new Date(now.getTime() - 60 * 60000).toTimeString().substring(0,5);
-    const end = new Date(now.getTime() + 60 * 60000).toTimeString().substring(0,5);
+    const iknTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    const todayStr = iknTime.toISOString().split('T')[0];
+    let start = `${String(iknTime.getUTCHours()).padStart(2, '0')}:00`;
+    let end = `${String(Math.min(23, iknTime.getUTCHours() + 1)).padStart(2, '0')}:59`;
 
     const bookingRes = await request(app).post('/api/bookings')
       .set('Authorization', `Bearer ${userToken}`)

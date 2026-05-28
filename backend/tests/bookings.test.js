@@ -249,9 +249,10 @@ describe('Bookings API Endpoints', () => {
     let qrToken;
     beforeAll(async () => {
       const d = new Date();
-      const today = d.toISOString().split('T')[0];
-      const start = new Date(d.getTime() - 5 * 60000).toTimeString().substring(0,5); // 5 mins ago
-      const end = new Date(d.getTime() + 60 * 60000).toTimeString().substring(0,5); // 1 hour later
+      const iknTime = new Date(d.getTime() + (8 * 60 * 60 * 1000));
+      const todayStr = iknTime.toISOString().split('T')[0];
+      let start = `${String(iknTime.getUTCHours()).padStart(2, '0')}:00`;
+      let end = `${String(Math.min(23, iknTime.getUTCHours() + 1)).padStart(2, '0')}:59`;
 
       const room = await dbGet("SELECT id, qr_token FROM rooms WHERE id = $1", [testRoomId]);
       qrToken = room.qr_token;
@@ -262,7 +263,7 @@ describe('Bookings API Endpoints', () => {
       // Create a booking for checkin test
       const res = await request(app).post('/api/bookings')
         .set('Authorization', `Bearer ${userToken1}`)
-        .send({ room_id: testRoomId, date: today, start_time: start, end_time: end, agenda: 'Checkin Test', meeting_type: 'offline' });
+        .send({ room_id: testRoomId, date: todayStr, start_time: start, end_time: end, agenda: 'Checkin Test', meeting_type: 'offline' });
       
       if (!res.body.success) console.error("Checkin setup failed:", res.body);
       checkInBookingId = res.body.data.id;
@@ -368,9 +369,10 @@ describe('Bookings API Endpoints', () => {
 
       // First ensure the booking is for today so it doesn't fail the day check
       const d = new Date();
-      const todayStr = d.toISOString().split('T')[0];
-      const start = new Date(d.getTime() - 5 * 60000).toTimeString().split(' ')[0].substring(0, 5); // 5 mins ago
-      const end = new Date(d.getTime() + 55 * 60000).toTimeString().split(' ')[0].substring(0, 5); // 55 mins from now
+      const iknTime = new Date(d.getTime() + (8 * 60 * 60 * 1000));
+      const todayStr = iknTime.toISOString().split('T')[0];
+      let start = `${String(iknTime.getUTCHours()).padStart(2, '0')}:00`;
+      let end = `${String(Math.min(23, iknTime.getUTCHours() + 1)).padStart(2, '0')}:59`;
 
       // Create a fresh booking for right now
       const bookingRes = await request(app).post('/api/bookings')
@@ -399,9 +401,10 @@ describe('Bookings API Endpoints', () => {
       const qrToken = roomRes.body.data.qr_token;
 
       const d = new Date();
-      const todayStr = d.toISOString().split('T')[0];
-      const start = new Date(d.getTime() - 5 * 60000).toTimeString().split(' ')[0].substring(0, 5); // 5 mins ago
-      const end = new Date(d.getTime() + 55 * 60000).toTimeString().split(' ')[0].substring(0, 5); // 55 mins from now
+      const iknTime = new Date(d.getTime() + (8 * 60 * 60 * 1000));
+      const todayStr = iknTime.toISOString().split('T')[0];
+      let start = `${String(iknTime.getUTCHours()).padStart(2, '0')}:00`;
+      let end = `${String(Math.min(23, iknTime.getUTCHours() + 1)).padStart(2, '0')}:59`;
 
       const bookingRes = await request(app).post('/api/bookings')
         .set('Authorization', `Bearer ${userToken1}`)

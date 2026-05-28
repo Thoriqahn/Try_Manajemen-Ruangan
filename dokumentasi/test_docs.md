@@ -179,6 +179,11 @@ Dokumen ini merangkum seluruh skenario uji coba (Unit Test) dalam aplikasi backe
 - **When** sistem *worker* berjalan (berjalan setiap 1 menit di `noShowWorker.js`).
 - **Then** sistem mendeteksi rapat tersebut, secara otomatis mengubah statusnya menjadi *completed*, dan memberikan label audit bahwa rapat diselesaikan secara otomatis.
 
+### Skenario 3.17: Standarisasi Zona Waktu (IKN/WITA) untuk Pengecekan Tanggal
+- **Given** server dijalankan pada lingkungan dengan zona waktu *default* UTC (contoh: server sedang berada di hari Kamis jam 23:00 UTC, namun waktu di IKN/Makassar sudah menunjukkan hari Jumat jam 07:00 WITA).
+- **When** sistem menjalankan skenario pengujian lintas hari (*midnight roll-over*) atau memvalidasi sesi kehadiran (*check-in/public attendance*).
+- **Then** sistem tidak akan mengalami kendala kegagalan tanggal. Sistem secara *hardcoded* mengubah dasar *offset* menjadi IKN time (UTC+08:00) menggunakan algoritma `(Date.now() + 8 * 60 * 60 * 1000)` agar pencatatan *log* selalu konsisten terlepas dari konfigurasi *server*.
+
 ---
 
 ## 4. Workspaces API Tests (`workspaces.test.js`)

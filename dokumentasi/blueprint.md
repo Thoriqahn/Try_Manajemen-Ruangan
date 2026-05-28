@@ -146,3 +146,12 @@ Menyajikan laporan (*reporting*) esensial dan data eksekutif secara real-time.
 
 ### 8.2. Pengguna Akhir
 - Kartu ringkasan (*Summary Cards*) memilah jadwal ke dalam "Mendatang" (Upcoming), "Sedang Berlangsung" (Ongoing), dan "Riwayat" (Past), lengkap dengan fungsi absensi dan tautan *Join Zoom* terintegrasi.
+
+---
+
+## 9. Epic: Standarisasi Zona Waktu (IKN Timezone Policy)
+Guna mencegah anomali data penjadwalan dan *flaky tests* lintas batas tanggal tengah malam (*midnight roll-over*), sistem menerapkan kebijakan *fixed timezone*.
+
+### 9.1. Waktu Referensi Tunggal (IKN / UTC+08:00)
+- Sistem kalender dan *check-in* secara paksa menggunakan kalkulasi kalender **IKN (WITA / UTC+08:00)** secara mandiri (`Date.now() + 8 hours`), dan tidak bergantung pada konfigurasi *timezone* mesin peladen (*server*) yang berpotensi memiliki waktu dasar `UTC`.
+- Melalui standarisasi absolut ini, ketika rapat di-*booking* hari Jumat pada jam IKN, validasi absensi (*public attendance* maupun internal *check-in*) akan tetap menganggap hari tersebut adalah hari Jumat, meskipun jam sistem lokal *server* masih berada di hari Kamis malam.

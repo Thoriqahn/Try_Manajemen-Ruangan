@@ -561,7 +561,8 @@ const checkInBooking = async (req, res, next) => {
 
     // 2. Find confirmed or ongoing bookings for this room on the current date
     const now = new Date();
-    const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    const iknTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    const todayStr = iknTime.toISOString().split('T')[0];
     
     const bookings = await dbAll(
       `SELECT id, room_id, user_id, date, start_time, end_time, status, is_checked_in

@@ -64,7 +64,8 @@ const submitPublicAttendance = async (req, res, next) => {
 
     // Bug #5: Time window validation — attendance only allowed during booking time
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const iknTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    const todayStr = iknTime.toISOString().split('T')[0];
     const bookingStart = new Date(`${booking.date}T${booking.start_time}:00`);
     const bookingEnd = new Date(`${booking.date}T${booking.end_time}:00`);
 
@@ -146,7 +147,8 @@ const getActiveBookingByQr = async (req, res, next) => {
 
     // Now find the active booking for this room today
     const now = new Date();
-    const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    const iknTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    const todayStr = iknTime.toISOString().split('T')[0];
     
     // Look for a confirmed or ongoing booking happening right now or soon
     const bookings = await dbAll(
