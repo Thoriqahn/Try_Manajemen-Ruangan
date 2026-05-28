@@ -1012,6 +1012,24 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                             Batalkan Rapat
                           </button>
                         )}
+                        {booking.status === "ongoing" && booking.user_id === UserStore.get()?.id && (
+                          <button
+                            onClick={async () => {
+                              if(window.confirm('Apakah Anda yakin ingin mengakhiri rapat ini sekarang? Ruangan akan segera dikosongkan.')) {
+                                try {
+                                  await bookingService.endBooking(booking.id);
+                                  toast.success("Rapat berhasil diakhiri");
+                                  fetchBookings();
+                                } catch (e: any) {
+                                  toast.error(e.response?.data?.message || "Gagal mengakhiri rapat");
+                                }
+                              }
+                            }}
+                            className="px-4 py-2.5 text-xs border border-amber-400 text-amber-600 bg-amber-50 hover:bg-amber-100 dark:hover:bg-amber-500/20 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30"
+                          >
+                            Akhiri Rapat
+                          </button>
+                        )}
                       </div>
 
                     </div>
@@ -1448,7 +1466,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                 Total hadir: <strong className="text-slate-800 font-bold transition-colors dark:text-slate-100">{attendeesList.length} orang</strong>
               </div>
               
-              {attendeesList.length > 0 && (
+              {attendeesList.length > 0 && bookings.find(b => b.id === attendeesModal)?.status === 'completed' && (
                 <button
                   onClick={handleExportAttendance}
                   className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg border border-indigo-200 transition-colors dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/20"

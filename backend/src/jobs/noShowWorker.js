@@ -87,6 +87,43 @@ async function processNoShows() {
       }
     }
 
+    // --- ADDED AUTO-COMPLETION FOR ONGOING MEETINGS THAT EXPIRED ---
+    const ongoingBookings = await dbAll(
+      `SELECT id, room_id, user_id, date, start_time, end_time, status, zoom_meeting_id, agenda
+       FROM bookings
+       WHERE status = 'ongoing' AND deleted_at IS NULL`
+    );
+
+    const expiredOngoing = ongoingBookings.filter(b => {
+      const bookingEnd = new Date(`${b.date}T${b.end_time}:00`);
+      return now > bookingEnd;
+    });
+
+    if (expiredOngoing.length > 0) {
+      console.log(`[SYSTEM WORKER] Found ${expiredOngoing.length} ongoing bookings past their end_time. Autocompleting...`);
+      for (const b of expiredOngoing) {
+        const client = await getClient();
+        try {
+          await client.query('BEGIN');
+          await client.query(`UPDATE bookings SET status = 'completed' WHERE id = $1`, [b.id]);
+          
+          const auditId = uuidv4();
+          const payload = JSON.stringify({ booking_id: b.id, room_id: b.room_id, old_status: 'ongoing', new_status: 'completed', action: 'AUTO_COMPLETE_END_TIME' });
+          await client.query(
+            `INSERT INTO global_audit_trail (id, actor_id, action_type, payload) VALUES ($1, $2, $3, $4)`,
+            [auditId, 'SYSTEM', 'SYSTEM_AUTO_COMPLETE', payload]
+          );
+          await client.query('COMMIT');
+          console.log(`[SYSTEM WORKER] Booking ${b.id} automatically completed.`);
+        } catch (dbErr) {
+          await client.query('ROLLBACK');
+          console.error(`[SYSTEM WORKER] DB error autocompleting booking ${b.id}:`, dbErr.message);
+        } finally {
+          client.release();
+        }
+      }
+    }
+
   } catch (err) {
     console.error('[SYSTEM WORKER] Error in processNoShows run:', err.message);
   }

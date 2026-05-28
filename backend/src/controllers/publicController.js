@@ -58,6 +58,10 @@ const submitPublicAttendance = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Rapat tidak ditemukan' });
     }
 
+    if (booking.status === 'completed') {
+      return res.status(403).json({ success: false, message: 'Rapat telah selesai. Presensi sudah ditutup.' });
+    }
+
     // Bug #5: Time window validation — attendance only allowed during booking time
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];

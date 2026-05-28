@@ -873,6 +873,54 @@ const getMyAttendances = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// POST /api/bookings/:id/end
+const endBooking = async (req, res, next) => {
+  try {
+    const bookingId = req.params.id;
+    const booking = await dbGet('SELECT * FROM bookings WHERE id = $1 AND deleted_at IS NULL', [bookingId]);
+    
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking tidak ditemukan' });
+    }
+
+    // Only host or admin/superadmin can end the booking
+    if (booking.user_id !== req.user.id && req.user.role === 'user') {
+      return res.status(403).json({ success: false, message: 'Hanya pembuat reservasi yang dapat mengakhiri rapat' });
+    }
+
+    if (booking.status !== 'ongoing') {
+      return res.status(400).json({ success: false, message: 'Hanya rapat yang sedang berlangsung (ongoing) yang dapat diakhiri' });
+    }
+
+    const now = new Date();
+    // Time format HH:mm in local timezone. We need to be careful with timezones.
+    // Instead of messing with timezone math, we just get HH:mm from current system time.
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const newEndTime = `${hh}:${mm}`;
+
+    // Check if current time is before the scheduled end_time
+    let updateTimeSql = '';
+    const endParts = booking.end_time.split(':');
+    const endMinutes = parseInt(endParts[0], 10) * 60 + parseInt(endParts[1], 10);
+    const nowMinutes = parseInt(hh, 10) * 60 + parseInt(mm, 10);
+
+    // If meeting is ended early, we truncate the end_time to now
+    let timeParams = [bookingId];
+    if (nowMinutes < endMinutes) {
+      updateTimeSql = `, end_time = $2`;
+      timeParams.push(newEndTime);
+    }
+
+    await dbRun(`UPDATE bookings SET status = 'completed' ${updateTimeSql} WHERE id = $1`, timeParams);
+    await audit(req.user.id, 'END_MEETING', 'bookings', bookingId, `Meeting ended manually`, req.ip);
+
+    res.json({ success: true, message: 'Rapat berhasil diakhiri' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // GET /api/v1/bookings/:id/attendees/csv
 const exportAttendeesCSV = async (req, res, next) => {
   try {
@@ -914,5 +962,5 @@ const exportAttendeesCSV = async (req, res, next) => {
 module.exports = { 
   listBookings, getBooking, createBooking, updateBooking, cancelBooking, 
   approveBooking, rejectBooking, forceCancel, checkInBooking, getBookingAttendees, 
-  logZoomJoin, logZoomLeave, getMyAttendances, exportAttendeesCSV
+  logZoomJoin, logZoomLeave, getMyAttendances, exportAttendeesCSV, endBooking
 };

@@ -169,6 +169,16 @@ Dokumen ini merangkum seluruh skenario uji coba (Unit Test) dalam aplikasi backe
 - **When** seorang tamu eksternal (tidak perlu login) mengirimkan data kehadirannya melalui *endpoint* `POST /api/public/attendances/:bookingId` dengan format nama, institusi, jabatan, dan email.
 - **Then** sistem memvalidasi jam rapat tersebut, memastikan rapat sedang aktif/berlangsung, lalu mencatatkan nama tamu tersebut ke dalam database kehadiran rapat (*meeting attendees*) dengan balasan status berhasil `200`.
 
+### Skenario 3.15: Akhiri Rapat & Pemotongan Jadwal Dinamis (Checkout)
+- **Given** sebuah rapat dengan status *ongoing*.
+- **When** sang pembuat pesanan (Owner) atau Admin melakukan eksekusi perintah `POST /api/bookings/:id/end`.
+- **Then** sistem akan mengubah status rapat menjadi *completed*, memotong (*truncate*) jam `end_time` rapat menjadi jam saat eksekusi agar slot ruangan segera dibebaskan, dan sistem akan menolak segala upaya presensi setelahnya.
+
+### Skenario 3.16: Penyelesaian Otomatis Rapat Kedaluwarsa (Cron Job)
+- **Given** sebuah rapat dengan status *ongoing* yang waktu selesainya (`end_time`) telah terlewat dari jam saat ini.
+- **When** sistem *worker* berjalan (berjalan setiap 1 menit di `noShowWorker.js`).
+- **Then** sistem mendeteksi rapat tersebut, secara otomatis mengubah statusnya menjadi *completed*, dan memberikan label audit bahwa rapat diselesaikan secara otomatis.
+
 ---
 
 ## 4. Workspaces API Tests (`workspaces.test.js`)

@@ -125,9 +125,9 @@ Bagi ruangan bertipe **Digital** atau **Hybrid**, metode *check-in* difasilitasi
 - **Check-in via Tautan (Link):** Peserta yang mengikuti rapat secara virtual dapat mengklik tombol **"Join Meeting"** atau tautan *teleconference* (contoh: Zoom/Teams) yang tersedia di dashboard mereka atau melalui surel undangan.
 - **Pencatatan Otomatis:** Sistem akan secara otomatis menganggap klik pada tautan tersebut sebagai aktivitas *Check-In* elektronik (*Virtual Check-In*), dan seketika mengubah status partisipasi pengguna menjadi `attending`. Batasan toleransi waktu (10 menit sebelum hingga 15 menit setelah rapat) tetap berlaku agar tombol / tautan tersebut dapat memvalidasi kehadiran dengan sah.
 
-### 7.5. Check-Out Mekanikal
-Ketika rapat usai (bahkan jika selesai lebih cepat dari jadwal), Host wajib *Check-Out* sehingga ruang otomatis menjadi *Tersedia (Available)* dan dapat diserobot oleh pemesanan instan (*Ad-hoc bookings*).
-
+### 7.5. Check-Out Mekanikal & Otomatisasi (Auto-Complete)
+- **Check-Out Manual:** Ketika rapat usai (bahkan jika selesai lebih cepat dari jadwal), Host wajib *Check-Out* menggunakan tombol **Akhiri Rapat**. Hal ini menyebabkan ruang otomatis menjadi *Tersedia (Available)* dan sisa jam terpotong (di-*truncate*) agar dapat diserobot oleh pemesanan instan (*Ad-hoc bookings*).
+- **Auto-Complete (Cron Job):** Jika Host lupa melakukan *check-out* manual, sistem *worker* latar belakang (`noShowWorker.js`) secara berkala menyapu jadwal. Rapat `ongoing` yang waktu akhirnya (`end_time`) telah terlewat akan secara otomatis ditutup menjadi `completed` guna menjaga rekam data tetap bersih.
 ### 7.6. Ekspor Daftar Hadir (PDF Presensi)
 Sebagai bukti dokumentasi resmi atas pelaksanaan rapat:
 - Seluruh presensi partisipan internal maupun eksternal dicatat di dalam sistem.

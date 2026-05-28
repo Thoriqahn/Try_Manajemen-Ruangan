@@ -126,5 +126,8 @@ export const bookingService = {
   async getMyAttendances() {
     return api.get<Booking[]>('/bookings/attendances/mine');
   },
-};
 
+  async endBooking(id: string) {
+    return api.post(`/bookings/${id}/end`);
+  }
+};

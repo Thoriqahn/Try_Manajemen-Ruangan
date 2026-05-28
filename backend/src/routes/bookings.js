@@ -152,4 +152,16 @@ router.post('/:id/zoom-join', authGuard, ctrl.logZoomJoin);
  */
 router.post('/:id/zoom-leave', authGuard, ctrl.logZoomLeave);
 
+/**
+ * @openapi
+ * /api/bookings/{id}/end:
+ *   post:
+ *     summary: POST /:id/end
+ *     tags: [Bookings]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
+router.post('/:id/end', authGuard, ctrl.endBooking);
+
 module.exports = router;

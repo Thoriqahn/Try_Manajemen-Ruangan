@@ -5,7 +5,7 @@ import { TokenStore } from "../../services/apiClient";
 import { generateAttendancePDF } from "../../utils/pdfExport";
 
 export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
-  const [filter, setFilter] = useState<"all" | "ongoing" | "confirmed">("all");
+  const [filter, setFilter] = useState<"all" | "ongoing" | "confirmed" | "completed">("all");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [forceCancelModal, setForceCancelModal] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
   const load = async () => {
     setLoading(true);
     try {
-      const res = await bookingService.list({ status: "confirmed,ongoing", limit: 50, admin_id: selectedAdminFilter || undefined, managed_only: "true" });
+      const res = await bookingService.list({ status: "confirmed,ongoing,completed", limit: 50, admin_id: selectedAdminFilter || undefined, managed_only: "true" });
       setBookings(res.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -87,6 +87,7 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
     all: bookings.length,
     ongoing: bookings.filter(b => b.status === "ongoing").length,
     confirmed: bookings.filter(b => b.status === "confirmed").length,
+    completed: bookings.filter(b => b.status === "completed").length,
   };
 
   const filteredBookings = bookings.filter(b => {
@@ -112,10 +113,13 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
             Semua<span className="text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wider transition-colors bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-500">{counts.all}</span>
           </button>
           <button onClick={() => setFilter("ongoing")} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${filter === "ongoing" ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-emerald-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"}`}>
-            Berlangsung<span className="text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wider transition-colors bg-indigo-100 dark:bg-indigo-500/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30">{counts.ongoing}</span>
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse transition-colors dark:bg-emerald-400" /> Sedang Berjalan <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-md text-xs">{counts.ongoing}</span>
           </button>
           <button onClick={() => setFilter("confirmed")} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${filter === "confirmed" ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-emerald-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"}`}>
-            Dikonfirmasi<span className="text-[10px] px-2 py-0.5 rounded-md font-bold tracking-wider transition-colors bg-emerald-100 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">{counts.confirmed}</span>
+            <div className="w-2 h-2 rounded-full bg-indigo-400 transition-colors dark:bg-indigo-500" /> Segera <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-md text-xs">{counts.confirmed}</span>
+          </button>
+          <button onClick={() => setFilter("completed")} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${filter === "completed" ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-emerald-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50"}`}>
+            <div className="w-2 h-2 rounded-full bg-slate-400 transition-colors" /> Riwayat <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-md text-xs">{counts.completed}</span>
           </button>
         </div>
 
@@ -176,10 +180,28 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
                       {booking.participants && <div className="flex items-center gap-2"><Users size={14} className="text-slate-400 transition-colors duration-300 dark:text-slate-500" /><span>{booking.participants} peserta</span></div>}
                     </div>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); setForceCancelModal(booking.id); setConfirmStep(1); }}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-50 text-rose-600 text-sm font-bold rounded-xl hover:bg-rose-500 hover:text-white transition-all flex-shrink-0 shadow-sm active:scale-95 dark:bg-rose-500/20 dark:hover:bg-rose-500 dark:hover:text-white dark:text-rose-400">
-                    <Trash2 size={16} /> Batalkan Paksa
-                  </button>
+                    {booking.status === "ongoing" && (
+                      <button onClick={async (e) => { 
+                        e.stopPropagation();
+                        if (window.confirm("Akhiri rapat paksa sebagai Admin? Waktu akan dipotong dan ruangan dibebaskan.")) {
+                          try {
+                            await bookingService.endBooking(booking.id);
+                            load();
+                          } catch (err: any) {
+                            alert(err.response?.data?.message || "Gagal mengakhiri rapat");
+                          }
+                        }
+                      }}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-50 text-amber-600 text-sm font-bold rounded-xl hover:bg-amber-500 hover:text-white transition-all flex-shrink-0 shadow-sm active:scale-95 dark:bg-amber-500/20 dark:hover:bg-amber-500 dark:text-amber-400" title="Akhiri Rapat">
+                        <Clock size={16} /> <span className="hidden sm:inline">Selesai</span>
+                      </button>
+                    )}
+                    {booking.status !== "completed" && (
+                      <button onClick={(e) => { e.stopPropagation(); setForceCancelModal(booking.id); setConfirmStep(1); }}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-50 text-rose-600 text-sm font-bold rounded-xl hover:bg-rose-500 hover:text-white transition-all flex-shrink-0 shadow-sm active:scale-95 dark:bg-rose-500/20 dark:hover:bg-rose-500 dark:hover:text-white dark:text-rose-400" title="Batal Paksa">
+                        <Trash2 size={16} /> <span className="hidden sm:inline">Batalkan</span>
+                      </button>
+                    )}
                 </div>
               </div>
             ))
@@ -261,13 +283,22 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 transition-colors z-10 sticky top-0 dark:bg-slate-800/80 dark:border-slate-800">
               <h3 className="text-lg font-extrabold text-slate-800 tracking-tight transition-colors dark:text-slate-100">Detail Peminjaman Ruangan</h3>
               <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => downloadAttendancePDF(selectedBookingView)}
-                  className="px-3 py-1.5 flex items-center gap-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30 rounded-lg text-xs font-bold transition-colors"
-                  title="Download Daftar Hadir (PDF)"
-                >
-                  <FileText size={16} /> PDF Presensi
-                </button>
+                {selectedBookingView.status === "completed" && (
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const attendees = await bookingService.getAttendees(selectedBookingView.id);
+                        downloadAttendancePDF(selectedBookingView, attendees.data);
+                      } catch(e) {
+                        alert("Gagal mengunduh daftar hadir");
+                      }
+                    }}
+                    className="px-3 py-1.5 flex items-center gap-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30 rounded-lg text-xs font-bold transition-colors"
+                    title="Download Daftar Hadir (PDF)"
+                  >
+                    <FileText size={16} /> PDF Presensi
+                  </button>
+                )}
                 <button onClick={() => setSelectedBookingView(null)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-slate-400 transition-colors dark:text-slate-500">
                   <X size={20} />
                 </button>
