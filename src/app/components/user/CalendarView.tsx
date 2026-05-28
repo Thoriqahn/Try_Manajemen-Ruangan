@@ -421,7 +421,7 @@ export function DailyView({
                         onMouseDown={() => !disabled && handleMouseDown(room.id, si)}
                         onMouseEnter={() => handleMouseEnter(room.id, si)}
                         onMouseUp={() => handleMouseUp(room.id)}
-                        onTouchStart={(e) => handleTouchStart(room.id, si, e)}
+                        onTouchStart={(e) => !disabled && handleTouchStart(room.id, si, e)}
                       >
                         {isOutsideOpHours ? (
                           <div className="absolute inset-0.5 rounded-xl bg-red-50 border border-red-200 text-red-500 text-[10px] flex items-center justify-center shadow-sm select-none transition-colors duration-300 dark:bg-red-500/10 dark:text-red-400/70 dark:border-red-500/20" style={{ fontWeight: 600 }}>Tutup</div>
@@ -681,19 +681,21 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
           compact ? "p-1 min-h-[70px]" : "p-2 sm:p-2.5 min-h-[80px] sm:min-h-[96px]"
         } ${isBlackout ? "cursor-not-allowed bg-red-50/50 dark:bg-red-900/10" : isPast ? "cursor-not-allowed bg-gray-50/70 dark:bg-slate-800/40" : isToday ? "bg-blue-50/70 dark:bg-blue-900/20" : "bg-white dark:bg-slate-900 hover:bg-blue-50/30 dark:hover:bg-slate-800/50"}`}
       >
-        <div className="flex items-start justify-between mb-1">
-          <span className={`text-xs sm:text-sm transition-colors ${
-            isToday ? "w-6 h-6 flex items-center justify-center rounded-full bg-blue-600 text-white" :
-            !inCurrentMonth ? "text-gray-300" :
-            isPast ? "text-gray-400 dark:text-slate-500" : 
-            isBlackout ? "text-red-500 dark:text-red-400" : "text-gray-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400"
-          }`} style={{ fontWeight: isToday ? 700 : 500 }}>
-            {date.getDate()}
-          </span>
-          {bookings.length > 0 && !compact && !isBlackout && (
-            <span className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-full w-5 h-5 flex items-center justify-center font-bold transition-colors dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/50" style={{ fontSize: "10px" }}>{bookings.length}</span>
-          )}
-        </div>
+        {!compact && (
+          <div className="flex items-start justify-between mb-1">
+            <span className={`text-xs sm:text-sm transition-colors ${
+              isToday ? "w-6 h-6 flex items-center justify-center rounded-full bg-blue-600 text-white" :
+              !inCurrentMonth ? "text-gray-300" :
+              isPast ? "text-gray-400 dark:text-slate-500" : 
+              isBlackout ? "text-red-500 dark:text-red-400" : "text-gray-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+            }`} style={{ fontWeight: isToday ? 700 : 500 }}>
+              {date.getDate()}
+            </span>
+            {bookings.length > 0 && !isBlackout && (
+              <span className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-full w-5 h-5 flex items-center justify-center font-bold transition-colors dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/50" style={{ fontSize: "10px" }}>{bookings.length}</span>
+            )}
+          </div>
+        )}
         {!compact ? (
           <div className="space-y-1 mt-1">
             {isBlackout ? (

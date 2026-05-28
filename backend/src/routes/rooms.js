@@ -34,7 +34,7 @@ const upload = multer({
  *       200:
  *         description: Success response
  */
-router.get('/', optionalAuth, ctrl.listRooms);
+router.get('/', authGuard, ctrl.listRooms);
 /**
  * @openapi
  * /api/rooms/{id}:
@@ -45,7 +45,7 @@ router.get('/', optionalAuth, ctrl.listRooms);
  *       200:
  *         description: Success response
  */
-router.get('/:id', optionalAuth, ctrl.getRoom);
+router.get('/:id', authGuard, ctrl.getRoom);
 /**
  * @openapi
  * /api/rooms/{id}/availability:
@@ -56,7 +56,7 @@ router.get('/:id', optionalAuth, ctrl.getRoom);
  *       200:
  *         description: Success response
  */
-router.get('/:id/availability', optionalAuth, ctrl.getAvailability);
+router.get('/:id/availability', authGuard, ctrl.getAvailability);
 /**
  * @openapi
  * /api/rooms:

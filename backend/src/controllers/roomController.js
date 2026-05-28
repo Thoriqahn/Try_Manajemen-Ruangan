@@ -30,7 +30,7 @@ const getRoomFull = async (roomId) => {
 // GET /api/rooms
 const listRooms = async (req, res, next) => {
   try {
-    const { building_id, floor_id, status, search, approval_type, admin_id } = req.query;
+    const { building_id, floor_id, status, search, approval_type, admin_id, capacity } = req.query;
     let sql = `
       SELECT r.*, b.name as building_name, f.name as floor_name,
         (SELECT STRING_AGG(u2.name, ', ') FROM room_assignments ra JOIN users u2 ON ra.user_id = u2.id WHERE ra.room_id = r.id AND u2.deleted_at IS NULL) as admin_name
@@ -61,6 +61,11 @@ const listRooms = async (req, res, next) => {
     } else if (req.user && req.user.role === 'superadmin' && admin_id) {
       sql += ` AND r.id IN (SELECT room_id FROM room_assignments WHERE user_id = $${paramIdx++})`;
       params.push(admin_id);
+    }
+
+    if (capacity) {
+      sql += ` AND r.id IN (SELECT room_id FROM room_layouts WHERE capacity >= $${paramIdx++} AND deleted_at IS NULL)`;
+      params.push(capacity);
     }
 
     sql += ' ORDER BY b.name, f.level, r.name';

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, Bell, Search, Calendar, Building2, BookOpen, QrCode } from "lucide-react";
+import { Menu, Bell, Search, Calendar, Building2, BookOpen, QrCode, LogOut } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { ThemeToggle } from "./ThemeToggle";
 import { bookingService } from "../../services/bookingService";
@@ -24,6 +24,9 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Profile Menu State
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -158,6 +161,13 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
     return () => window.removeEventListener("click", close);
   }, [showNotifications]);
 
+  useEffect(() => {
+    if (!showProfileMenu) return;
+    const close = () => setShowProfileMenu(false);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [showProfileMenu]);
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans transition-colors duration-300 relative dark:bg-slate-900">
       {/* Background IKN Ornaments - Subtle Patterns */}
@@ -174,12 +184,12 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
 
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-30 lg:hidden transition-opacity dark:bg-black/40" onClick={() => setMobileOpen(false)} />
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 lg:hidden transition-opacity dark:bg-black/40" onClick={() => setMobileOpen(false)} />
       )}
 
       {/* Sidebar */}
       <div className={`
-        fixed lg:relative z-40 h-full
+        fixed lg:relative z-50 lg:z-40 h-full
         ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         transition-transform duration-300
       `}>
@@ -270,9 +280,43 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
             )}
           </div>
 
-          {/* Avatar */}
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 dark:from-emerald-600 dark:to-emerald-800 flex items-center justify-center text-white text-xs font-semibold cursor-pointer shadow-md shadow-indigo-500/20 hover:shadow-lg transition-all hover:-translate-y-0.5">
-            {currentUser?.name ? currentUser.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() : role === "superadmin" ? "SA" : role === "admin" ? "AD" : "US"}
+          {/* Avatar & Profile Dropdown */}
+          <div className="relative">
+            <div 
+              onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); setShowNotifications(false); }}
+              className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 dark:from-emerald-600 dark:to-emerald-800 flex items-center justify-center text-white text-xs font-semibold cursor-pointer shadow-md shadow-indigo-500/20 hover:shadow-lg transition-all hover:-translate-y-0.5"
+            >
+              {currentUser?.name ? currentUser.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() : role === "superadmin" ? "SA" : role === "admin" ? "AD" : "US"}
+            </div>
+
+            {showProfileMenu && (
+              <div 
+                onClick={(e) => e.stopPropagation()} 
+                className="absolute right-0 mt-3 w-64 bg-white/95 backdrop-blur-xl border border-white/40 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.08)] z-50 overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-4 duration-300 origin-top-right transition-colors dark:bg-slate-900/95 dark:border-slate-700"
+              >
+                <div className="px-5 py-4 bg-slate-50/80 backdrop-blur-md border-b border-slate-100 dark:bg-slate-800/80 dark:border-slate-700 transition-colors duration-300">
+                  <div className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                    {currentUser?.name || (role === "superadmin" ? "Super Admin" : role === "admin" ? "Admin Ruangan" : "Pengguna")}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                    {currentUser?.email || (role === "superadmin" ? "superadmin@oikn.go.id" : role === "admin" ? "admin@oikn.go.id" : "user@oikn.go.id")}
+                  </div>
+                  <div className="mt-2 inline-block px-2 py-0.5 bg-indigo-100 dark:bg-emerald-500/20 text-indigo-700 dark:text-emerald-400 text-[10px] font-bold rounded uppercase tracking-wider">
+                    {role}
+                  </div>
+                </div>
+                
+                <div className="p-2">
+                  <button
+                    onClick={() => { setShowProfileMenu(false); onLogout(); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/20 text-sm transition-all duration-300 group font-medium"
+                  >
+                    <LogOut size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                    Keluar Sistem
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </header>
 

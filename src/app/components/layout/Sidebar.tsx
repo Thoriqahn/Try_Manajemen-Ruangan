@@ -176,30 +176,11 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
         )}
       </div>
 
-      {/* User profile & logout */}
-      <div className="p-4 border-t border-[#2A4E85] dark:border-slate-800/60 bg-[#162C4A] dark:bg-slate-950/50">
-        <div className={`flex items-center gap-3 px-2 py-2 mb-2 rounded-xl ${collapsed ? "justify-center" : ""}`}>
-          <div className="w-9 h-9 rounded-xl bg-[#2A4E85] dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-xs text-blue-100 dark:text-slate-300 font-bold border border-[#3A60A0] dark:border-slate-700">
-            {role === "superadmin" ? "SA" : role === "admin" ? "AD" : "US"}
-          </div>
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <div className="text-white dark:text-slate-200 text-sm font-semibold truncate">
-                {userName || (role === "superadmin" ? "Super Admin" : role === "admin" ? "Admin Ruangan" : "Pengguna")}
-              </div>
-              <div className="text-blue-200/70 dark:text-slate-500 text-xs truncate font-medium mt-0.5">
-                {userEmail || (role === "superadmin" ? "superadmin@oikn.go.id" : role === "admin" ? "admin@oikn.go.id" : "user@oikn.go.id")}
-              </div>
-            </div>
-          )}
+      {/* Bottom Spacer for Sidebar */}
+      <div className="p-4 border-t border-[#2A4E85] dark:border-slate-800/60 bg-[#162C4A] dark:bg-slate-950/50 hidden lg:block">
+        <div className="text-center text-[10px] text-blue-200/50 font-medium">
+          Menara v1.0.0
         </div>
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-200/70 dark:text-slate-400 hover:text-rose-300 dark:hover:text-rose-400 hover:bg-rose-500/10 text-sm transition-all duration-300 group dark:bg-rose-500/30"
-        >
-          <LogOut size={18} className="group-hover:-translate-x-0.5 transition-transform" />
-          {!collapsed && <span className="font-medium">Keluar Sistem</span>}
-        </button>
       </div>
     </div>
   );

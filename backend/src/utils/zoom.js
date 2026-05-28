@@ -12,6 +12,8 @@ let tokenExpiresAt = 0;
  * Get Zoom OAuth access token using Server-to-Server credentials stored in DB.
  */
 const getAccessToken = async () => {
+  if (process.env.NODE_ENV === 'test') return 'test_token_123';
+
   // Return cached token if still valid (with 60s buffer)
   if (cachedToken && Date.now() < tokenExpiresAt - 60000) {
     return cachedToken;
@@ -103,6 +105,14 @@ const createZoomMeeting = async (hostEmail, topic, date, startTime, endTime) => 
   // Build ISO 8601 start_time
   const startDateTime = `${date}T${startTime}:00`;
 
+  if (process.env.NODE_ENV === 'test') {
+    return {
+      id: Math.floor(Math.random() * 1000000000),
+      join_url: 'https://zoom.us/j/dummy',
+      password: 'dummy-password'
+    };
+  }
+
   const payload = {
     topic,
     type: 2, // Scheduled meeting
@@ -124,6 +134,7 @@ const createZoomMeeting = async (hostEmail, topic, date, startTime, endTime) => 
  * Delete a Zoom meeting.
  */
 const deleteZoomMeeting = async (meetingId) => {
+  if (process.env.NODE_ENV === 'test') return true;
   return await zoomRequest('DELETE', `/meetings/${meetingId}`);
 };
 
@@ -136,6 +147,8 @@ const updateZoomMeeting = async (meetingId, date, startTime, endTime) => {
   const durationMinutes = (eh * 60 + em) - (sh * 60 + sm);
   const startDateTime = `${date}T${startTime}:00`;
 
+  if (process.env.NODE_ENV === 'test') return true;
+
   return await zoomRequest('PATCH', `/meetings/${meetingId}`, {
     start_time: startDateTime,
     duration: durationMinutes,
@@ -147,6 +160,9 @@ const updateZoomMeeting = async (meetingId, date, startTime, endTime) => {
  * Verify a Zoom user's license status.
  */
 const getZoomUser = async (email) => {
+  if (process.env.NODE_ENV === 'test') {
+    return { type: 2, display_name: 'Test Zoom User' };
+  }
   return await zoomRequest('GET', `/users/${email}`);
 };
 

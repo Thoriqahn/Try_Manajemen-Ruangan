@@ -561,7 +561,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
   const nextMeeting = bookings.find(b => ["confirmed", "ongoing"].includes(b.status));
 
   return (
-    <div className="p-6 space-y-6 transition-colors duration-300">
+    <div className="p-0 sm:p-6 space-y-3 sm:space-y-6 transition-colors duration-300">
       
       {/* Greetings Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 transition-colors dark:border-slate-800/60">
@@ -591,47 +591,47 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
       </div>
 
       {/* Summary Statistics Widgets */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         
-        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-4.5 rounded-[1.25rem] shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:border-indigo-200 dark:hover:border-emerald-500/30 group dark:bg-slate-900/80 dark:border-indigo-500/30">
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0 group-hover:scale-105 transition-transform transition-colors dark:bg-indigo-500/30 dark:text-indigo-400 dark:border-indigo-500/20">
-            <Calendar size={20} />
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-2.5 sm:p-4.5 rounded-xl sm:rounded-[1.25rem] shadow-sm flex flex-row items-center gap-2.5 sm:gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:border-indigo-200 dark:hover:border-emerald-500/30 group dark:bg-slate-900/80 dark:border-indigo-500/30">
+          <div className="w-7 h-7 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0 group-hover:scale-105 transition-transform transition-colors dark:bg-indigo-500/30 dark:text-indigo-400 dark:border-indigo-500/20">
+            <Calendar className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-colors dark:text-slate-500">Total Rapat Bulan Ini</span>
-            <h4 className="text-lg font-extrabold text-slate-800 mt-0.5 transition-colors dark:text-slate-100">{totalRapatBulanIni} Rapat</h4>
-          </div>
-        </div>
-
-        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-4.5 rounded-[1.25rem] shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:border-emerald-200 dark:hover:border-emerald-500/30 group dark:bg-slate-900/80 dark:border-emerald-500/30">
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 group-hover:scale-105 transition-transform transition-colors dark:bg-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/20">
-            <Armchair size={20} />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-colors dark:text-slate-500">ID Meja Kerja Anda</span>
-            <h4 className="text-lg font-extrabold text-slate-800 mt-0.5 transition-colors dark:text-slate-100">{assignedDesk?.desk_id || "Belum Ada"}</h4>
+          <div className="min-w-0 w-full">
+            <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate transition-colors dark:text-slate-500">Total Rapat</span>
+            <h4 className="text-xs sm:text-lg font-extrabold text-slate-800 truncate transition-colors dark:text-slate-100">{totalRapatBulanIni} Rapat</h4>
           </div>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-4.5 rounded-[1.25rem] shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:border-sky-200 dark:hover:border-sky-500/30 group dark:bg-slate-900/80 dark:border-sky-500/30">
-          <div className="w-12 h-12 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 flex-shrink-0 group-hover:scale-105 transition-transform transition-colors dark:bg-sky-500/30 dark:text-sky-400 dark:border-sky-500/20">
-            <Clock size={20} />
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-2.5 sm:p-4.5 rounded-xl sm:rounded-[1.25rem] shadow-sm flex flex-row items-center gap-2.5 sm:gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:border-emerald-200 dark:hover:border-emerald-500/30 group dark:bg-slate-900/80 dark:border-emerald-500/30">
+          <div className="w-7 h-7 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 group-hover:scale-105 transition-transform transition-colors dark:bg-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/20">
+            <Armchair className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
-          <div className="min-w-0 flex-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5 transition-colors dark:text-slate-500">Agenda Terdekat</span>
-            <h4 className="text-sm font-extrabold text-slate-800 truncate transition-colors dark:text-slate-100" title={nextMeeting?.agenda || "Tidak ada rapat terdekat"}>
+          <div className="min-w-0 w-full">
+            <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate transition-colors dark:text-slate-500">Meja Anda</span>
+            <h4 className="text-xs sm:text-lg font-extrabold text-slate-800 truncate transition-colors dark:text-slate-100">{assignedDesk?.desk_id || "Belum Ada"}</h4>
+          </div>
+        </div>
+
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-2.5 sm:p-4.5 rounded-xl sm:rounded-[1.25rem] shadow-sm flex flex-row items-center gap-2.5 sm:gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:border-sky-200 dark:hover:border-sky-500/30 group dark:bg-slate-900/80 dark:border-sky-500/30">
+          <div className="w-7 h-7 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 flex-shrink-0 group-hover:scale-105 transition-transform transition-colors dark:bg-sky-500/30 dark:text-sky-400 dark:border-sky-500/20">
+            <Clock className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+          </div>
+          <div className="min-w-0 w-full">
+            <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate transition-colors dark:text-slate-500">Agenda Terdekat</span>
+            <h4 className="text-xs sm:text-base font-extrabold text-slate-800 truncate transition-colors dark:text-slate-100" title={nextMeeting?.agenda || "Tidak ada rapat terdekat"}>
               {nextMeeting ? `${nextMeeting.start_time} - ${nextMeeting.agenda}` : "Tidak Ada"}
             </h4>
           </div>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-4.5 rounded-[1.25rem] shadow-sm flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:border-teal-200 dark:hover:border-teal-500/30 group dark:bg-slate-900/80 dark:border-teal-500/30">
-          <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 flex-shrink-0 group-hover:scale-105 transition-transform transition-colors dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-500/20">
-            <CheckCircle2 size={20} />
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-2.5 sm:p-4.5 rounded-xl sm:rounded-[1.25rem] shadow-sm flex flex-row items-center gap-2.5 sm:gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:border-teal-200 dark:hover:border-teal-500/30 group dark:bg-slate-900/80 dark:border-teal-500/30">
+          <div className="w-7 h-7 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 flex-shrink-0 group-hover:scale-105 transition-transform transition-colors dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-500/20">
+            <CheckCircle2 className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-colors dark:text-slate-500">Tingkat Kehadiran</span>
-            <h4 className="text-lg font-extrabold text-slate-800 mt-0.5 transition-colors dark:text-slate-100">96.8%</h4>
+          <div className="min-w-0 w-full">
+            <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate transition-colors dark:text-slate-500">Kehadiran</span>
+            <h4 className="text-xs sm:text-lg font-extrabold text-slate-800 truncate transition-colors dark:text-slate-100">96.8%</h4>
           </div>
         </div>
 
@@ -639,7 +639,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
 
       {/* Seating Assignment Card Section */}
       <div 
-        className="text-white rounded-3xl p-6 shadow-xl border border-blue-900/30 relative overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] group"
+        className="text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl border border-blue-900/30 relative overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] group mt-4 sm:mt-0"
         style={{
           background: assignedDesk?.room_photo 
             ? `linear-gradient(to right, rgba(15,32,66,1) 40%, rgba(30,58,96,0.6) 100%), url(${assignedDesk.room_photo.startsWith('http') ? assignedDesk.room_photo : `http://127.0.0.1:5000${assignedDesk.room_photo}`})`
@@ -652,14 +652,14 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl -mr-20 -mt-20 group-hover:bg-blue-400/20 transition-all duration-500" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl -ml-16 -mb-16 transition-colors duration-300 dark:bg-indigo-500/20" />
         
-        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-4 flex-1">
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-6">
+          <div className="space-y-2 sm:space-y-4 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="bg-blue-100 border border-blue-200 text-blue-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 transition-colors dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30">
+              <span className="bg-blue-100 border border-blue-200 text-blue-700 text-[8px] sm:text-[10px] font-bold px-2 py-0.5 sm:px-3 sm:py-1 rounded-full uppercase tracking-wider flex items-center gap-1 transition-colors dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30">
                 <Armchair size={10} /> Penempatan Meja Kerja
               </span>
               {pendingRequest && (
-                <span className="bg-amber-100 border border-amber-200 text-amber-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1 transition-colors dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30">
+                <span className="bg-amber-100 border border-amber-200 text-amber-700 text-[8px] sm:text-[10px] font-bold px-2 py-0.5 sm:px-3 sm:py-1 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1 transition-colors dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30">
                   <AlertTriangle size={10} /> Pengajuan Pindah Pending
                 </span>
               )}
@@ -667,25 +667,25 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
             
             {seatingLoading ? (
               <div className="space-y-2">
-                <div className="h-6 w-48 bg-white/10 rounded animate-pulse" />
-                <div className="h-4 w-64 bg-white/10 rounded animate-pulse" />
+                <div className="h-5 sm:h-6 w-32 sm:w-48 bg-white/10 rounded animate-pulse" />
+                <div className="h-3 sm:h-4 w-48 sm:w-64 bg-white/10 rounded animate-pulse" />
               </div>
             ) : assignedDesk ? (
               <div>
-                <h3 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                <h3 className="text-base sm:text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
                   {assignedDesk.building_name}
                 </h3>
-                <p className="text-sm text-blue-200 mt-1 flex items-center gap-1.5">
-                  <MapPin size={14} className="text-blue-300 flex-shrink-0" />
-                  <span>{assignedDesk.floor_name} · {assignedDesk.room_name}</span>
+                <p className="text-xs sm:text-sm text-blue-200 mt-0.5 sm:mt-1 flex items-center gap-1.5">
+                  <MapPin size={12} className="text-blue-300 flex-shrink-0 sm:w-3.5 sm:h-3.5" />
+                  <span className="truncate">{assignedDesk.floor_name} · {assignedDesk.room_name}</span>
                 </p>
-                <div className="mt-4 flex flex-wrap gap-x-4 gap-y-3 text-xs text-blue-100/80 items-center">
-                  <span className="flex items-center gap-1.5"><CheckCircle2 size={12} className="text-green-400" /> Alokasi Kerja Dinas Aktif</span>
-                  <span className="flex items-center gap-1.5"><Sparkles size={12} className="text-yellow-300" /> Fasilitas Premium Bersama</span>
+                <div className="mt-2 sm:mt-4 flex flex-wrap gap-x-3 gap-y-2 text-[10px] sm:text-xs text-blue-100/80 items-center">
+                  <span className="flex items-center gap-1"><CheckCircle2 size={10} className="text-green-400 sm:w-3 sm:h-3" /> Alokasi Kerja Dinas</span>
+                  <span className="flex items-center gap-1"><Sparkles size={10} className="text-yellow-300 sm:w-3 sm:h-3" /> Fasilitas Premium</span>
                   {!pendingRequest && (
                     <button
                       onClick={() => setIsSeatingModalOpen(true)}
-                      className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg text-[10px] font-bold transition-all shadow-sm flex items-center gap-1 ml-2 backdrop-blur-sm"
+                      className="px-2 py-1 sm:px-3 sm:py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all shadow-sm flex items-center gap-1 ml-0 sm:ml-2 mt-1 sm:mt-0 backdrop-blur-sm"
                     >
                       Ganti Tempat Duduk
                       <ArrowRight size={10} />
@@ -695,15 +695,15 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
               </div>
             ) : pendingRequest ? (
               <div>
-                <h3 className="text-lg font-bold text-amber-300">Pengajuan Sedang Diproses</h3>
-                <p className="text-sm text-blue-200 mt-1">
+                <h3 className="text-base sm:text-lg font-bold text-amber-300">Pengajuan Sedang Diproses</h3>
+                <p className="text-xs sm:text-sm text-blue-200 mt-0.5 sm:mt-1">
                   Pengajuan penempatan meja Anda di <strong className="text-white">{pendingRequest.room_name}</strong> sedang menanti persetujuan Admin.
                 </p>
               </div>
             ) : (
               <div>
-                <h3 className="text-lg font-bold text-white">Belum Memiliki Tempat Duduk</h3>
-                <p className="text-sm text-blue-200 mt-1">
+                <h3 className="text-base sm:text-lg font-bold text-white">Belum Memiliki Tempat Duduk</h3>
+                <p className="text-xs sm:text-sm text-blue-200 mt-0.5 sm:mt-1">
                   Anda belum terdaftar pada meja kerja manapun di Kawasan Inti IKN. Silakan ajukan penempatan meja.
                 </p>
               </div>
@@ -721,21 +721,21 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                     {assignedDesk.desk_id}
                   </span>
                 </div>
-                <div className="sm:hidden text-left bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl">
-                  <span className="text-[9px] text-blue-300 font-bold block uppercase">
+                <div className="sm:hidden absolute top-4 right-4 text-right bg-white/10 backdrop-blur-md border border-white/10 px-2 py-1 rounded-lg">
+                  <span className="text-[8px] text-blue-300 font-bold block uppercase tracking-widest">
                     Meja
                   </span>
-                  <span className="text-lg font-black text-white">{assignedDesk.desk_id}</span>
+                  <span className="text-sm font-black text-white">{assignedDesk.desk_id}</span>
                 </div>
               </div>
             ) : (
               !pendingRequest && (
                 <button
                   onClick={() => setIsSeatingModalOpen(true)}
-                  className="px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-2xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:shadow-xl hover:scale-105 active:scale-95 group/btn dark:bg-blue-500"
+                  className="px-4 py-2 sm:px-5 sm:py-3 bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:shadow-xl hover:scale-105 active:scale-95 group/btn dark:bg-blue-500"
                 >
-                  Ajukan Penempatan Meja Kerja Baru
-                  <ArrowRight size={13} className="transition-transform group-hover/btn:translate-x-1" />
+                  Ajukan Penempatan Meja
+                  <ArrowRight size={12} className="transition-transform group-hover/btn:translate-x-1 sm:w-[13px] sm:h-[13px]" />
                 </button>
               )
             )}
@@ -990,15 +990,17 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                           </button>
                         )}
 
-                        {/* Bug #4: Attendees List Button — visible on ALL tabs for all bookings */}
-                        <button
-                          onClick={() => handleOpenAttendees(booking.id)}
-                          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm bg-white hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 border border-slate-200 group dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
-                          title="Lihat Daftar Hadir"
-                        >
-                          <UserCheck size={14} className="text-emerald-500 group-hover:scale-110 transition-transform transition-colors dark:text-emerald-400" />
-                          <span>Presensi</span>
-                        </button>
+                        {/* Attendees List Button — visible only when ongoing or past */}
+                        {activeTab !== "upcoming" && (
+                          <button
+                            onClick={() => handleOpenAttendees(booking.id)}
+                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm bg-white hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 border border-slate-200 group dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+                            title="Lihat Daftar Hadir"
+                          >
+                            <UserCheck size={14} className="text-emerald-500 group-hover:scale-110 transition-transform transition-colors dark:text-emerald-400" />
+                            <span>Presensi</span>
+                          </button>
+                        )}
 
                         {/* Attendance Link Copy Button (Only for Online/Hybrid) */}
                         <div className="flex items-center gap-2 mt-2 flex-wrap">

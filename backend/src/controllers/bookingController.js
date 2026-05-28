@@ -148,8 +148,13 @@ const getBooking = async (req, res, next) => {
     if (!booking) return res.status(404).json({ success: false, message: 'Booking tidak ditemukan' });
 
     // Access check
-    if (req.user.role === 'user' && booking.user_id !== req.user.id)
-      return res.status(403).json({ success: false, message: 'Akses ditolak' });
+    if (req.user.role === 'user' && booking.user_id !== req.user.id) {
+      const isAttendee = await dbGet('SELECT 1 FROM meeting_attendees WHERE booking_id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+      if (!isAttendee) {
+        return res.status(403).json({ success: false, message: 'Akses ditolak' });
+      }
+      booking.is_guest_attendance = true; // flag to let frontend know this is an attended booking
+    }
 
     res.json({ success: true, data: booking });
   } catch (err) { next(err); }
@@ -398,8 +403,10 @@ const cancelBooking = async (req, res, next) => {
     if (!['pending', 'confirmed'].includes(booking.status))
       return res.status(400).json({ success: false, message: 'Booking tidak dapat dibatalkan' });
 
+    const reason = req.body?.reason || 'Dibatalkan oleh pengguna';
+
     await dbRun('UPDATE bookings SET status=$1, cancel_reason=$2 WHERE id=$3',
-      ['cancelled', req.body.reason || 'Dibatalkan oleh pengguna', req.params.id]);
+      ['cancelled', reason, req.params.id]);
 
     // Cancel Zoom meeting if exists
     await cancelZoomIfNeeded(booking, req.user.id, req.user.name, req.ip);

@@ -23,7 +23,7 @@ import { authService } from "./services/authService";
 import { TokenStore, UserStore } from "./services/apiClient";
 import { Toaster } from "./components/ui/sonner";
 import { QrScanSimulator } from "./components/shared/QrScanSimulator";
-
+import { ErrorState } from "./components/shared/ErrorState";
 
 type Page =
   | "login" | "register" | "forgot-password"
@@ -103,6 +103,15 @@ export default function App() {
     return () => window.removeEventListener('menara:session-expired', handler);
   }, []);
 
+  // Update document title dynamically
+  useEffect(() => {
+    if (nav.page && pageTitles[nav.page]) {
+      document.title = `${pageTitles[nav.page].title} | Menara OIKN`;
+    } else {
+      document.title = 'Menara OIKN';
+    }
+  }, [nav.page]);
+
   const handleLogin = (user: AppUser) => {
     setCurrentUser(user);
     UserStore.set(user);
@@ -163,6 +172,9 @@ export default function App() {
   const pageInfo = pageTitles[nav.page] || { title: "Menara" };
 
   const renderPage = () => {
+    const isSuper = role === "superadmin";
+    const isAdmin = role === "admin" || isSuper;
+
     switch (nav.page) {
       // User
       case "calendar":
@@ -178,33 +190,43 @@ export default function App() {
 
       // Admin
       case "admin-dashboard":
-        return <AdminDashboard onNavigate={handleNavigate} isSuperAdmin={role === "superadmin"} />;
+        if (!isAdmin) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
+        return <AdminDashboard onNavigate={handleNavigate} isSuperAdmin={isSuper} />;
       case "admin-approval":
-        return <ApprovalQueue onNavigate={handleNavigate} isSuperAdmin={role === "superadmin"} />;
+        if (!isAdmin) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
+        return <ApprovalQueue onNavigate={handleNavigate} isSuperAdmin={isSuper} />;
       case "admin-schedule":
-        return <ScheduleControl isSuperAdmin={role === "superadmin"} />;
+        if (!isAdmin) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
+        return <ScheduleControl isSuperAdmin={isSuper} />;
       case "admin-rooms":
-        return <RoomManagement isSuperAdmin={role === "superadmin"} onNavigate={handleNavigate} />;
+        if (!isAdmin) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
+        return <RoomManagement isSuperAdmin={isSuper} onNavigate={handleNavigate} />;
       case "admin-workspace-approval":
-        return <WorkspaceApproval onNavigate={handleNavigate} isSuperAdmin={role === "superadmin"} />;
+        if (!isAdmin) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
+        return <WorkspaceApproval onNavigate={handleNavigate} isSuperAdmin={isSuper} />;
 
       // Super Admin
       case "sa-buildings":
+        if (!isSuper) return <ErrorState type="403" onAction={() => handleNavigate(defaultPage[role])} />;
         return <BuildingManagement />;
-
       case "sa-users":
+        if (!isSuper) return <ErrorState type="403" onAction={() => handleNavigate(defaultPage[role])} />;
         return <UserManagement />;
       case "sa-policy":
+        if (!isSuper) return <ErrorState type="403" onAction={() => handleNavigate(defaultPage[role])} />;
         return <GlobalPolicy />;
       case "sa-api":
+        if (!isSuper) return <ErrorState type="403" onAction={() => handleNavigate(defaultPage[role])} />;
         return <ApiMonitoring />;
       case "sa-audit":
+        if (!isSuper) return <ErrorState type="403" onAction={() => handleNavigate(defaultPage[role])} />;
         return <AuditTrail />;
       case "sa-zoom":
+        if (!isSuper) return <ErrorState type="403" onAction={() => handleNavigate(defaultPage[role])} />;
         return <ZoomManagement />;
 
       default:
-        return <CalendarView onNavigate={handleNavigate} userRole={role} />;
+        return <ErrorState type="404" onAction={() => handleNavigate(defaultPage[role])} actionLabel={`Kembali ke ${pageTitles[defaultPage[role]]?.title || "Beranda"}`} />;
     }
   };
 
