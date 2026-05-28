@@ -1030,6 +1030,35 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                             Akhiri Rapat
                           </button>
                         )}
+                        {booking.status === "completed" && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                toast.info("Mengambil data presensi...");
+                                const res = await bookingService.getAttendees(booking.id);
+                                const attendees = res.data || [];
+                                if (attendees.length === 0) {
+                                  toast.error("Tidak ada data presensi untuk rapat ini.");
+                                  return;
+                                }
+                                generateAttendancePDF(
+                                  booking.id, 
+                                  booking.room_name || "Ruangan", 
+                                  booking.agenda, 
+                                  booking.date, 
+                                  `${booking.start_time} - ${booking.end_time}`, 
+                                  attendees
+                                );
+                                toast.success("PDF berhasil diunduh");
+                              } catch (e: any) {
+                                toast.error("Gagal mengunduh PDF");
+                              }
+                            }}
+                            className="px-4 py-2.5 text-xs border border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 dark:bg-indigo-500/30 dark:text-indigo-400 dark:border-indigo-500/30 flex items-center gap-1.5"
+                          >
+                            <Download size={14} /> Cetak PDF Presensi
+                          </button>
+                        )}
                       </div>
 
                     </div>

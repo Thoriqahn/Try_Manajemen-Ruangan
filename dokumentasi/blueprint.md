@@ -73,8 +73,17 @@ Epic yang terpisah dari skema "Sewa Per Jam", difokuskan pada manajemen meja *Ho
 - **Workspace:** Adalah area kerja kolosal yang tidak dipesan dengan durasi menit, melainkan berbasis hari (Daily) atau permanen (Assigned).
 - **Monitoring Kapasitas:** Modul secara otomatis melacak kuota meja yang tersisa pada hari tertentu di departemen tertentu. 
 
-### 4.2. Proses Permohonan vs Penugasan
-- **Fleksibel (Request-Based):** Staf mengajukan *booking* ke kantor pada hari H.
+### 4.3. Skalabilitas & Refactoring
+
+1. **Optimasi Kueri DB:** Pastikan `GET /api/v1/rooms` di-cache atau menggunakan JOIN yang efisien jika fasilitas/opsi bertambah banyak.
+2. **WebSocket (Opsional):** Jika real-time status ruangan (sedang dipakai/tersedia) sangat penting untuk display layar di depan ruangan, pertimbangkan `Socket.io` alih-alih polling.
+
+### 4.4. Fitur Tambahan Terimplementasi (Pasca-MVP)
+
+1. **Cetak PDF Presensi (Selesai):** Fitur bagi pengguna dan admin untuk mengunduh laporan *Check-in* peserta rapat dalam format PDF setelah rapat selesai (`completed`), diekspor langsung di sisi *Frontend* (jsPDF).
+2. **Aturan Check-Out Khusus (Selesai):** Pengamanan tombol "Akhiri Rapat" (`status = 'ongoing'`) di *Dashboard* pengguna. Tombol hanya muncul dan dapat dieksekusi oleh pembuat pesanan (Owner) atau Admin/Superadmin untuk menghindari penyusupan.
+3. **Log Aktivitas / Audit Trail (Selesai):** Sistem kotak hitam rahasia untuk merekam secara *immutable* (Read-Only) seluruh tindak tanduk perubahan krusial di sistem oleh aktor siapa pun.
+
 - **Permanen (Assigned):** Staf kunci / manajer dapat ditetapkan kursinya secara permanen oleh Admin sehingga slot tersebut terkunci.
 - *Check-in Workspace* jauh lebih longgar dan tidak dapat dibatalkan otomatis (*No-Show penalty*) secepat sistem Ruang Rapat.
 

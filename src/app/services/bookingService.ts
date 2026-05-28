@@ -129,5 +129,30 @@ export const bookingService = {
 
   async endBooking(id: string) {
     return api.post(`/bookings/${id}/end`);
+  },
+
+  async downloadAttendeesCSV(id: string) {
+    // Generate a temporary link to download CSV directly
+    const token = localStorage.getItem('token');
+    const url = `/api/v1/bookings/${id}/attendees/csv`;
+    
+    // We fetch it manually so we can pass auth token
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!res.ok) throw new Error('Failed to download CSV');
+    
+    const blob = await res.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = `Presensi_Rapat_${id}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(downloadUrl);
   }
 };

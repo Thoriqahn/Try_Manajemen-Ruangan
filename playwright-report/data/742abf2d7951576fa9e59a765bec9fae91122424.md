@@ -6,18 +6,19 @@
 
 # Test info
 
-- Name: booking.spec.ts >> Room Booking Flow >> should validate empty booking form fields
-- Location: tests-e2e\booking.spec.ts:13:3
+- Name: pdf-and-checkout.spec.ts >> PDF and Checkout Rules Flow >> should respect checkout rules and show PDF button for completed bookings
+- Location: tests-e2e\pdf-and-checkout.spec.ts:13:3
 
 # Error details
 
 ```
-Error: locator.click: Element is not visible
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: locator.click: Test timeout of 30000ms exceeded.
 Call log:
-  - waiting for locator('button:has-text("Pesan"), button:has-text("Booking"), a:has-text("Pesan")').first()
-    - locator resolved to <button class="flex flex-col items-center gap-1 p-2 transition-colors text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">…</button>
-  - attempting click action
-    - scrolling into view if needed
+  - waiting for locator('text="Riwayat", text="Pesanan Saya", a[href*="my-bookings"]').first()
 
 ```
 
@@ -194,43 +195,105 @@ Call log:
 # Test source
 
 ```ts
-  1  | import { test, expect } from '@playwright/test';
-  2  | 
-  3  | test.describe('Room Booking Flow', () => {
-  4  |   test.beforeEach(async ({ page }) => {
-  5  |     // Login before each test
-  6  |     await page.goto('/login');
-  7  |     await page.fill('input[type="email"]', 'user@oikn.go.id');
-  8  |     await page.fill('input[type="password"]', 'password123!');
-  9  |     await page.click('button:has-text("Masuk")');
-  10 |     await expect(page.locator('nav, aside, .MuiCard-root, h1').first()).toBeVisible({ timeout: 10000 });
-  11 |   });
-  12 | 
-  13 |   test('should validate empty booking form fields', async ({ page }) => {
-  14 |     // Navigate to Room list / Booking page
-  15 |     // Assume there's a link to "Ruangan" or "Pesan Ruangan"
-  16 |     const ruanganMenu = page.locator('a:has-text("Ruangan"), button:has-text("Ruangan"), a:has-text("Pesan")').first();
-  17 |     await ruanganMenu.click();
-  18 | 
-  19 |     // Wait for the rooms page to load
-  20 |     await expect(page.locator('h1, h2').filter({ hasText: /Ruangan|Pesan/i }).first()).toBeVisible();
-  21 | 
-  22 |     // Wait for the room list to appear
-  23 |     await page.waitForSelector('text=Pesan', { timeout: 10000 });
-  24 | 
-  25 |     // Click on the first "Pesan" or "Booking" button on a room card
-  26 |     const firstBookingBtn = page.locator('button:has-text("Pesan"), button:has-text("Booking"), a:has-text("Pesan")').first();
-> 27 |     await firstBookingBtn.click({ force: true });
-     |                           ^ Error: locator.click: Element is not visible
-  28 | 
-  29 |     // Submit form immediately without filling the "Agenda" to trigger validation
-  30 |     const submitBtn = page.locator('button[type="submit"], button:has-text("Konfirmasi"), button:has-text("Submit")').first();
-  31 |     await submitBtn.click();
-  32 | 
-  33 |     // Expect a validation error to appear for the required field
-  34 |     const errorText = page.locator('text=wajib diisi, text=required, .Mui-error').first();
-  35 |     await expect(errorText).toBeVisible();
-  36 |   });
-  37 | });
-  38 | 
+  1   | import { test, expect } from '@playwright/test';
+  2   | 
+  3   | test.describe('PDF and Checkout Rules Flow', () => {
+  4   |   test.beforeEach(async ({ page }) => {
+  5   |     // Login as regular user
+  6   |     await page.goto('/login');
+  7   |     await page.fill('input[type="email"]', 'user@oikn.go.id');
+  8   |     await page.fill('input[type="password"]', 'password123!');
+  9   |     await page.click('button:has-text("Masuk")');
+  10  |     await expect(page.locator('nav, aside, .MuiCard-root, h1, h2').first()).toBeVisible({ timeout: 15000 });
+  11  |   });
+  12  | 
+  13  |   test('should respect checkout rules and show PDF button for completed bookings', async ({ page }) => {
+  14  |     // Navigate to My Bookings
+  15  |     const isMobile = await page.locator('button[aria-label="open drawer"], button[aria-label="menu"], .hamburger-menu').isVisible();
+  16  |     if (isMobile) {
+  17  |       await page.click('button[aria-label="open drawer"], button[aria-label="menu"], .hamburger-menu');
+  18  |     }
+  19  |     const historyLink = page.locator('text="Riwayat", text="Pesanan Saya", a[href*="my-bookings"]').first();
+> 20  |     await historyLink.click({ force: true });
+      |                       ^ Error: locator.click: Test timeout of 30000ms exceeded.
+  21  |     await expect(page.locator('h1, h2').filter({ hasText: /Riwayat|Pesanan/i }).first()).toBeVisible();
+  22  | 
+  23  |     // Intercept API calls to inject a mock 'ongoing' booking and a 'completed' booking
+  24  |     await page.route('**/api/v1/bookings?**', async route => {
+  25  |       const response = await route.fetch();
+  26  |       const json = await response.json();
+  27  |       
+  28  |       // Add fake bookings to the first page of results
+  29  |       if (json.data && Array.isArray(json.data)) {
+  30  |         json.data.push({
+  31  |           id: 'mock-ongoing-123',
+  32  |           room_name: 'Ruang Uji E2E Checkout',
+  33  |           date: new Date().toISOString().split('T')[0],
+  34  |           start_time: '08:00',
+  35  |           end_time: '10:00',
+  36  |           agenda: 'Testing Checkout Rule',
+  37  |           status: 'ongoing',
+  38  |           user_id: 'u1' // matching standard user ID
+  39  |         });
+  40  | 
+  41  |         json.data.push({
+  42  |           id: 'mock-completed-123',
+  43  |           room_name: 'Ruang Uji E2E PDF',
+  44  |           date: new Date().toISOString().split('T')[0],
+  45  |           start_time: '13:00',
+  46  |           end_time: '15:00',
+  47  |           agenda: 'Testing PDF Export',
+  48  |           status: 'completed',
+  49  |           user_id: 'u1'
+  50  |         });
+  51  |       }
+  52  |       await route.fulfill({ json });
+  53  |     });
+  54  | 
+  55  |     // Intercept attendees endpoint
+  56  |     await page.route('**/api/v1/bookings/mock-completed-123/attendees', async route => {
+  57  |       await route.fulfill({
+  58  |         json: {
+  59  |           success: true,
+  60  |           data: [
+  61  |             { id: 1, user_name: 'Budi', institution: 'OIKN', attendance_type: 'offline', scanned_at: new Date().toISOString() }
+  62  |           ]
+  63  |         }
+  64  |       });
+  65  |     });
+  66  | 
+  67  |     // Refresh the view so the intercepted data loads
+  68  |     await page.reload();
+  69  |     await page.waitForTimeout(2000); // Give time for reload and mock fetch
+  70  | 
+  71  |     // Wait for booking cards
+  72  |     await page.waitForSelector('.MuiCard-root, .card, .shadow-md', { timeout: 10000 });
+  73  | 
+  74  |     // Verify "Akhiri Rapat" is present for the ongoing booking
+  75  |     const ongoingCard = page.locator('div').filter({ hasText: 'Testing Checkout Rule' }).first();
+  76  |     const akhiriBtn = ongoingCard.locator('button', { hasText: 'Akhiri Rapat' });
+  77  |     await expect(akhiriBtn).toBeVisible();
+  78  | 
+  79  |     // Verify "Cetak PDF" is present for the completed booking
+  80  |     // Note: It might be under the "Selesai" tab, but the mock injected it into the main list
+  81  |     const completedCard = page.locator('div').filter({ hasText: 'Testing PDF Export' }).first();
+  82  |     const pdfBtn = completedCard.locator('button', { hasText: /PDF/i });
+  83  |     
+  84  |     // We might need to click "Selesai" tab if the UI filters strictly by status
+  85  |     const selesaiTab = page.locator('button[role="tab"], .tab').filter({ hasText: /Selesai/i }).first();
+  86  |     if (await selesaiTab.isVisible()) {
+  87  |         await selesaiTab.click();
+  88  |     }
+  89  | 
+  90  |     await expect(pdfBtn).toBeVisible();
+  91  | 
+  92  |     // Verify PDF download starts when clicking
+  93  |     // Playwright captures downloads via page.waitForEvent('download')
+  94  |     const downloadPromise = page.waitForEvent('download');
+  95  |     await pdfBtn.click();
+  96  |     const download = await downloadPromise;
+  97  |     expect(download.suggestedFilename()).toContain('Presensi_mock-completed-123.pdf');
+  98  |   });
+  99  | });
+  100 | 
 ```
