@@ -12,6 +12,7 @@ import { roomService, Room } from "../../services/roomService";
 import { UserStore } from "../../services/apiClient";
 import { toast } from "sonner";
 import { QRCodeSVG } from 'qrcode.react';
+import { generateAttendancePDF } from "../../utils/pdfExport";
 
 interface MyBookingsProps {
   onNavigate: (page: string, data?: any) => void;
@@ -493,67 +494,15 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
 
   const handleExportAttendance = () => {
     if (!attendeesList || attendeesList.length === 0) return;
+    const selectedBooking = bookings.find(b => b.id === attendeesModal);
+    if (!selectedBooking) return;
     
-    let tableHtml = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-      <head>
-        <meta charset="utf-8" />
-        <style>
-          table { border-collapse: collapse; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: middle; }
-          th { background-color: #4f46e5; color: white; }
-        </style>
-      </head>
-      <body>
-        <table>
-          <thead>
-            <tr>
-              <th>Nama</th>
-              <th>ID Pegawai</th>
-              <th>Tipe Kehadiran</th>
-              <th>Instansi</th>
-              <th>Jabatan</th>
-              <th>Email</th>
-              <th>Waktu Hadir</th>
-              <th>Tanda Tangan</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    attendeesList.forEach(a => {
-      const time = new Date(a.scanned_at).toLocaleString("id-ID");
-      const sigImg = a.signature ? `<img src="${a.signature}" height="50" style="object-fit: contain;" />` : '';
-      tableHtml += `
-        <tr>
-          <td>${a.user_name || ''}</td>
-          <td>${a.user_id ? a.user_id.split('-').pop() : ''}</td>
-          <td>${a.attendance_type || ''}</td>
-          <td>${a.institution || ''}</td>
-          <td>${a.position || ''}</td>
-          <td>${a.email || ''}</td>
-          <td>${time}</td>
-          <td style="height: 60px; text-align: center;">${sigImg}</td>
-        </tr>
-      `;
-    });
-
-    tableHtml += `
-          </tbody>
-        </table>
-      </body>
-      </html>
-    `;
-
-    const blob = new Blob([tableHtml], { type: "application/vnd.ms-excel" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Data_Presensi_${attendeesModal}.xls`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("File Excel berhasil diunduh");
+    try {
+      generateAttendancePDF(selectedBooking, attendeesList);
+      toast.success("PDF berhasil diunduh");
+    } catch(err) {
+      toast.error("Gagal mengunduh PDF");
+    }
   };
 
   // Metrik Statistik
@@ -1505,7 +1454,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                   className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg border border-indigo-200 transition-colors dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 dark:text-emerald-400 dark:border-emerald-500/20"
                 >
                   <Download size={14} />
-                  <span>Download CSV</span>
+                  <span>Download PDF</span>
                 </button>
               )}
             </div>

@@ -515,7 +515,7 @@ const forceCancel = async (req, res, next) => {
 // POST /api/v1/bookings/check-in
 const checkInBooking = async (req, res, next) => {
   try {
-    const { room_id, scanned_qr_token, simulate_user_id } = req.body;
+    const { room_id, scanned_qr_token, simulate_user_id, signature, email, institution, position } = req.body;
     
     let targetUserId = req.user.id;
     let targetUserName = req.user.name;
@@ -711,9 +711,9 @@ const checkInBooking = async (req, res, next) => {
 
       // Record Attendance
       await client.query(
-        `INSERT INTO meeting_attendees (booking_id, user_id, user_name)
-         VALUES ($1, $2, $3)`,
-        [targetBooking.id, targetUserId, targetUserName]
+        `INSERT INTO meeting_attendees (booking_id, user_id, user_name, email, institution, position, signature)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [targetBooking.id, targetUserId, targetUserName, email || null, institution || null, position || null, signature || null]
       );
 
       await client.query('COMMIT');
@@ -873,8 +873,46 @@ const getMyAttendances = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// GET /api/v1/bookings/:id/attendees/csv
+const exportAttendeesCSV = async (req, res, next) => {
+  try {
+    const booking = await dbGet(`SELECT b.agenda, b.date FROM bookings b WHERE b.id = $1 AND b.deleted_at IS NULL`, [req.params.id]);
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking tidak ditemukan' });
+
+    const attendees = await dbAll(
+      `SELECT id, user_name, email, institution, position, signature, attendance_type, scanned_at 
+       FROM meeting_attendees 
+       WHERE booking_id = $1 
+       ORDER BY scanned_at ASC`,
+      [req.params.id]
+    );
+
+    // Build CSV
+    let csvStr = '\uFEFF'; // BOM for UTF-8 Excel compatibility
+    csvStr += 'Nama Lengkap,Email,Instansi,Jabatan,Tipe Kehadiran,Waktu Check-In,Status Tanda Tangan\n';
+    
+    attendees.forEach(row => {
+      const name = `"${(row.user_name || '').replace(/"/g, '""')}"`;
+      const email = `"${(row.email || '').replace(/"/g, '""')}"`;
+      const inst = `"${(row.institution || '').replace(/"/g, '""')}"`;
+      const pos = `"${(row.position || '').replace(/"/g, '""')}"`;
+      const type = `"${row.attendance_type || ''}"`;
+      const time = `"${new Date(row.scanned_at).toLocaleString('id-ID')}"`;
+      const signed = row.signature ? '"Tersedia"' : '""';
+
+      csvStr += `${name},${email},${inst},${pos},${type},${time},${signed}\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="Presensi_${booking.date}_${booking.agenda.replace(/[^a-zA-Z0-9]/g, '_')}.csv"`);
+    res.send(csvStr);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = { 
   listBookings, getBooking, createBooking, updateBooking, cancelBooking, 
   approveBooking, rejectBooking, forceCancel, checkInBooking, getBookingAttendees, 
-  logZoomJoin, logZoomLeave, getMyAttendances
+  logZoomJoin, logZoomLeave, getMyAttendances, exportAttendeesCSV
 };

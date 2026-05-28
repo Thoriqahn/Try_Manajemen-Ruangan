@@ -166,6 +166,8 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
     }
   }, [selectedBooking]);
 
+
+
   const handleCheckIn = async () => {
     if (!selectedBooking) {
       toast.error("Pilih salah satu booking terlebih dahulu!");
@@ -313,7 +315,6 @@ export function QrScanSimulator({ onCheckInSuccess }: QrScanSimulatorProps) {
               </button>
             </div>
 
-            {/* Content Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Tabs for Scanner & Attendance */}
               <div className="flex border-b border-slate-200">

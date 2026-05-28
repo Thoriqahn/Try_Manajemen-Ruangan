@@ -54,6 +54,11 @@ export interface Attendee {
   id: string;
   user_id: string;
   user_name: string;
+  email?: string;
+  institution?: string;
+  position?: string;
+  signature?: string;
+  attendance_type?: string;
   scanned_at: string;
 }
 
@@ -94,8 +99,16 @@ export const bookingService = {
     return api.post(`/bookings/${id}/force-cancel`, { reason });
   },
 
-  async checkIn(roomId: string | undefined, scannedQrToken: string, simulateUserId?: string) {
-    return api.post('/bookings/check-in', { room_id: roomId, scanned_qr_token: scannedQrToken, simulate_user_id: simulateUserId });
+  async checkIn(roomId: string | undefined, scannedQrToken: string, simulateUserId?: string, signature?: string, email?: string, institution?: string, position?: string) {
+    return api.post('/bookings/check-in', { 
+      room_id: roomId, 
+      scanned_qr_token: scannedQrToken, 
+      simulate_user_id: simulateUserId,
+      signature,
+      email,
+      institution,
+      position
+    });
   },
 
   async getAttendees(bookingId: string) {

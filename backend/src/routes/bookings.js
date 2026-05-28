@@ -118,6 +118,18 @@ router.get('/:id/attendees', authGuard, ctrl.getBookingAttendees);
 
 /**
  * @openapi
+ * /api/bookings/{id}/attendees/csv:
+ *   get:
+ *     summary: GET /:id/attendees/csv
+ *     tags: [Bookings]
+ *     responses:
+ *       200:
+ *         description: Success response
+ */
+router.get('/:id/attendees/csv', authGuard, ctrl.exportAttendeesCSV);
+
+/**
+ * @openapi
  * /api/bookings/{id}/zoom-join:
  *   post:
  *     summary: POST /:id/zoom-join

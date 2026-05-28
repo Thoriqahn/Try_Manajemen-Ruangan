@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AlertTriangle, Trash2, Calendar, MapPin, Clock, Users, RefreshCw, FileText, X } from "lucide-react";
 import { bookingService, Booking } from "../../services/bookingService";
 import { TokenStore } from "../../services/apiClient";
+import { generateAttendancePDF } from "../../utils/pdfExport";
 
 export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
   const [filter, setFilter] = useState<"all" | "ongoing" | "confirmed">("all");
@@ -53,6 +54,22 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
       alert(e.response?.data?.message || e.message || "Gagal membatalkan jadwal");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const downloadAttendancePDF = async (booking: Booking) => {
+    try {
+      const res = await bookingService.getAttendees(booking.id);
+      const attendees = res.data || [];
+
+      if (attendees.length === 0) {
+        alert("Belum ada daftar hadir untuk jadwal ini.");
+        return;
+      }
+
+      generateAttendancePDF(booking, attendees);
+    } catch(err) {
+      alert("Gagal mengunduh PDF");
     }
   };
 
@@ -243,9 +260,18 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
           <div className="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200 transition-colors flex flex-col max-h-[90vh] dark:bg-slate-900 dark:border-slate-800" onClick={e => e.stopPropagation()}>
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 transition-colors z-10 sticky top-0 dark:bg-slate-800/80 dark:border-slate-800">
               <h3 className="text-lg font-extrabold text-slate-800 tracking-tight transition-colors dark:text-slate-100">Detail Peminjaman Ruangan</h3>
-              <button onClick={() => setSelectedBookingView(null)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-slate-400 transition-colors dark:text-slate-500">
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => downloadAttendancePDF(selectedBookingView)}
+                  className="px-3 py-1.5 flex items-center gap-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30 rounded-lg text-xs font-bold transition-colors"
+                  title="Download Daftar Hadir (PDF)"
+                >
+                  <FileText size={16} /> PDF Presensi
+                </button>
+                <button onClick={() => setSelectedBookingView(null)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-slate-400 transition-colors dark:text-slate-500">
+                  <X size={20} />
+                </button>
+              </div>
             </div>
             
             <div className="p-6 sm:p-8 overflow-y-auto custom-scrollbar space-y-8 flex-1">

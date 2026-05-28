@@ -63,6 +63,10 @@ const validateCheckIn = [
     .trim()
     .notEmpty()
     .withMessage('scanned_qr_token wajib diisi dan harus berupa string'),
+  body('signature').optional().isString().withMessage('Signature harus berupa string base64'),
+  body('email').optional().isEmail().withMessage('Format email tidak valid'),
+  body('institution').optional().isString().trim(),
+  body('position').optional().isString().trim(),
   validateResults
 ];
 
