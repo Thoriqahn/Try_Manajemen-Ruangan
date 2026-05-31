@@ -1,6 +1,22 @@
+/**
+ * @fileoverview Audit Log Controller
+ * Menyediakan endpoint untuk membaca dan memfilter audit trail sistem.
+ */
 const { dbAll, dbGet } = require('../config/database');
 
-// GET /api/audit
+/**
+ * Ambil daftar audit log dengan filter dan pagination.
+ * GET /api/audit
+ *
+ * Query params:
+ * - action {string} - Filter berdasarkan nama aksi (misal: 'CREATE_ROOM')
+ * - actor {string} - Filter berdasarkan nama aktor (ILIKE, partial match)
+ * - search {string} - Pencarian di actor_name, action, atau resource
+ * - limit {number} - Jumlah record per halaman (default: 50)
+ * - offset {number} - Posisi mulai (default: 0)
+ *
+ * @returns {{ success: true, data: AuditLog[], pagination: { total, limit, offset } }}
+ */
 const listAuditLogs = async (req, res, next) => {
   try {
     const { action, actor, search, limit = 50, offset = 0 } = req.query;
@@ -16,7 +32,7 @@ const listAuditLogs = async (req, res, next) => {
       paramIdx++;
     }
 
-    // Count total (without LIMIT/OFFSET)
+    // Hitung total tanpa LIMIT/OFFSET untuk kebutuhan pagination
     const countSql = sql.replace('SELECT *', 'SELECT COUNT(*)::int as total');
     const total = await dbGet(countSql, [...params]);
 

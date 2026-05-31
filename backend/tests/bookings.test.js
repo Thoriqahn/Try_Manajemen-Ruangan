@@ -251,16 +251,23 @@ describe('Bookings API Endpoints', () => {
       const d = new Date();
       const iknTime = new Date(d.getTime() + (8 * 60 * 60 * 1000));
       const todayStr = iknTime.toISOString().split('T')[0];
-      let start = `${String(iknTime.getUTCHours()).padStart(2, '0')}:00`;
-      let end = `${String(Math.min(23, iknTime.getUTCHours() + 1)).padStart(2, '0')}:59`;
+
+      // Buat booking dengan start 2 menit lalu & end 1 jam ke depan
+      // agar selalu masuk dalam window check-in (±15 menit dari start)
+      const startDate = new Date(d.getTime() - 2 * 60 * 1000);
+      const endDate = new Date(d.getTime() + 60 * 60 * 1000);
+      const startIKN = new Date(startDate.getTime() + (8 * 60 * 60 * 1000));
+      const endIKN = new Date(endDate.getTime() + (8 * 60 * 60 * 1000));
+      let start = `${String(startIKN.getUTCHours()).padStart(2, '0')}:${String(startIKN.getUTCMinutes()).padStart(2, '0')}`;
+      let end = `${String(endIKN.getUTCHours()).padStart(2, '0')}:${String(endIKN.getUTCMinutes()).padStart(2, '0')}`;
 
       const room = await dbGet("SELECT id, qr_token FROM rooms WHERE id = $1", [testRoomId]);
       qrToken = room.qr_token;
 
-      // Allow 24h booking for check-in test regardless of current real time
+      // Izinkan 24h booking untuk test check-in
       await dbRun("UPDATE rooms SET restrict_hours = false WHERE id = $1", [testRoomId]);
 
-      // Create a booking for checkin test
+      // Buat booking
       const res = await request(app).post('/api/bookings')
         .set('Authorization', `Bearer ${userToken1}`)
         .send({ room_id: testRoomId, date: todayStr, start_time: start, end_time: end, agenda: 'Checkin Test', meeting_type: 'offline' });
@@ -268,9 +275,10 @@ describe('Bookings API Endpoints', () => {
       if (!res.body.success) console.error("Checkin setup failed:", res.body);
       checkInBookingId = res.body.data.id;
       
-      // Approve it so we can check in
+      // Setujui booking agar bisa check-in
       await request(app).post(`/api/bookings/${checkInBookingId}/approve`).set('Authorization', `Bearer ${superadminToken}`);
     });
+
 
     it('should reject check-in from non-owner before room is claimed', async () => {
       const res = await request(app).post('/api/v1/bookings/check-in')
@@ -403,18 +411,28 @@ describe('Bookings API Endpoints', () => {
       const d = new Date();
       const iknTime = new Date(d.getTime() + (8 * 60 * 60 * 1000));
       const todayStr = iknTime.toISOString().split('T')[0];
-      let start = `${String(iknTime.getUTCHours()).padStart(2, '0')}:00`;
-      let end = `${String(Math.min(23, iknTime.getUTCHours() + 1)).padStart(2, '0')}:59`;
+
+      // Gunakan start 2 menit lalu agar masuk window check-in (±15 menit)
+      const startDate = new Date(d.getTime() - 2 * 60 * 1000);
+      const endDate = new Date(d.getTime() + 60 * 60 * 1000);
+      const startIKN = new Date(startDate.getTime() + (8 * 60 * 60 * 1000));
+      const endIKN = new Date(endDate.getTime() + (8 * 60 * 60 * 1000));
+      let start = `${String(startIKN.getUTCHours()).padStart(2, '0')}:${String(startIKN.getUTCMinutes()).padStart(2, '0')}`;
+      let end = `${String(endIKN.getUTCHours()).padStart(2, '0')}:${String(endIKN.getUTCMinutes()).padStart(2, '0')}`;
 
       const bookingRes = await request(app).post('/api/bookings')
         .set('Authorization', `Bearer ${userToken1}`)
         .send({ room_id: roomId, date: todayStr, start_time: start, end_time: end, agenda: 'Attendee View Test', meeting_type: 'offline' });
       const bookingId = bookingRes.body.data.id;
 
+      // Approve agar status = confirmed, baru bisa check-in
+      await request(app).post(`/api/bookings/${bookingId}/approve`).set('Authorization', `Bearer ${superadminToken}`);
+
       // 2. User 1 does first checkin to claim the room
       await request(app).post('/api/bookings/check-in')
         .set('Authorization', `Bearer ${userToken1}`)
         .send({ room_id: roomId, scanned_qr_token: qrToken });
+
 
       // 3. User 2 checks in (attends)
       const attendRes = await request(app).post('/api/bookings/check-in')

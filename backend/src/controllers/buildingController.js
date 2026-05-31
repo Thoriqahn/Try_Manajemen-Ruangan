@@ -1,8 +1,17 @@
+/**
+ * @fileoverview Building & Floor Controller
+ * Mengelola data gedung dan lantai yang dipakai sebagai struktur hierarki lokasi ruangan.
+ */
 const { dbGet, dbAll, dbRun } = require('../config/database');
 const { randomUUID: uuidv4 } = require('crypto');
 const { audit } = require('../utils/audit');
 
-// GET /api/buildings
+/**
+ * Ambil semua gedung beserta daftar lantainya.
+ * GET /api/buildings
+ *
+ * @returns {{ success: true, data: Building[] }} Setiap Building menyertakan field floors[]
+ */
 const listBuildings = async (req, res, next) => {
   try {
     const buildings = await dbAll('SELECT * FROM buildings WHERE deleted_at IS NULL ORDER BY name');
@@ -13,7 +22,13 @@ const listBuildings = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/buildings
+/**
+ * Buat gedung baru beserta upload foto gedung.
+ * POST /api/buildings
+ *
+ * Memerlukan field: name, lat, lng, dan file gambar gedung (multipart/form-data).
+ * Koordinat lat/lng digunakan untuk peta interaktif di dashboard.
+ */
 const createBuilding = async (req, res, next) => {
   try {
     const { name, address, lat, lng, total_floors } = req.body;
@@ -32,7 +47,12 @@ const createBuilding = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// PUT /api/buildings/:id
+/**
+ * Perbarui data gedung.
+ * PUT /api/buildings/:id
+ *
+ * Foto gedung hanya diperbarui jika file baru diunggah; jika tidak, foto lama dipertahankan.
+ */
 const updateBuilding = async (req, res, next) => {
   try {
     const { name, address, lat, lng, total_floors } = req.body;
@@ -51,7 +71,10 @@ const updateBuilding = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// DELETE /api/buildings/:id (soft delete)
+/**
+ * Hapus (soft delete) gedung beserta seluruh relasinya.
+ * DELETE /api/buildings/:id
+ */
 const deleteBuilding = async (req, res, next) => {
   try {
     const building = await dbGet('SELECT id, name FROM buildings WHERE id=$1 AND deleted_at IS NULL', [req.params.id]);
@@ -62,7 +85,13 @@ const deleteBuilding = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// GET /api/buildings/:id/floors
+/**
+ * Ambil daftar lantai suatu gedung, dan auto-generate lantai yang belum ada.
+ * GET /api/buildings/:id/floors
+ *
+ * Jika jumlah lantai di DB kurang dari total_floors gedung,
+ * lantai yang kurang di-generate otomatis (misal: "Lantai 1", "Lantai 2", ...).
+ */
 const listFloors = async (req, res, next) => {
   try {
     const building = await dbGet('SELECT total_floors FROM buildings WHERE id=$1 AND deleted_at IS NULL', [req.params.id]);
@@ -70,6 +99,7 @@ const listFloors = async (req, res, next) => {
 
     let floors = await dbAll('SELECT * FROM floors WHERE building_id=$1 AND deleted_at IS NULL ORDER BY level', [req.params.id]);
 
+    // Auto-generate lantai yang belum ada berdasarkan total_floors gedung
     let hasChanges = false;
     for (let i = 1; i <= building.total_floors; i++) {
       if (!floors.find(f => f.level === i)) {
@@ -82,12 +112,16 @@ const listFloors = async (req, res, next) => {
       floors = await dbAll('SELECT * FROM floors WHERE building_id=$1 AND deleted_at IS NULL ORDER BY level', [req.params.id]);
     }
 
+    // Tampilkan hanya lantai yang relevan (sesuai total_floors)
     const activeFloors = floors.filter(f => f.level <= building.total_floors);
     res.json({ success: true, data: activeFloors });
   } catch (err) { next(err); }
 };
 
-// POST /api/buildings/:id/floors
+/**
+ * Tambah lantai baru ke gedung.
+ * POST /api/buildings/:id/floors
+ */
 const createFloor = async (req, res, next) => {
   try {
     const { name, level } = req.body;

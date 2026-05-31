@@ -116,17 +116,9 @@ router.post('/:id/force-cancel', authGuard, roleGuard('admin', 'superadmin'), ct
  */
 router.get('/:id/attendees', authGuard, ctrl.getBookingAttendees);
 
-/**
- * @openapi
- * /api/bookings/{id}/attendees/csv:
- *   get:
- *     summary: GET /:id/attendees/csv
- *     tags: [Bookings]
- *     responses:
- *       200:
- *         description: Success response
- */
-router.get('/:id/attendees/csv', authGuard, ctrl.exportAttendeesCSV);
+// Catatan: Route GET /:id/attendees/csv telah dihapus.
+// Export presensi kini dilakukan di sisi frontend (PDF client-side via jsPDF).
+// Data peserta masih tersedia via GET /:id/attendees.
 
 /**
  * @openapi

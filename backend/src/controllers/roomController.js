@@ -3,7 +3,13 @@ const { randomUUID: uuidv4 } = require('crypto');
 const { audit } = require('../utils/audit');
 const path = require('path');
 
-// Helper to get full room with layouts and facilities
+/**
+ * Helper: ambil data ruangan lengkap beserta layouts, facilities, dan photos.
+ * Dipakai oleh getRoom, createRoom, dan updateRoom untuk konsistensi response.
+ *
+ * @param {string} roomId - UUID ruangan
+ * @returns {object|null} Data ruangan lengkap, atau null jika tidak ditemukan
+ */
 const getRoomFull = async (roomId) => {
   const room = await dbGet(`
     SELECT r.*, b.name as building_name, f.name as floor_name,
@@ -27,7 +33,14 @@ const getRoomFull = async (roomId) => {
   return room;
 };
 
-// GET /api/rooms
+/**
+ * Ambil daftar ruangan dengan filter opsional.
+ * GET /api/rooms
+ *
+ * Query params: building_id, floor_id, status, search, approval_type, admin_id, capacity, managed_only
+ * - User biasa hanya melihat ruangan status 'active'
+ * - Admin dengan managed_only=true hanya melihat ruangan yang ditetapkan kepadanya
+ */
 const listRooms = async (req, res, next) => {
   try {
     const { building_id, floor_id, status, search, approval_type, admin_id, capacity } = req.query;
@@ -82,7 +95,10 @@ const listRooms = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// GET /api/rooms/:id
+/**
+ * Ambil detail satu ruangan berdasarkan ID.
+ * GET /api/rooms/:id
+ */
 const getRoom = async (req, res, next) => {
   try {
     const room = await getRoomFull(req.params.id);
@@ -91,17 +107,22 @@ const getRoom = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/rooms
+/**
+ * Buat ruangan baru.
+ * POST /api/rooms
+ *
+ * Mendukung tipe ruangan: 'physical', 'digital', 'hybrid'
+ * Mendukung jenis manajemen: 'MEETING_ROOM', 'WORKSPACE'
+ * Jika jenis WORKSPACE, meja kerja (workspace_desks) di-generate otomatis sesuai total_meja_kerja.
+ * Facilities diterima sebagai array [{type, quantity}] atau object map {type: quantity}.
+ */
 const createRoom = async (req, res, next) => {
   try {
     const { name, building_id, floor_id, admin_id, description, status = 'active', approval_type = 'instant',
       restrict_hours = false, hours_start, hours_end, layouts = [], facilities = [], room_type = 'physical',
       jenis_manajemen_ruang = 'MEETING_ROOM', total_meja_kerja = null } = req.body;
 
-    // Debug: log raw facilities shape
-    console.log('[DEBUG] createRoom - raw facilities:', facilities, 'type:', typeof facilities);
-
-    // Normalize facilities early: accept either object map or array
+    // Normalisasi facilities: terima array atau object map
     let facilitiesInput = [];
     try {
       if (Array.isArray(facilities)) {
@@ -112,7 +133,7 @@ const createRoom = async (req, res, next) => {
     } catch (e) {
       facilitiesInput = [];
     }
-    // Overwrite req.body.facilities with normalized array so other code can iterate safely
+    // Timpa req.body.facilities dengan array yang sudah dinormalisasi
     req.body.facilities = facilitiesInput;
 
     if (room_type === 'physical' || room_type === 'hybrid') {
@@ -157,15 +178,13 @@ const createRoom = async (req, res, next) => {
          : layouts);
 
     const layoutsToInsert = Array.isArray(finalLayouts) ? finalLayouts : (finalLayouts ? [finalLayouts] : []);
-    console.log('[DEBUG] finalLayouts -> isArray:', Array.isArray(finalLayouts));
     for (const layout of layoutsToInsert) {
       await dbRun(`INSERT INTO room_layouts (id, room_id, layout_type, capacity) VALUES ($1,$2,$3,$4)`,
         [uuidv4(), roomId, layout.type || layout.layout_type, layout.capacity]);
     }
 
-    // Insert facilities (use normalized facilitiesInput)
+    // Insert facilities (gunakan facilitiesInput yang sudah dinormalisasi)
     const finalFacilities = Array.isArray(facilitiesInput) ? facilitiesInput : (facilitiesInput ? [facilitiesInput] : []);
-    console.log('[DEBUG] facilitiesInput ->', facilitiesInput, 'finalFacilities isArray:', Array.isArray(finalFacilities));
     for (const fac of finalFacilities) {
       await dbRun(`INSERT INTO room_facilities (id, room_id, facility_type, quantity) VALUES ($1,$2,$3,$4)`,
         [uuidv4(), roomId, fac.type || fac.facility_type, fac.quantity || fac.qty || 0]);
@@ -195,7 +214,15 @@ const createRoom = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// PUT /api/rooms/:id
+/**
+ * Perbarui data ruangan yang sudah ada.
+ * PUT /api/rooms/:id
+ *
+ * Admin hanya bisa mengupdate ruangan yang ditetapkan kepadanya.
+ * Superadmin bisa mengupdate semua ruangan dan menetapkan admin baru.
+ * Jika jenis WORKSPACE berubah jumlah meja, meja ditambah/dikurangi secara aman
+ * (meja OCCUPIED tidak akan dihapus).
+ */
 const updateRoom = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -320,7 +347,13 @@ const updateRoom = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// DELETE /api/rooms/:id (soft delete)
+/**
+ * Hapus (soft delete) ruangan.
+ * DELETE /api/rooms/:id
+ *
+ * Jika ruangan masih punya booking aktif, return 409 dengan kode 'HAS_ACTIVE_BOOKINGS'.
+ * Dengan query param force=true, semua booking aktif akan dibatalkan otomatis sebelum ruangan dihapus.
+ */
 const deleteRoom = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -365,24 +398,38 @@ const deleteRoom = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// GET /api/rooms/:id/availability?week=YYYY-MM-DD
+/**
+ * Ambil ketersediaan ruangan per minggu (5 hari kerja).
+ * GET /api/rooms/:id/availability?week=YYYY-MM-DD
+ *
+ * Mengembalikan slot booking per hari beserta blackout dates.
+ * Parameter week: Senin dari minggu yang dimaksud (default: minggu ini).
+ */
 const getAvailability = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { week } = req.query;
+    const { week, date_from, date_to } = req.query;
 
     const room = await dbGet('SELECT id, name, restrict_hours, hours_start, hours_end FROM rooms WHERE id=$1 AND status=$2 AND deleted_at IS NULL', [id, 'active']);
     if (!room) return res.status(404).json({ success: false, message: 'Ruangan tidak ditemukan' });
 
-    const monday = week ? new Date(week) : (() => {
-      const d = new Date(); const day = d.getDay();
-      d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); return d;
-    })();
-
     const days = [];
-    for (let i = 0; i < 5; i++) {
-      const d = new Date(monday); d.setDate(d.getDate() + i);
-      days.push(d.toISOString().split('T')[0]);
+    if (date_from && date_to) {
+      let curr = new Date(date_from);
+      const end = new Date(date_to);
+      while (curr <= end && days.length < 31) {
+        days.push(curr.toISOString().split('T')[0]);
+        curr.setDate(curr.getDate() + 1);
+      }
+    } else {
+      const monday = week ? new Date(week) : (() => {
+        const d = new Date(); const day = d.getDay();
+        d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); return d;
+      })();
+      for (let i = 0; i < 5; i++) {
+        const d = new Date(monday); d.setDate(d.getDate() + i);
+        days.push(d.toISOString().split('T')[0]);
+      }
     }
 
     const placeholders = days.map((_, i) => `$${i + 2}`).join(',');
@@ -421,7 +468,13 @@ const getAvailability = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/rooms/:id/upload
+/**
+ * Upload foto ruangan.
+ * POST /api/rooms/:id/upload
+ *
+ * Foto pertama otomatis menjadi foto utama (is_primary=true).
+ * File di-handle oleh middleware multer sebelum masuk ke sini.
+ */
 const uploadPhoto = async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'File tidak ditemukan' });
@@ -442,6 +495,13 @@ const uploadPhoto = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+/**
+ * Hapus foto ruangan (soft delete).
+ * DELETE /api/rooms/:id/photos/:photoId
+ *
+ * Jika foto yang dihapus adalah foto utama, foto berikutnya otomatis
+ * diangkat menjadi foto utama baru. Jika tidak ada foto lain, image_url ruangan di-null-kan.
+ */
 const deletePhoto = async (req, res, next) => {
   try {
     const { id: roomId, photoId } = req.params;

@@ -3,18 +3,24 @@ const { randomUUID: uuidv4 } = require('crypto');
 const { dbGet, dbRun } = require('../config/database');
 const { generateTokens, verifyRefreshToken } = require('../utils/jwt');
 const { sendOtpEmail } = require('../utils/email');
+const { normalizeRole } = require('../utils/roles');
 
+/**
+ * Hasilkan 6-digit OTP secara acak.
+ * @returns {string} Kode OTP 6 digit
+ */
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-const normalizeRole = (dbRole) => {
-  if (!dbRole) return 'user';
-  const r = dbRole.toUpperCase();
-  if (r === 'SUPERADMIN') return 'superadmin';
-  if (r === 'ADMIN_RAPAT' || r === 'ADMIN_KERJA') return 'admin';
-  return 'user';
-};
-
-// POST /api/auth/register
+/**
+ * Mendaftarkan pengguna baru dengan status 'pending' dan mengirim OTP verifikasi.
+ * POST /api/auth/register
+ *
+ * Validasi:
+ * - name, email, password wajib ada
+ * - format email valid (mengandung '@', tanpa spasi)
+ * - password minimal 8 karakter, mengandung huruf, angka, dan karakter khusus
+ * - email belum terdaftar
+ */
 const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
@@ -43,7 +49,13 @@ const register = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/auth/verify-otp
+/**
+ * Verifikasi OTP setelah registrasi — mengaktifkan akun dan mengembalikan token.
+ * POST /api/auth/verify-otp
+ *
+ * @param {string} req.body.userId - ID pengguna yang hendak diverifikasi
+ * @param {string} req.body.otp - Kode OTP yang diterima lewat email
+ */
 const verifyOtp = async (req, res, next) => {
   try {
     const { userId, otp } = req.body;
@@ -67,7 +79,12 @@ const verifyOtp = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/auth/resend-otp
+/**
+ * Kirim ulang OTP ke email pengguna yang belum aktif.
+ * POST /api/auth/resend-otp
+ *
+ * Rate-limited: hanya bisa dikirim 1x per 5 menit.
+ */
 const resendOtp = async (req, res, next) => {
   try {
     const { userId } = req.body;
@@ -75,7 +92,7 @@ const resendOtp = async (req, res, next) => {
     if (!user) return res.status(404).json({ success: false, message: 'Pengguna tidak ditemukan' });
     if (user.status === 'active') return res.status(400).json({ success: false, message: 'Akun sudah aktif' });
 
-    // Rate limit: 1x per 5 min
+    // Rate limit: 1x per 5 menit
     const lastSent = parseInt(user.otp_expires) - 30 * 60 * 1000;
     if (Date.now() - lastSent < 5 * 60 * 1000) {
       const waitSec = Math.ceil((5 * 60 * 1000 - (Date.now() - lastSent)) / 1000);
@@ -90,7 +107,13 @@ const resendOtp = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/auth/login
+/**
+ * Login pengguna dengan email dan password.
+ * POST /api/auth/login
+ *
+ * Mengembalikan access token (15m) dan refresh token (7d).
+ * Gagal jika akun belum aktif, sudah dinonaktifkan, atau password salah.
+ */
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -119,7 +142,12 @@ const login = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/auth/logout
+/**
+ * Invalidasi refresh token pengguna (logout).
+ * POST /api/auth/logout
+ *
+ * Menghapus refresh_token di DB sehingga token tidak bisa dipakai ulang.
+ */
 const logout = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
@@ -130,7 +158,13 @@ const logout = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/auth/refresh
+/**
+ * Perbarui access token menggunakan refresh token.
+ * POST /api/auth/refresh
+ *
+ * Strategi: refresh token rotation — setiap refresh menghasilkan refresh token baru.
+ * Token lama langsung tidak valid setelah dipakai.
+ */
 const refresh = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
@@ -154,7 +188,12 @@ const refresh = async (req, res, next) => {
   }
 };
 
-// GET /api/auth/me
+/**
+ * Ambil profil pengguna yang sedang login.
+ * GET /api/auth/me
+ *
+ * Memerlukan header Authorization: Bearer <accessToken>
+ */
 const me = async (req, res, next) => {
   try {
     const user = await dbGet('SELECT id, name, email, role, status, created_at FROM users WHERE id=$1 AND deleted_at IS NULL', [req.user.id]);
@@ -165,13 +204,18 @@ const me = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/auth/forgot-password
+/**
+ * Kirim OTP reset password ke email.
+ * POST /api/auth/forgot-password
+ *
+ * Selalu mengembalikan respons sukses (anti-enumeration) meski email tidak ditemukan.
+ */
 const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ success: false, message: 'Email diperlukan' });
     const user = await dbGet('SELECT * FROM users WHERE email=$1 AND deleted_at IS NULL', [email.toLowerCase()]);
-    // Always respond success to prevent email enumeration
+    // Selalu respons sukses untuk mencegah email enumeration attack
     if (!user || user.status !== 'active') {
       return res.json({ success: true, message: 'Jika email terdaftar, kode OTP akan dikirim.' });
     }
@@ -183,7 +227,14 @@ const forgotPassword = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/auth/reset-password
+/**
+ * Reset password menggunakan OTP yang diterima via email.
+ * POST /api/auth/reset-password
+ *
+ * @param {string} req.body.userId - ID pengguna
+ * @param {string} req.body.otp - Kode OTP dari email
+ * @param {string} req.body.newPassword - Password baru (minimal 8 karakter)
+ */
 const resetPassword = async (req, res, next) => {
   try {
     const { userId, otp, newPassword } = req.body;

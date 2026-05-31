@@ -1,6 +1,26 @@
+/**
+ * @fileoverview Stats Controller
+ * Menyediakan statistik agregat untuk dashboard admin dan superadmin.
+ * Semua query di-scope ke ruangan yang ditetapkan ke admin yang bersangkutan.
+ */
 const { dbGet, dbAll } = require('../config/database');
 
-// GET /api/stats/admin — scoped to admin's rooms
+/**
+ * Statistik untuk dashboard admin.
+ * GET /api/stats/admin
+ *
+ * Scoped berdasarkan role:
+ * - Admin biasa: hanya ruangan yang ditetapkan kepadanya
+ * - Superadmin: semua ruangan, atau bisa query admin tertentu via ?admin_id=
+ *
+ * Data yang dikembalikan:
+ * - totalRooms: jumlah ruangan aktif dalam scope
+ * - weeklyBookings: jumlah booking minggu ini (confirmed/ongoing/completed)
+ * - pendingApprovals: booking yang menunggu persetujuan
+ * - ghostBookings: booking cancelled bulan ini (metrik keandalan)
+ * - trend: booking per hari untuk 7 hari terakhir
+ * - peakHours: 5 jam paling sibuk berdasarkan start_time
+ */
 const adminStats = async (req, res, next) => {
   try {
     const isSuperAdmin = req.user.role === 'superadmin';
@@ -18,10 +38,10 @@ const adminStats = async (req, res, next) => {
       params = [admin_id];
     }
 
-    // Total rooms
+    // Total ruangan aktif dalam scope
     const totalRooms = await dbGet(`SELECT COUNT(*)::int as count FROM rooms r WHERE r.status='active' AND r.deleted_at IS NULL ${roomCondition}`, params);
 
-    // Total bookings this week
+    // Hitung rentang minggu ini (Senin–Minggu)
     const today = new Date();
     const monday = new Date(today);
     monday.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
@@ -35,14 +55,14 @@ const adminStats = async (req, res, next) => {
       [weekStart, weekEnd, ...params]
     );
 
-    // Pending approvals — reset paramIdx for independent query
+    // Booking pending — query independen (paramIdx di-reset)
     let pendingParams = [...params];
     const pendingApprovals = await dbGet(
       `SELECT COUNT(*)::int as count FROM bookings b LEFT JOIN rooms r ON b.room_id=r.id WHERE b.status='pending' AND b.deleted_at IS NULL ${roomCondition}`,
       pendingParams
     );
 
-    // Ghost bookings (cancelled) this month
+    // Ghost bookings (cancelled) bulan ini
     const thisMonth = new Date().toISOString().slice(0, 7);
     let ghostParams = [`${thisMonth}%`, ...params];
     const ghostBookings = await dbGet(
@@ -50,7 +70,7 @@ const adminStats = async (req, res, next) => {
       ghostParams
     );
 
-    // Utilization trend (last 7 days)
+    // Trend utilisasi 7 hari terakhir (per hari)
     const trend = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
@@ -63,7 +83,7 @@ const adminStats = async (req, res, next) => {
       trend.push({ date: dateStr, bookings: count?.count || 0 });
     }
 
-    // Peak hours
+    // Top 5 jam tersibuk berdasarkan start_time
     const peakHours = await dbAll(
       `SELECT start_time, COUNT(*)::int as count FROM bookings b LEFT JOIN rooms r ON b.room_id=r.id WHERE b.status IN ('confirmed','ongoing','completed') AND b.deleted_at IS NULL ${roomCondition} GROUP BY start_time ORDER BY count DESC LIMIT 5`,
       params
@@ -83,7 +103,13 @@ const adminStats = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// GET /api/stats/global — superadmin
+/**
+ * Statistik global untuk dashboard superadmin.
+ * GET /api/stats/global
+ *
+ * Query dijalankan paralel dengan Promise.all untuk efisiensi.
+ * Data yang dikembalikan: totalRooms, totalUsers, totalActiveBookings, todayBookings, activeApiTokens.
+ */
 const globalStats = async (req, res, next) => {
   try {
     const [totalRooms, totalUsers, totalBookings, activeTokens] = await Promise.all([

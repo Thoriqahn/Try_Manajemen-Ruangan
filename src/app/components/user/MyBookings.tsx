@@ -498,12 +498,20 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
     if (!selectedBooking) return;
     
     try {
-      generateAttendancePDF(selectedBooking, attendeesList);
+      generateAttendancePDF(
+        selectedBooking.id,
+        selectedBooking.room_name || "Ruangan",
+        selectedBooking.agenda,
+        selectedBooking.date,
+        `${selectedBooking.start_time} - ${selectedBooking.end_time}`,
+        attendeesList
+      );
       toast.success("PDF berhasil diunduh");
     } catch(err) {
       toast.error("Gagal mengunduh PDF");
     }
   };
+
 
   // Metrik Statistik
   const totalRapatBulanIni = bookings.filter(b => b.status === 'completed' || b.status === 'confirmed').length;

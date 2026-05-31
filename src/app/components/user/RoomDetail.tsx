@@ -82,7 +82,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
     for (let i = 0; i < 5; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      const iso = d.toISOString().split("T")[0];
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       days.push({ label: dayNames[i], date: String(d.getDate()).padStart(2, "0"), full: iso });
     }
     return days;
@@ -675,7 +675,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
                 <div key={b.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between transition-colors dark:bg-slate-900 dark:border-slate-700">
                   <div>
                     <div className="text-sm text-gray-800 transition-colors dark:text-slate-100" style={{ fontWeight: 500 }}>{b.agenda}</div>
-                    <div className="text-xs text-gray-400 mt-0.5 transition-colors dark:text-slate-500">{b.date} · {b.start_time} – {b.end_time}</div>
+                    <div className="text-xs text-gray-400 mt-0.5 transition-colors dark:text-slate-500">{(typeof b.date === 'string' && b.date.includes('T')) ? b.date.split('T')[0] : b.date} · {b.start_time} – {b.end_time}</div>
                     <div className="text-xs text-gray-400 transition-colors dark:text-slate-500">{b.user_name}</div>
                   </div>
                   <span className={`px-2.5 py-1 rounded-full text-xs ${statusColor[b.status] || "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300"}`} style={{ fontWeight: 500 }}>
@@ -796,7 +796,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
 
 function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onClose, onConfirm }: any) {
   const [form, setForm] = useState({
-    date: initialDate || new Date().toISOString().split("T")[0],
+    date: initialDate || new Date().toLocaleDateString('en-CA'),
     startTime: initialTime || "",
     endTime: initialEndTime || "",
     agenda: "",
@@ -934,7 +934,7 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
 
           <div>
             <label className="block text-sm text-gray-700 mb-1.5 transition-colors dark:text-slate-200" style={{ fontWeight: 500 }}>Tanggal <span className="text-red-500 transition-colors duration-300 dark:text-red-400">*</span></label>
-            <input type="date" min={new Date().toISOString().split("T")[0]} value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
+            <input type="date" min={new Date().toLocaleDateString('en-CA')} value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
               className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none transition-all dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700" />
           </div>
           <div className="grid grid-cols-2 gap-3">

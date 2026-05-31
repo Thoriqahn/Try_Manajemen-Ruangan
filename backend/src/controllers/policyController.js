@@ -1,8 +1,20 @@
+/**
+ * @fileoverview Policy Controller
+ * Mengelola kebijakan global pemesanan ruangan (durasi max, hari max ke depan)
+ * dan daftar tanggal blackout (penutupan fasilitas).
+ */
 const { dbGet, dbAll, dbRun } = require('../config/database');
 const { randomUUID: uuidv4 } = require('crypto');
 const { audit } = require('../utils/audit');
 
-// GET /api/policy
+/**
+ * Ambil kebijakan global dan daftar blackout dates.
+ * GET /api/policy
+ *
+ * Jika belum ada record policy, auto-create dengan nilai default:
+ * - max_duration_hours: 4
+ * - max_days_ahead: 30
+ */
 const getPolicy = async (req, res, next) => {
   try {
     let policy = await dbGet('SELECT * FROM global_policy WHERE id=1 AND deleted_at IS NULL');
@@ -15,7 +27,16 @@ const getPolicy = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// PUT /api/policy
+/**
+ * Perbarui kebijakan global pemesanan.
+ * PUT /api/policy
+ *
+ * Hanya superadmin yang bisa mengakses endpoint ini.
+ * Perubahan dicatat ke audit log.
+ *
+ * @param {number} [req.body.max_duration_hours] - Durasi maksimal booking dalam jam
+ * @param {number} [req.body.max_days_ahead] - Berapa hari ke depan booking boleh dibuat
+ */
 const updatePolicy = async (req, res, next) => {
   try {
     const { max_duration_hours, max_days_ahead } = req.body;
@@ -33,7 +54,18 @@ const updatePolicy = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /api/policy/blackout
+/**
+ * Tambah tanggal blackout (penutupan fasilitas).
+ * POST /api/policy/blackout
+ *
+ * Side effects:
+ * - Semua booking 'pending'/'confirmed' pada tanggal tersebut otomatis dibatalkan
+ * - Notifikasi dikirim ke user yang terdampak
+ * - Mendukung ON CONFLICT: jika tanggal sudah ada tapi soft-deleted, di-restore dengan alasan baru
+ *
+ * @param {string} req.body.date - Tanggal dalam format YYYY-MM-DD
+ * @param {string} req.body.reason - Alasan penutupan (wajib)
+ */
 const addBlackout = async (req, res, next) => {
   try {
     const { date, reason } = req.body;
@@ -46,7 +78,7 @@ const addBlackout = async (req, res, next) => {
       ON CONFLICT (date) DO UPDATE SET deleted_at = NULL, reason = EXCLUDED.reason
     `, [uuidv4(), date, reason]);
 
-    // Auto-cancel existing bookings on this date
+    // Batalkan semua booking aktif di tanggal ini
     const affectedBookings = await dbAll(
       `SELECT id, user_id FROM bookings WHERE date = $1 AND status IN ('pending', 'confirmed') AND deleted_at IS NULL`,
       [date]
@@ -58,7 +90,7 @@ const addBlackout = async (req, res, next) => {
         [reason, date]
       );
 
-      // Create notifications for affected users
+      // Kirim notifikasi ke setiap user yang terdampak (1 notif per user)
       const uniqueUsers = [...new Set(affectedBookings.map(b => b.user_id))];
       for (const userId of uniqueUsers) {
         await dbRun(
@@ -73,7 +105,12 @@ const addBlackout = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// DELETE /api/policy/blackout/:date (soft delete)
+/**
+ * Hapus (soft delete) tanggal blackout — fasilitas kembali buka pada tanggal tersebut.
+ * DELETE /api/policy/blackout/:date
+ *
+ * Booking yang sudah dibatalkan sebelumnya TIDAK otomatis dipulihkan.
+ */
 const removeBlackout = async (req, res, next) => {
   try {
     await dbRun('UPDATE blackout_dates SET deleted_at=NOW() WHERE date=$1 AND deleted_at IS NULL', [req.params.date]);

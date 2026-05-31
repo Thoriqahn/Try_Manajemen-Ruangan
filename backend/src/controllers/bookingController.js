@@ -914,7 +914,14 @@ const endBooking = async (req, res, next) => {
     }
 
     await dbRun(`UPDATE bookings SET status = 'completed' ${updateTimeSql} WHERE id = $1`, timeParams);
-    await audit(req.user.id, 'END_MEETING', 'bookings', bookingId, `Meeting ended manually`, req.ip);
+    await audit({
+      actorId: req.user.id,
+      actorName: req.user.name,
+      action: 'END_MEETING',
+      resource: `bookings:${bookingId}`,
+      ip: req.ip,
+      after: { status: 'completed', ended_at: newEndTime }
+    });
 
     res.json({ success: true, message: 'Rapat berhasil diakhiri' });
   } catch (err) {
@@ -922,46 +929,12 @@ const endBooking = async (req, res, next) => {
   }
 };
 
-// GET /api/v1/bookings/:id/attendees/csv
-const exportAttendeesCSV = async (req, res, next) => {
-  try {
-    const booking = await dbGet(`SELECT b.agenda, b.date FROM bookings b WHERE b.id = $1 AND b.deleted_at IS NULL`, [req.params.id]);
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking tidak ditemukan' });
-
-    const attendees = await dbAll(
-      `SELECT id, user_name, email, institution, position, signature, attendance_type, scanned_at 
-       FROM meeting_attendees 
-       WHERE booking_id = $1 
-       ORDER BY scanned_at ASC`,
-      [req.params.id]
-    );
-
-    // Build CSV
-    let csvStr = '\uFEFF'; // BOM for UTF-8 Excel compatibility
-    csvStr += 'Nama Lengkap,Email,Instansi,Jabatan,Tipe Kehadiran,Waktu Check-In,Status Tanda Tangan\n';
-    
-    attendees.forEach(row => {
-      const name = `"${(row.user_name || '').replace(/"/g, '""')}"`;
-      const email = `"${(row.email || '').replace(/"/g, '""')}"`;
-      const inst = `"${(row.institution || '').replace(/"/g, '""')}"`;
-      const pos = `"${(row.position || '').replace(/"/g, '""')}"`;
-      const type = `"${row.attendance_type || ''}"`;
-      const time = `"${new Date(row.scanned_at).toLocaleString('id-ID')}"`;
-      const signed = row.signature ? '"Tersedia"' : '""';
-
-      csvStr += `${name},${email},${inst},${pos},${type},${time},${signed}\n`;
-    });
-
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="Presensi_${booking.date}_${booking.agenda.replace(/[^a-zA-Z0-9]/g, '_')}.csv"`);
-    res.send(csvStr);
-  } catch (err) {
-    next(err);
-  }
-};
+// Catatan: Export CSV presensi telah dihapus.
+// Export presensi kini dilakukan sepenuhnya di sisi frontend menggunakan jsPDF.
+// Data peserta tetap tersedia melalui endpoint GET /api/bookings/:id/attendees.
 
 module.exports = { 
   listBookings, getBooking, createBooking, updateBooking, cancelBooking, 
   approveBooking, rejectBooking, forceCancel, checkInBooking, getBookingAttendees, 
-  logZoomJoin, logZoomLeave, getMyAttendances, exportAttendeesCSV, endBooking
+  logZoomJoin, logZoomLeave, getMyAttendances, endBooking
 };

@@ -1,16 +1,16 @@
 const { dbGet, dbAll, dbRun } = require('../config/database');
 const { randomUUID: uuidv4 } = require('crypto');
 const { audit } = require('../utils/audit');
+const { normalizeRole } = require('../utils/roles');
 
-const normalizeRole = (dbRole) => {
-  if (!dbRole) return 'user';
-  const r = dbRole.toUpperCase();
-  if (r === 'SUPERADMIN') return 'superadmin';
-  if (r === 'ADMIN_RAPAT' || r === 'ADMIN_KERJA') return 'admin';
-  return 'user';
-};
-
-// GET /api/users
+/**
+ * Ambil daftar semua pengguna dengan filter opsional.
+ * GET /api/users
+ *
+ * Query params: role, status, search
+ * Untuk role 'admin', sertakan juga daftar ruangan yang ditetapkan (assignedRooms).
+ * Untuk superadmin: lihat semua user. Untuk admin: hanya user mereka.
+ */
 const listUsers = async (req, res, next) => {
   try {
     const { role, status, search } = req.query;
@@ -40,6 +40,7 @@ const listUsers = async (req, res, next) => {
     sql += ' ORDER BY created_at DESC';
     const users = await dbAll(sql, params);
 
+    // Enrich data: normalisasi role + tambah assignedRooms untuk admin
     for (const user of users) {
       user.rawRole = user.role;
       user.role = normalizeRole(user.role);
@@ -59,7 +60,12 @@ const listUsers = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// GET /api/users/:id
+/**
+ * Ambil detail satu pengguna berdasarkan ID.
+ * GET /api/users/:id
+ *
+ * Untuk admin: sertakan juga assignedRooms.
+ */
 const getUser = async (req, res, next) => {
   try {
     const user = await dbGet('SELECT id, name, email, role, status, created_at FROM users WHERE id=$1 AND deleted_at IS NULL', [req.params.id]);
@@ -78,7 +84,15 @@ const getUser = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// PUT /api/users/:id/role
+/**
+ * Ubah role pengguna.
+ * PUT /api/users/:id/role
+ *
+ * Proteksi:
+ * - Hanya 'Super Admin Utama' (hardcoded id/email) yang bisa menetapkan SUPERADMIN
+ * - Tidak bisa mengubah SUPERADMIN kecuali oleh Super Admin Utama
+ * - Jika role baru bukan admin, semua room_assignments user dihapus
+ */
 const updateRole = async (req, res, next) => {
   try {
     const { role } = req.body;
@@ -88,6 +102,7 @@ const updateRole = async (req, res, next) => {
     const user = await dbGet('SELECT * FROM users WHERE id=$1 AND deleted_at IS NULL', [req.params.id]);
     if (!user) return res.status(404).json({ success: false, message: 'Pengguna tidak ditemukan' });
 
+    // Super Admin Utama teridentifikasi berdasarkan ID atau email khusus
     const isHyperAdmin = req.user.id === 'u-super' || req.user.email === 'superadmin@oikn.go.id';
     const normalizedUserRole = normalizeRole(user.role);
 
@@ -98,6 +113,7 @@ const updateRole = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Hanya Super Admin Utama yang dapat mengubah peran Super Admin' });
     }
 
+    // Map role input ke format DB
     let dbRole = 'USER';
     if (role === 'superadmin' || role === 'SUPERADMIN') {
       dbRole = 'SUPERADMIN';
@@ -109,6 +125,7 @@ const updateRole = async (req, res, next) => {
 
     await dbRun('UPDATE users SET role=$1 WHERE id=$2', [dbRole, req.params.id]);
 
+    // Hapus semua room_assignments jika bukan admin lagi
     if (dbRole !== 'ADMIN_RAPAT' && dbRole !== 'ADMIN_KERJA') {
       await dbRun('DELETE FROM room_assignments WHERE user_id=$1', [req.params.id]);
     }
@@ -118,7 +135,13 @@ const updateRole = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// PUT /api/users/:id/status
+/**
+ * Ubah status aktif/nonaktif pengguna.
+ * PUT /api/users/:id/status
+ *
+ * Status yang valid: 'active' | 'inactive'
+ * Pengguna inactive tidak bisa login meski punya token valid.
+ */
 const updateStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
@@ -132,14 +155,22 @@ const updateStatus = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// PUT /api/users/:id/room-assignment
+/**
+ * Perbarui daftar ruangan yang ditetapkan ke admin.
+ * PUT /api/users/:id/room-assignment
+ *
+ * Strategi: hard-delete semua yang lama lalu insert ulang semua yang baru.
+ * Hanya bisa dipanggil untuk pengguna yang sudah berperan admin.
+ *
+ * @param {string[]} req.body.roomIds - Array of room ID yang akan ditetapkan
+ */
 const updateRoomAssignment = async (req, res, next) => {
   try {
     const { roomIds } = req.body;
     const user = await dbGet('SELECT * FROM users WHERE id=$1 AND deleted_at IS NULL', [req.params.id]);
     if (!user || normalizeRole(user.role) !== 'admin') return res.status(400).json({ success: false, message: 'Pengguna bukan Admin Ruangan' });
 
-    // Hard delete all existing and re-insert for composite primary key model
+    // Hapus semua assignment lama dan insert baru (replace strategy)
     await dbRun('DELETE FROM room_assignments WHERE user_id=$1', [req.params.id]);
     for (const roomId of (roomIds || [])) {
       await dbRun('INSERT INTO room_assignments (user_id, room_id) VALUES ($1,$2) ON CONFLICT (user_id, room_id) DO NOTHING',
