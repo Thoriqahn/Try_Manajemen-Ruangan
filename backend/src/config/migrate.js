@@ -34,6 +34,10 @@ async function initSchema() {
     otp_type TEXT,
     refresh_token TEXT,
     avatar_url TEXT,
+    position TEXT,
+    work_unit TEXT,
+    organization_unit TEXT,
+    nip TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     deleted_at TIMESTAMPTZ DEFAULT NULL
   )`);
@@ -43,6 +47,10 @@ async function initSchema() {
     await dbRun(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
     await dbRun(`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('SUPERADMIN','ADMIN_RAPAT','ADMIN_KERJA','USER'))`);
     await dbRun(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`);
+    await dbRun(`ALTER TABLE users ADD COLUMN IF NOT EXISTS position TEXT`);
+    await dbRun(`ALTER TABLE users ADD COLUMN IF NOT EXISTS work_unit TEXT`);
+    await dbRun(`ALTER TABLE users ADD COLUMN IF NOT EXISTS organization_unit TEXT`);
+    await dbRun(`ALTER TABLE users ADD COLUMN IF NOT EXISTS nip TEXT`);
   } catch (err) {
     console.log('Migration info (users constraint/avatar update):', err.message);
   }
@@ -648,7 +656,7 @@ async function seedData() {
     { 
       id: 'bk-past-1', 
       room_id: 'r1', 
-      user_id: 'u-user1', 
+      user_id: 'u-user6', // Dimas Anggara
       date: fmtDate(addDays(today, -3)), 
       start_time: '09:00', 
       end_time: '11:00', 
@@ -724,15 +732,18 @@ async function seedData() {
   const scanTime4 = new Date(`${pastDateStr}T09:12:00Z`);
 
   const attendeesPast = [
-    { booking_id: 'bk-past-1', user_id: 'u-user1', user_name: 'Budi Santoso, M.Eng.', scanTime: scanTime1 },
-    { booking_id: 'bk-past-1', user_id: 'u-user2', user_name: 'Dewi Rahayu, S.I.P.', scanTime: scanTime2 },
-    { booking_id: 'bk-past-1', user_id: 'u-admin1', user_name: 'Ahmad Fauzi, S.Kom.', scanTime: scanTime3 },
-    { booking_id: 'bk-past-1', user_id: 'u-user5', user_name: 'Rian Hidayat, B.Eng.', scanTime: scanTime4 }
+    { booking_id: 'bk-past-1', user_id: 'u-user6', user_name: 'Dimas Anggara', email: null, institution: null, position: null, signature: null, scanTime: scanTime1 },
+    { booking_id: 'bk-past-1', user_id: 'u-user1', user_name: 'Budi Santoso, M.Eng.', email: null, institution: null, position: null, signature: null, scanTime: scanTime1 },
+    { booking_id: 'bk-past-1', user_id: 'u-user2', user_name: 'Dewi Rahayu, S.I.P.', email: null, institution: null, position: null, signature: null, scanTime: scanTime2 },
+    { booking_id: 'bk-past-1', user_id: 'u-admin1', user_name: 'Ahmad Fauzi, S.Kom.', email: null, institution: null, position: null, signature: null, scanTime: scanTime3 },
+    { booking_id: 'bk-past-1', user_id: 'u-user5', user_name: 'Rian Hidayat, B.Eng.', email: null, institution: null, position: null, signature: null, scanTime: scanTime4 },
+    { booking_id: 'bk-past-1', user_id: null, user_name: 'Joko Anwar', email: 'joko.eksternal@vendor.com', institution: 'PT Tekno Solusi', position: 'Project Manager', signature: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAKCAYAAAC0VX7mAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAO0lEQVQoz2NgwA+0gHgXEDMQxP8J0o8sQDDtIAOI1s0wgM1kXIZTazK2YBRDQMDLwMDAgG4aI8EIRgEA/dASbS6lH/wAAAAASUVORK5CYII=', scanTime: new Date(`${pastDateStr}T09:15:00Z`) },
+    { booking_id: 'bk-past-1', user_id: null, user_name: 'Sinta Larasati', email: 'sinta@vendor.com', institution: 'PT Tekno Solusi', position: 'Lead Developer', signature: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAKCAYAAAC0VX7mAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAO0lEQVQoz2NgwA+0gHgXEDMQxP8J0o8sQDDtIAOI1s0wgM1kXIZTazK2YBRDQMDLwMDAgG4aI8EIRgEA/dASbS6lH/wAAAAASUVORK5CYII=', scanTime: new Date(`${pastDateStr}T09:16:00Z`) }
   ];
   for (const att of attendeesPast) {
     await dbRun(
-      `INSERT INTO meeting_attendees (id, booking_id, user_id, user_name, scanned_at) VALUES ($1,$2,$3,$4,$5)`,
-      [uuidv4(), att.booking_id, att.user_id, att.user_name, att.scanTime.toISOString()]
+      `INSERT INTO meeting_attendees (id, booking_id, user_id, user_name, email, institution, position, signature, scanned_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [uuidv4(), att.booking_id, att.user_id, att.user_name, att.email, att.institution, att.position, att.signature, att.scanTime.toISOString()]
     );
   }
 

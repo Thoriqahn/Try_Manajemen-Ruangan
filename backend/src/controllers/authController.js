@@ -68,7 +68,7 @@ const verifyOtp = async (req, res, next) => {
     }
 
     await dbRun(`UPDATE users SET status='active', otp=NULL, otp_expires=NULL, otp_type=NULL WHERE id=$1`, [userId]);
-    const updatedUser = await dbGet('SELECT id, name, email, role FROM users WHERE id=$1', [userId]);
+    const updatedUser = await dbGet('SELECT id, name, email, role, position, work_unit, organization_unit, nip FROM users WHERE id=$1', [userId]);
     
     updatedUser.role = normalizeRole(updatedUser.role);
     
@@ -137,7 +137,7 @@ const login = async (req, res, next) => {
       message: 'Login berhasil',
       accessToken,
       refreshToken,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role }
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, position: user.position, work_unit: user.work_unit, organization_unit: user.organization_unit, nip: user.nip }
     });
   } catch (err) { next(err); }
 };
@@ -196,7 +196,7 @@ const refresh = async (req, res, next) => {
  */
 const me = async (req, res, next) => {
   try {
-    const user = await dbGet('SELECT id, name, email, role, status, created_at FROM users WHERE id=$1 AND deleted_at IS NULL', [req.user.id]);
+    const user = await dbGet('SELECT id, name, email, role, status, created_at, position, work_unit, organization_unit, nip FROM users WHERE id=$1 AND deleted_at IS NULL', [req.user.id]);
     if (user) {
       user.role = normalizeRole(user.role);
     }

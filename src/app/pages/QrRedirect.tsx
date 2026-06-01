@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import apiClient from "../../../services/apiClient";
+import apiClient from "../../services/apiClient";
 
 export default function QrRedirect() {
   const [error, setError] = useState<string | null>(null);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Check, X, Clock, RefreshCw, Video, FileText } from "lucide-react";
+import { Check, X, Clock, RefreshCw, Video, FileText, Download } from "lucide-react";
 import { bookingService } from "../../services/bookingService";
 
 import { userService } from "../../services/index";
@@ -31,7 +31,7 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
       const res = await bookingService.list({ 
         admin_id: selectedAdminFilter || undefined,
         managed_only: "true"
-      });
+      } as any);
       if (res.success) setBookings(res.data || []);
     } catch (err) {
       console.error("Failed to fetch bookings:", err);
@@ -390,24 +390,66 @@ export function ApprovalQueue({ onNavigate, isSuperAdmin = false }: ApprovalQueu
                 </div>
               </div>
 
-              {selectedApprovalBooking.surat_terkait && (
-                <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200 transition-colors dark:bg-slate-800/30 dark:border-slate-700">
-                  <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-4 transition-colors duration-300 dark:text-slate-400">Dokumen Surat Terkait</h4>
-                  <div className="flex items-start gap-3 p-4 bg-white border border-slate-200 rounded-xl shadow-sm transition-colors dark:bg-slate-800 dark:border-slate-700">
-                    <div className="p-2 bg-indigo-50 rounded-lg transition-colors duration-300 dark:bg-emerald-500/30">
-                      <FileText size={20} className="text-indigo-500 flex-shrink-0 transition-colors duration-300 dark:text-emerald-400" />
+              {selectedApprovalBooking.surat_terkait && (() => {
+                let blobUrl = selectedApprovalBooking.surat_terkait;
+                let isBase64 = false;
+                if (blobUrl.startsWith("data:")) {
+                  isBase64 = true;
+                  try {
+                    let unescapedUrl = blobUrl
+                      .replace(/&#x2F;/g, "/")
+                      .replace(/&quot;/g, '"')
+                      .replace(/&amp;/g, "&")
+                      .replace(/&lt;/g, "<")
+                      .replace(/&gt;/g, ">")
+                      .replace(/&#39;/g, "'");
+                    const arr = unescapedUrl.split(",");
+                    const mime = arr[0].match(/:(.*?);/)?.[1] || "application/pdf";
+                    const bstr = atob(arr[1].replace(/\s/g, ''));
+                    let n = bstr.length;
+                    const u8arr = new Uint8Array(n);
+                    while (n--) {
+                      u8arr[n] = bstr.charCodeAt(n);
+                    }
+                    const blob = new Blob([u8arr], { type: mime });
+                    blobUrl = URL.createObjectURL(blob);
+                  } catch (e) {
+                    console.error("Base64 decode failed", e);
+                  }
+                }
+                
+                return (
+                  <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200 transition-colors dark:bg-slate-800/30 dark:border-slate-700">
+                    <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-4 transition-colors duration-300 dark:text-slate-400">Dokumen Surat Terkait</h4>
+                    <div className="flex items-start gap-3 p-4 bg-white border border-slate-200 rounded-xl shadow-sm transition-colors dark:bg-slate-800 dark:border-slate-700 justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-indigo-50 rounded-lg transition-colors duration-300 dark:bg-emerald-500/30">
+                          <FileText size={20} className="text-indigo-500 flex-shrink-0 transition-colors duration-300 dark:text-emerald-400" />
+                        </div>
+                        <span className="text-sm text-slate-700 font-bold mt-1.5 transition-colors duration-300 dark:text-slate-200">
+                          {isBase64 ? "Dokumen Pendukung.pdf" : selectedApprovalBooking.surat_terkait}
+                        </span>
+                      </div>
+                      <a href={blobUrl} download={isBase64 ? `Dokumen_${selectedApprovalBooking.id}.pdf` : undefined} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg dark:text-emerald-400 dark:hover:bg-emerald-500/20 transition-colors" title="Unduh File">
+                        <Download size={18} />
+                      </a>
                     </div>
-                    <span className="text-sm text-slate-700 font-bold mt-1.5 truncate max-w-full transition-colors duration-300 dark:text-slate-200">{selectedApprovalBooking.surat_terkait}</span>
+                    <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden h-[400px] shadow-inner transition-colors duration-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+                      {isBase64 ? (
+                        <object data={blobUrl} type="application/pdf" className="w-full h-full">
+                          <embed src={blobUrl} type="application/pdf" className="w-full h-full" />
+                        </object>
+                      ) : (
+                        <iframe 
+                          src={selectedApprovalBooking.surat_terkait.endsWith('.pdf') ? selectedApprovalBooking.surat_terkait : '/dummy-surat.pdf'} 
+                          className="w-full h-full bg-slate-100 transition-colors duration-300 dark:bg-slate-900"
+                          title="PDF Reader"
+                        />
+                      )}
+                    </div>
                   </div>
-                  <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden h-[400px] shadow-inner transition-colors duration-300 dark:border-slate-700">
-                    <iframe 
-                      src={selectedApprovalBooking.surat_terkait.endsWith('.pdf') ? selectedApprovalBooking.surat_terkait : '/dummy-surat.pdf'} 
-                      className="w-full h-full bg-slate-100 transition-colors duration-300 dark:bg-slate-900"
-                      title="PDF Reader"
-                    />
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {normalizedFacilities && Object.keys(normalizedFacilities).length > 0 && (
                 <div className="space-y-4">

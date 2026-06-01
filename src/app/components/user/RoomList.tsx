@@ -65,6 +65,7 @@ export function RoomList({ onNavigate }: RoomListProps) {
   ))];
 
   const filtered = rooms.filter(r => {
+    if (r.jenis_manajemen_ruang === 'WORKSPACE') return false;
     if (search && !r.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (filterBuildingId !== "all" && r.building_id !== filterBuildingId) return false;
     if (filterFloor !== "all" && r.floor_name !== filterFloor) return false;

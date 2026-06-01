@@ -22,7 +22,7 @@ const Shimmer = ({ className }: { className?: string }) => (
   <div className={`animate-pulse bg-slate-200 dark:bg-slate-800 rounded-xl ${className}`} />
 );
 
-const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
+const statusConfig: Record<string, { bg: string; text?: string; label: string }> = {
   confirmed: { bg: "bg-blue-50 dark:bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400", label: "Dikonfirmasi" },
   pending: { bg: "bg-amber-50 dark:bg-amber-500/20 dark:bg-amber-500/30 border border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-400", label: "Menunggu Approval" },
   ongoing: { bg: "bg-emerald-50 dark:bg-emerald-500/10 dark:bg-emerald-500/20 dark:bg-emerald-500/30 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400", label: "Sedang Berjalan" },
@@ -32,7 +32,7 @@ const statusConfig: Record<string, { bg: string; text: string; label: string }> 
   CANCELLED_NOSHOW: { bg: "bg-red-100 dark:bg-red-500/20 dark:bg-red-500/30 border border-red-300 dark:border-red-500/30 text-red-800 dark:text-red-400", label: "No-Show (Batal Otomatis)" }
 };
 
-const meetingTypeBadge: Record<string, { bg: string; text: string; label: string; icon: string }> = {
+const meetingTypeBadge: Record<string, { bg: string; text?: string; label: string; icon: string }> = {
   offline: { bg: "bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400", label: "Offline", icon: "🏢" },
   online: { bg: "bg-purple-50 dark:bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-500/20 text-purple-700 dark:text-purple-400", label: "Online", icon: "💻" },
   hybrid: { bg: "bg-teal-50 dark:bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-500/20 text-teal-700 dark:text-teal-400", label: "Hybrid", icon: "🔄" },
@@ -164,6 +164,9 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
   const [search, setSearch] = useState("");
   const [cancelModal, setCancelModal] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
+  
+  const [endModal, setEndModal] = useState<string | null>(null);
+  const [endLoading, setEndLoading] = useState(false);
 
   // QR Scanner States
 
@@ -171,6 +174,9 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
   const [attendeesModal, setAttendeesModal] = useState<string | null>(null);
   const [attendeesList, setAttendeesList] = useState<any[]>([]);
   const [attendeesLoading, setAttendeesLoading] = useState(false);
+  
+  // Document Viewer State
+  const [documentModal, setDocumentModal] = useState<{ url: string; title: string; filename: string } | null>(null);
 
   // Seating States
   const [seatingLoading, setSeatingLoading] = useState(true);
@@ -227,14 +233,15 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
     setSeatingLoading(true);
     try {
       const res = await workspaceService.getMySeating();
-      if (res.success && res.data) {
-        if (res.data.assigned_desk) {
-          setAssignedDesk(res.data.assigned_desk);
+      const data = res.data as any;
+      if (res.success && data) {
+        if (data.assigned_desk) {
+          setAssignedDesk(data.assigned_desk);
         } else {
           setAssignedDesk(null);
         }
-        setPendingRequest(res.data.pending_request);
-        setResolvedRequest(res.data.resolved_request || null);
+        setPendingRequest(data.pending_request);
+        setResolvedRequest(data.resolved_request || null);
       } else {
         setAssignedDesk(null);
         setPendingRequest(null);
@@ -460,17 +467,29 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
         toast.success("Reservasi rapat simulasi berhasil dibatalkan.");
       } else {
         // Real API call
-        const res = await bookingService.cancel(id, "Dibatalkan oleh pengguna");
-        if (res.success) {
-          setBookings(prev => prev.map(b => b.id === id ? { ...b, status: "cancelled" } : b));
-          setCancelModal(null);
-          toast.success("Reservasi rapat berhasil dibatalkan.");
-        }
+        await bookingService.cancel(id, "Dibatalkan oleh pengguna");
+        toast.success("Reservasi berhasil dibatalkan");
+        setCancelModal(null);
+        fetchBookings();
       }
-    } catch (err: any) {
-      toast.error(err.message || "Gagal membatalkan booking");
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || "Gagal membatalkan reservasi");
     } finally {
       setCancelLoading(false);
+    }
+  };
+
+  const handleEndBooking = async (bookingId: string) => {
+    try {
+      setEndLoading(true);
+      await bookingService.endBooking(bookingId);
+      toast.success("Rapat berhasil diakhiri");
+      setEndModal(null);
+      fetchBookings();
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || "Gagal mengakhiri rapat");
+    } finally {
+      setEndLoading(false);
     }
   };
 
@@ -886,8 +905,16 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                         {booking.surat_terkait && (
                           <div className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 w-fit transition-colors dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700">
                             <span>📄</span>
-                            <span className="font-semibold text-slate-700 transition-colors dark:text-slate-200">Surat Pengantar:</span>
-                            <span className="italic opacity-90">{booking.surat_terkait}</span>
+                            {booking.surat_terkait.startsWith('data:') ? (
+                              <button onClick={() => setDocumentModal({ url: booking.surat_terkait, title: "Surat Pengantar", filename: `Surat_Pengantar_${booking.id}.pdf` })} className="text-blue-600 hover:text-blue-800 underline font-medium flex items-center gap-1.5 transition-colors dark:text-blue-400 dark:hover:text-blue-300">
+                                Surat Pengantar <ExternalLink size={12} />
+                              </button>
+                            ) : (
+                              <>
+                                <span className="font-semibold text-slate-700 transition-colors dark:text-slate-200">Surat Pengantar:</span>
+                                <span className="italic opacity-90 truncate max-w-[250px]" title={booking.surat_terkait}>{booking.surat_terkait}</span>
+                              </>
+                            )}
                           </div>
                         )}
 
@@ -1022,17 +1049,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                         )}
                         {booking.status === "ongoing" && booking.user_id === UserStore.get()?.id && (
                           <button
-                            onClick={async () => {
-                              if(window.confirm('Apakah Anda yakin ingin mengakhiri rapat ini sekarang? Ruangan akan segera dikosongkan.')) {
-                                try {
-                                  await bookingService.endBooking(booking.id);
-                                  toast.success("Rapat berhasil diakhiri");
-                                  fetchBookings();
-                                } catch (e: any) {
-                                  toast.error(e.response?.data?.message || "Gagal mengakhiri rapat");
-                                }
-                              }
-                            }}
+                            onClick={() => setEndModal(booking.id)}
                             className="px-4 py-2.5 text-xs border border-amber-400 text-amber-600 bg-amber-50 hover:bg-amber-100 dark:hover:bg-amber-500/20 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30"
                           >
                             Akhiri Rapat
@@ -1410,6 +1427,40 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
         </div>
       )}
 
+      {/* End Meeting Confirmation Modal */}
+      {endModal && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl p-8 border border-slate-200 animate-in zoom-in-95 duration-200 transition-colors dark:bg-slate-900 dark:border-slate-800">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-amber-50 border border-amber-100 rounded-full flex items-center justify-center mb-5 shadow-sm transition-colors dark:bg-amber-500/30 dark:border-amber-500/20">
+                <CheckCircle2 size={28} className="text-amber-600 transition-colors dark:text-amber-400" />
+              </div>
+              <h3 className="text-slate-800 font-extrabold text-xl mb-3 transition-colors dark:text-slate-100">Akhiri Rapat?</h3>
+              <p className="text-sm text-slate-500 mb-8 leading-relaxed max-w-[250px] transition-colors dark:text-slate-400">
+                Apakah Anda yakin ingin mengakhiri rapat ini sekarang? Status ruangan akan dikembalikan menjadi kosong.
+              </p>
+              <div className="flex flex-col gap-3 w-full">
+                <button
+                  onClick={() => handleEndBooking(endModal)}
+                  disabled={endLoading}
+                  className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold transition-all duration-300 shadow flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-amber-500/30 hover:-translate-y-0.5"
+                >
+                  {endLoading ? (
+                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Mengakhiri...</>
+                  ) : "Ya, Akhiri Rapat"}
+                </button>
+                <button
+                  onClick={() => setEndModal(null)}
+                  className="w-full py-3.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                >
+                  Kembali
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Attendees Modal */}
       {attendeesModal && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -1472,7 +1523,7 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
                               {attendee.signature && (
                                 <div className="mt-1.5">
                                   <p className="text-[9px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Tanda Tangan:</p>
-                                  <img src={attendee.signature} alt="Tanda Tangan" className="h-10 object-contain bg-slate-50 rounded border border-slate-200/50 p-1 dark:bg-slate-800 dark:border-slate-700" />
+                                  <img src={attendee.signature} alt="Tanda Tangan" className="h-10 object-contain bg-white rounded border border-slate-200 p-1 shadow-sm" />
                                 </div>
                               )}
                             </div>
@@ -1517,7 +1568,102 @@ export function MyBookings({ onNavigate }: MyBookingsProps) {
         </div>
       )}
 
+      {/* Document Viewer Modal */}
+      {documentModal && (
+        <DocumentModalViewer documentModal={documentModal} onClose={() => setDocumentModal(null)} />
+      )}
 
+    </div>
+  );
+}
+
+function DocumentModalViewer({ documentModal, onClose }: { documentModal: any, onClose: () => void }) {
+  const [blobUrl, setBlobUrl] = useState<string>("");
+
+  useEffect(() => {
+    if (documentModal.url && documentModal.url.startsWith("data:")) {
+      try {
+        // Fix corrupted base64 string from previous escape() bug
+        let unescapedUrl = documentModal.url
+          .replace(/&#x2F;/g, "/")
+          .replace(/&quot;/g, '"')
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&#39;/g, "'");
+          
+        const arr = unescapedUrl.split(",");
+        const mime = arr[0].match(/:(.*?);/)?.[1] || "application/pdf";
+        // Remove any whitespaces/newlines that might break atob
+        const base64Data = arr[1].replace(/\s/g, '');
+        const bstr = atob(base64Data);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        const url = URL.createObjectURL(blob);
+        setBlobUrl(url);
+        return () => URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error("Base64 decode failed", err);
+        setBlobUrl(documentModal.url); // Fallback to raw data URI
+      }
+    } else {
+      setBlobUrl(documentModal.url);
+    }
+  }, [documentModal.url]);
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6 transition-all duration-300 animate-in fade-in">
+      <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col h-[85vh] max-h-[90vh] overflow-hidden border border-slate-200 transition-colors dark:bg-slate-900 dark:border-slate-700 animate-in zoom-in-95">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 transition-colors dark:border-slate-800 dark:bg-slate-800/50 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
+              <Info size={16} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 transition-colors dark:text-slate-100">{documentModal.title}</h3>
+              <p className="text-[10px] text-slate-500 transition-colors dark:text-slate-400">Dokumen PDF</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href={documentModal.url}
+              download={documentModal.filename}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition-colors dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 dark:text-indigo-300"
+            >
+              <Download size={14} />
+              <span>Unduh File</span>
+            </a>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors dark:hover:bg-slate-800 dark:hover:text-slate-300"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex-1 bg-slate-100 dark:bg-slate-950 p-2 overflow-hidden relative">
+          {blobUrl ? (
+            <object
+              data={blobUrl}
+              type="application/pdf"
+              className="w-full h-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+            >
+              <embed 
+                src={blobUrl} 
+                type="application/pdf"
+                className="w-full h-full rounded-xl border border-slate-200 dark:border-slate-800"
+              />
+            </object>
+          ) : (
+            <div className="flex items-center justify-center w-full h-full text-slate-500">Memuat dokumen...</div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

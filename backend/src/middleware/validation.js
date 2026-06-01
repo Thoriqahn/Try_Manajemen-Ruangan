@@ -112,7 +112,7 @@ const validateBooking = [
   body('agenda').optional().isString().trim().escape(),
   body('participants').optional().isInt({ min: 1 }),
   body('meeting_type').optional().isIn(['offline', 'online', 'hybrid']),
-  body('surat_terkait').optional({ checkFalsy: true }).isString().trim().escape(),
+  body('surat_terkait').optional({ checkFalsy: true }).isString().trim(),
   validateResults
 ];
 

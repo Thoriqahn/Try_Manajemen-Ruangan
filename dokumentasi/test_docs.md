@@ -29,6 +29,11 @@ Dokumen ini merangkum seluruh skenario uji coba (Unit Test) dalam aplikasi backe
 - **When** pengguna mencoba melakukan login dengan password yang salah.
 - **Then** sistem menolak login karena kredensial tidak valid.
 
+### Skenario 1.6: Pemeriksaan Kelengkapan Data Profil Integrasi SSO
+- **Given** pengguna terautentikasi dan mencoba mengambil profil via `/api/auth/me`.
+- **When** permintaan diterima oleh server.
+- **Then** sistem mengembalikan profil pengguna, termasuk properti untuk integrasi SSO (seperti `position`, `work_unit`, `organization_unit`, dan `nip`) agar sinkronisasi OIKN berjalan mulus.
+
 ---
 
 ## 2. Rooms API Tests (`rooms.test.js`)

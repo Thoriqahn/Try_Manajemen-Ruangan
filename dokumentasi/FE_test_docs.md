@@ -35,6 +35,17 @@ Pengujian terhadap halaman admin Kelola Ruangan untuk memastikan CRUD sederhana 
 - **Render Tabel:** Mengecek bahwa nama ruangan, nama gedung, serta data balasan termuat dalam baris tabel DOM.
 - **Tombol Aksi & Konfirmasi Status:** Menemukan tombol "Nonaktifkan" (atau *Power Button* untuk toggle status) pada tabel dan mengujinya apabila tombol tersebut diklik, modul peringatan "Nonaktifkan Ruangan?" dapat muncul (modal).
 
+### 3.4. ScheduleControl (`src/__tests__/ScheduleControl.test.tsx`)
+Pengujian ditujukan untuk Admin & Superadmin Dashboard (Pengendalian Jadwal).
+- **Service Mocks:** `bookingService.list`, `bookingService.getAttendees` serta fungsi cetak `generateAttendancePDF` dimock.
+- **Unduh PDF Presensi:** Memeriksa keberadaan tombol "Cetak PDF Presensi" pada tabel untuk status "completed", memastikan klik pada tombol tersebut memanggil fungsi `getAttendees` dan mengeksekusi `generateAttendancePDF` dengan argumen yang benar (seperti *booking.id*, *room_name*, dsb), serta menampilkan *toast success*.
+- **Handling Peserta Kosong:** Memastikan jika *API* mengembalikan peserta kosong, aplikasi tidak membuat PDF melainkan menampilkan *toast error*.
+
+### 3.5. Ekspor PDF Presensi (`src/__tests__/pdfExport.test.ts`)
+Pengujian ditujukan untuk fungsi utilitas pembuat dokumen laporan absensi.
+- **Dynamic Text Wrapping:** Memastikan fungsi rendering menggunakan kalkulasi tinggi dokumen yang tepat apabila label `agenda` atau `roomName` sangat panjang, membuktikan utilitas jsPDF `splitTextToSize` diimplementasikan dengan kalkulasi tinggi kotak yang elastis.
+- **Konsistensi Gaya Tombol Dasbor:** Memastikan komponen `MyBookings.tsx` dan `ScheduleControl.tsx` menggunakan gaya render tombol "Daftar Hadir" (dengan ikon `Download`) yang identik satu sama lain.
+
 ## 4. Tantangan dan Penyelesaian
 - **Named vs Default Exports:** Pengujian memerlukan impor spesifik `{ RoomManagement }` dan bukan `default export`.
 - **Modul Service Layer:** Service API seperti `roomService.list` diletakkan di `app/services/roomService`. *Mocking* path yang salah (seperti `../services/roomService.ts` di mana path alias tidak dikenali) memicu error `NetworkError`. Kami menyesuaikan path import yang dimock menjadi path relatif secara langsung `../app/services/roomService` atau meniru resolusi root.
@@ -52,4 +63,4 @@ atau
 npm run test
 ```
 
-Perintah di atas akan menjalankan Vitest dan merender laporan keberhasilan ke terminal. Hasil pengujian menunjukkan `6 passed (100% success rate)` untuk bagian Frontend.
+Perintah di atas akan menjalankan Vitest dan merender laporan keberhasilan ke terminal. Hasil pengujian menunjukkan `7 passed (100% success rate)` untuk bagian Frontend.

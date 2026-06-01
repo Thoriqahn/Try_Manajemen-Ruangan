@@ -35,7 +35,7 @@ export function RoomManagement({ isSuperAdmin = false, onNavigate }: RoomManagem
         search: search || undefined,
         admin_id: filterAdmin || undefined,
         managed_only: isSuperAdmin ? undefined : "true"
-      });
+      } as any);
       const normal = (res.data || []).map((r: any) => {
         const facs = r.facilities;
         if (Array.isArray(facs)) {
@@ -627,7 +627,7 @@ function RoomFormModal({ room, isSuperAdmin, onClose }: { room: any; isSuperAdmi
         await roomService.update(roomId, payload); 
       } else { 
         const res = await roomService.create(payload);
-        roomId = res.data?.id || res.id || res.data?.data?.id; // fallback logic just in case
+        roomId = (res as any).data?.id || res.id || (res as any).data?.data?.id; // fallback logic just in case
       }
 
       if (photos.length > 0 && roomId) {

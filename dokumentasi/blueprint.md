@@ -30,6 +30,14 @@ Sistem menggunakan struktur hirarki dengan 3 tingkatan akses:
 - Setiap aktivitas kritikal (Pembuatan *Booking*, Persetujuan, Penolakan, Pembatalan sepihak, hingga riwayat *Check-in/Check-out*) selalu terekam di dalam database beserta *timestamp*-nya.
 - Saat pemesanan dibatalkan (*Cancelled*), sistem **mewajibkan** pencantuman "Alasan Pembatalan" (*Cancellation Reason*) agar data historis dapat diaudit saat rekonsiliasi bulanan oleh manajemen.
 
+### 1.4. Integrasi Profil Single Sign-On (SSO)
+Sistem ini dipersiapkan untuk menyinkronkan data profil dari penyedia identitas eksternal (IdP) Otorita Ibu Kota Nusantara. Basis data tabel `users` dan model di sisi *Frontend* (termasuk *endpoint* `/api/auth/me` dan `/api/auth/login`) telah dilengkapi properti standar untuk menyimpan data jabatan operasional pengguna:
+- **NIP** (Nomor Induk Pegawai)
+- **Jabatan** (`position`)
+- **Unit Kerja** (`work_unit`)
+- **Unit Organisasi** (`organization_unit`)
+Atribut ini akan dipasok otomatis oleh *SSO Token* dan kelak akan dirender bersama dengan data nama pegawai internal.
+
 ---
 
 ## 2. Epic: Manajemen Gedung & Infrastruktur (Building Management)
@@ -80,7 +88,7 @@ Epic yang terpisah dari skema "Sewa Per Jam", difokuskan pada manajemen meja *Ho
 
 ### 4.4. Fitur Tambahan Terimplementasi (Pasca-MVP)
 
-1. **Cetak PDF Presensi (Selesai):** Fitur bagi pengguna dan admin untuk mengunduh laporan *Check-in* peserta rapat dalam format PDF setelah rapat selesai (`completed`), diekspor langsung di sisi *Frontend* (jsPDF).
+1. **Cetak PDF Presensi (Selesai):** Fitur bagi pengguna, **Admin Ruangan, dan Superadmin** untuk mengunduh laporan *Check-in* peserta rapat dalam format PDF setelah rapat selesai (`completed`), diekspor langsung di sisi *Frontend* (jsPDF). Dokumen PDF mengadopsi mekanisme *Dynamic Height* dan *Text Wrapping* (via `splitTextToSize`) agar kop dokumen tetap presisi meskipun memiliki *Nama Rapat/Agenda* atau *Nama Ruangan* yang sangat panjang. Tombol akses unduhan "Cetak PDF Presensi" sekarang telah tersedia secara seragam di dasbor *My Bookings* (User) maupun dasbor **Kontrol Jadwal** (Admin & Superadmin).
 2. **Aturan Check-Out Khusus (Selesai):** Pengamanan tombol "Akhiri Rapat" (`status = 'ongoing'`) di *Dashboard* pengguna. Tombol hanya muncul dan dapat dieksekusi oleh pembuat pesanan (Owner) atau Admin/Superadmin untuk menghindari penyusupan.
 3. **Log Aktivitas / Audit Trail (Selesai):** Sistem kotak hitam rahasia untuk merekam secara *immutable* (Read-Only) seluruh tindak tanduk perubahan krusial di sistem oleh aktor siapa pun.
 
@@ -142,6 +150,7 @@ Sebagai bukti dokumentasi resmi atas pelaksanaan rapat:
 - Seluruh presensi partisipan internal maupun eksternal dicatat di dalam sistem.
 - Host, peserta (di *My Bookings*), dan Administrator dapat men-download **PDF Daftar Hadir** untuk setiap rapat.
 - **Laporan Otomatis:** PDF dirender menggunakan `jsPDF` dengan kop surat korporat secara dinamis. Tanda tangan digital dari tamu (eksternal) akan langsung tergambar (*embedded*) di dalam tabel PDF tersebut sebagai validasi hukum kehadiran.
+- **Defensive Programming (Data Anomaly):** Mengingat secara *happy path* sebuah jadwal rapat berstatus `completed` wajib memiliki minimal 1 (satu) entitas absensi (*check-in*), sistem secara defensif tetap memvalidasi jika muatan balasan peserta rapat ternyata kosong (e.g. karena anomali data di database). Apabila kosong, aplikasi akan menampilkan *toast error* alih-alih mengeksekusi `generateAttendancePDF` demi mencegah *crash* pada antar-muka (*UI*).
 
 ---
 

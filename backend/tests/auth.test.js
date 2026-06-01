@@ -73,4 +73,29 @@ describe('Auth API Endpoints', () => {
     expect(res.body.success).toBe(false);
     expect(res.body.message).toContain('Email atau password salah');
   });
+
+  it('should return complete profile including SSO fields for /api/auth/me', async () => {
+    // Inject mock SSO fields for the active test user
+    await dbRun('UPDATE users SET position = $1, work_unit = $2, organization_unit = $3, nip = $4 WHERE email = $5', 
+      ['Staff Ahli', 'Unit Kerja A', 'Biro Umum', '199001012020121001', testUser.email]);
+    
+    // Login to get token
+    const loginRes = await request(app)
+      .post('/api/auth/login')
+      .send({ email: testUser.email, password: testUser.password });
+    
+    const token = loginRes.body.accessToken;
+
+    const res = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    // Check SSO Fields
+    expect(res.body.user.position).toBe('Staff Ahli');
+    expect(res.body.user.work_unit).toBe('Unit Kerja A');
+    expect(res.body.user.organization_unit).toBe('Biro Umum');
+    expect(res.body.user.nip).toBe('199001012020121001');
+  });
 });

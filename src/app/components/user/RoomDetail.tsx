@@ -281,7 +281,7 @@ export function RoomDetail({ roomId, onNavigate, userRole }: RoomDetailProps) {
 
   let photos = room.photos || [];
   if (photos.length === 0 && room.image_url) {
-    photos = [{ url: room.image_url, id: 'primary' }];
+    photos = [{ url: room.image_url, id: 'primary', is_primary: true }];
   }
   
   const heroImage = getImageUrl(room.image_url);
@@ -818,7 +818,7 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
     setLoading(true); setError("");
     try {
       await bookingService.create({
-        room_id: (form.meetingType === "online" && room.room_type !== "digital") ? undefined : room.id,
+        room_id: room.id,
         date: form.date,
         start_time: form.startTime, end_time: form.endTime,
         agenda: form.agenda, participants: Number(form.participants) || 1,
@@ -981,8 +981,14 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
                 if (file && file.size > 2 * 1024 * 1024) {
                   alert("File terlalu besar. Maksimal 2MB.");
                   e.target.value = ""; // Reset the input
+                } else if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    setForm({ ...form, suratTerkait: ev.target?.result as string });
+                  };
+                  reader.readAsDataURL(file);
                 } else {
-                  setForm({ ...form, suratTerkait: file });
+                  setForm({ ...form, suratTerkait: "" });
                 }
               }}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 transition-colors dark:bg-slate-800 dark:border-slate-700"

@@ -2,7 +2,17 @@ import { api, TokenStore, UserStore } from './apiClient';
 
 export interface LoginPayload { email: string; password: string; }
 export interface RegisterPayload { name: string; email: string; password: string; }
-export interface User { id: string; name: string; email: string; role: 'user' | 'admin' | 'superadmin'; status: string; }
+export interface User { 
+  id: string; 
+  name: string; 
+  email: string; 
+  role: string; 
+  status: string; 
+  position?: string;
+  work_unit?: string;
+  organization_unit?: string;
+  nip?: string;
+}
 
 export const authService = {
   async login(payload: LoginPayload) {

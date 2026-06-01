@@ -261,6 +261,10 @@ describe('Bookings API Endpoints', () => {
       let start = `${String(startIKN.getUTCHours()).padStart(2, '0')}:${String(startIKN.getUTCMinutes()).padStart(2, '0')}`;
       let end = `${String(endIKN.getUTCHours()).padStart(2, '0')}:${String(endIKN.getUTCMinutes()).padStart(2, '0')}`;
 
+      // Prevent midnight rollover causing start > end
+      if (startIKN.getUTCDate() !== iknTime.getUTCDate()) start = '00:00';
+      if (endIKN.getUTCDate() !== iknTime.getUTCDate()) end = '23:59';
+
       const room = await dbGet("SELECT id, qr_token FROM rooms WHERE id = $1", [testRoomId]);
       qrToken = room.qr_token;
 
@@ -420,9 +424,15 @@ describe('Bookings API Endpoints', () => {
       let start = `${String(startIKN.getUTCHours()).padStart(2, '0')}:${String(startIKN.getUTCMinutes()).padStart(2, '0')}`;
       let end = `${String(endIKN.getUTCHours()).padStart(2, '0')}:${String(endIKN.getUTCMinutes()).padStart(2, '0')}`;
 
+      // Prevent midnight rollover causing start > end
+      if (startIKN.getUTCDate() !== iknTime.getUTCDate()) start = '00:00';
+      if (endIKN.getUTCDate() !== iknTime.getUTCDate()) end = '23:59';
+
       const bookingRes = await request(app).post('/api/bookings')
         .set('Authorization', `Bearer ${userToken1}`)
         .send({ room_id: roomId, date: todayStr, start_time: start, end_time: end, agenda: 'Attendee View Test', meeting_type: 'offline' });
+      
+      if (!bookingRes.body.success) console.error("Booking Creation Failed:", bookingRes.body);
       const bookingId = bookingRes.body.data.id;
 
       // Approve agar status = confirmed, baru bisa check-in

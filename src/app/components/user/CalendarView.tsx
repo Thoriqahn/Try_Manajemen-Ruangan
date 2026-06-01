@@ -606,6 +606,7 @@ export function CalendarView({ onNavigate, userRole }: CalendarViewProps) {
 
   const filteredRooms = rooms.filter(r => {
     if (r.status !== "active") return false;
+    if (r.jenis_manajemen_ruang === "WORKSPACE") return false;
     if (filterBuilding !== "all" && r.building_name !== filterBuilding) return false;
     if (filterFloor !== "all" && r.floor_name !== filterFloor) return false;
     return true;
@@ -1027,8 +1028,14 @@ function BookingModal({ room, date, startTime, endTime, onClose, onConfirm }: {
                 if (file && file.size > 2 * 1024 * 1024) {
                   alert("File terlalu besar. Maksimal 2MB.");
                   e.target.value = "";
+                } else if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    setForm({ ...form, suratTerkait: ev.target?.result as string });
+                  };
+                  reader.readAsDataURL(file);
                 } else {
-                  setForm({ ...form, suratTerkait: file });
+                  setForm({ ...form, suratTerkait: "" as any });
                 }
               }}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-gray-50 transition-colors dark:bg-slate-800 dark:border-slate-700"

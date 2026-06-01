@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, Trash2, Calendar, MapPin, Clock, Users, RefreshCw, FileText, X } from "lucide-react";
+import { AlertTriangle, Trash2, Calendar, MapPin, Clock, Users, RefreshCw, FileText, X, Download } from "lucide-react";
+import { toast } from "sonner";
 import { bookingService, Booking } from "../../services/bookingService";
 import { TokenStore } from "../../services/apiClient";
 import { generateAttendancePDF } from "../../utils/pdfExport";
@@ -51,7 +52,7 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
       setConfirmStep(1);
       load();
     } catch (e: any) {
-      alert(e.response?.data?.message || e.message || "Gagal membatalkan jadwal");
+      toast.error(e.response?.data?.message || e.message || "Gagal membatalkan jadwal");
     } finally {
       setSubmitting(false);
     }
@@ -63,13 +64,22 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
       const attendees = res.data || [];
 
       if (attendees.length === 0) {
-        alert("Belum ada daftar hadir untuk jadwal ini.");
+        toast.error("Belum ada daftar hadir untuk jadwal ini.");
         return;
       }
 
-      generateAttendancePDF(booking, attendees);
+      toast.info("Membuat dokumen PDF...");
+      generateAttendancePDF(
+        booking.id,
+        booking.room_name || "Ruangan",
+        booking.agenda,
+        booking.date,
+        `${booking.start_time} - ${booking.end_time}`,
+        attendees
+      );
+      toast.success("PDF berhasil diunduh");
     } catch(err) {
-      alert("Gagal mengunduh PDF");
+      toast.error("Gagal mengunduh PDF");
     }
   };
 
@@ -188,12 +198,21 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
                             await bookingService.endBooking(booking.id);
                             load();
                           } catch (err: any) {
-                            alert(err.response?.data?.message || "Gagal mengakhiri rapat");
+                            toast.error(err.response?.data?.message || "Gagal mengakhiri rapat");
                           }
                         }
                       }}
                         className="flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-50 text-amber-600 text-sm font-bold rounded-xl hover:bg-amber-500 hover:text-white transition-all flex-shrink-0 shadow-sm active:scale-95 dark:bg-amber-500/20 dark:hover:bg-amber-500 dark:text-amber-400" title="Akhiri Rapat">
                         <Clock size={16} /> <span className="hidden sm:inline">Selesai</span>
+                      </button>
+                    )}
+                    {booking.status === "completed" && (
+                      <button onClick={async (e) => { 
+                        e.stopPropagation();
+                        downloadAttendancePDF(booking);
+                      }}
+                        className="px-4 py-2.5 text-xs border border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 dark:bg-indigo-500/30 dark:text-indigo-400 dark:border-indigo-500/30 flex items-center gap-1.5" title="Unduh Daftar Hadir">
+                        <Download size={14} /> <span className="hidden sm:inline">Cetak PDF Presensi</span>
                       </button>
                     )}
                     {booking.status !== "completed" && (
@@ -290,7 +309,7 @@ export function ScheduleControl({ isSuperAdmin = false }: { isSuperAdmin?: boole
                         const attendees = await bookingService.getAttendees(selectedBookingView.id);
                         downloadAttendancePDF(selectedBookingView, attendees.data);
                       } catch(e) {
-                        alert("Gagal mengunduh daftar hadir");
+                        toast.error("Gagal mengunduh daftar hadir");
                       }
                     }}
                     className="px-3 py-1.5 flex items-center gap-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30 rounded-lg text-xs font-bold transition-colors"
