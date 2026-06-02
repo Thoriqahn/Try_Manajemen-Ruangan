@@ -808,14 +808,13 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
 
   const timeOptions = getDynamicSlots(room, true);
   const endOptions = timeOptions.filter(t => t > form.startTime);
 
   const handleSubmit = async () => {
     if (!form.agenda || !form.startTime || !form.endTime) return;
-    setLoading(true); setError("");
+    setLoading(true);
     try {
       await bookingService.create({
         room_id: room.id,
@@ -828,9 +827,10 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
       });
       setSuccess(true);
     } catch (e: any) {
-      setError(e.message || "Gagal membuat booking");
+      toast.error(e.message || "Gagal membuat booking");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (success) {
@@ -873,7 +873,6 @@ function QuickBookingModal({ room, initialDate, initialTime, initialEndTime, onC
           <p className="text-sm text-gray-500 mt-0.5 transition-colors dark:text-slate-400">{room.name}</p>
         </div>
         <div className="p-6 space-y-4 overflow-y-auto flex-1">
-          {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-xs text-red-700 transition-colors duration-300 dark:bg-red-500/30 dark:text-red-400 dark:border-red-500/30">{error}</div>}
 
           {/* Meeting Type Selector */}
           {room.room_type === "digital" ? (

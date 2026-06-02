@@ -5,6 +5,7 @@ import { roomService } from "../../services/roomService";
 import { bookingService } from "../../services/bookingService";
 import { buildingService, policyService } from "../../services/index";
 import { UserStore } from "../../services/apiClient";
+import { toast } from "sonner";
 
 interface CalendarViewProps {
   onNavigate: (page: string, data?: any) => void;
@@ -884,7 +885,6 @@ function BookingModal({ room, date, startTime, endTime, onClose, onConfirm }: {
     suratTerkait: "" as any,
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
   const endOptions = timeSlots.filter(t => t > startTime);
@@ -892,7 +892,6 @@ function BookingModal({ room, date, startTime, endTime, onClose, onConfirm }: {
   const handleSubmit = async () => {
     if (!form.agenda || !form.endTime) return;
     setLoading(true);
-    setError("");
     try {
       await bookingService.create({
         room_id: room.id,
@@ -905,7 +904,7 @@ function BookingModal({ room, date, startTime, endTime, onClose, onConfirm }: {
       });
       setSuccess(true);
     } catch (e: any) {
-      setError(e.message || "Gagal melakukan pemesanan");
+      toast.error(e.message || "Gagal melakukan pemesanan");
     } finally {
       setLoading(false);
     }
@@ -951,12 +950,6 @@ function BookingModal({ room, date, startTime, endTime, onClose, onConfirm }: {
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg transition-colors dark:text-slate-300">×</button>
         </div>
-
-        {error && (
-          <div className="mx-5 mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl transition-colors duration-300 dark:bg-red-500/30 dark:text-red-400 dark:border-red-500/30">
-            {error}
-          </div>
-        )}
 
         <div className="mx-5 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3 transition-colors dark:bg-blue-900/20 dark:border-blue-800/50">
           <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
