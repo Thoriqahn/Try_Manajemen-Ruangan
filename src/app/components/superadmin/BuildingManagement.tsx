@@ -204,6 +204,17 @@ function BuildingFormModal({ building, onClose }: { building: any; onClose: () =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!form.name.trim()) {
+      setError("Nama gedung wajib diisi!");
+      return;
+    }
+    
+    if (!form.total_floors || form.total_floors < 1) {
+      setError("Total lantai wajib diisi minimal 1!");
+      return;
+    }
+
     if (!form.lat || !form.lng) {
       setError("Anda wajib meletakkan pinpoint pada peta!");
       return;
@@ -249,7 +260,7 @@ function BuildingFormModal({ building, onClose }: { building: any; onClose: () =
           <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full text-gray-500 transition-colors dark:text-slate-400"><X size={20} /></button>
         </div>
         
-        <form onSubmit={handleSubmit} className="flex flex-col md:flex-row flex-1 overflow-y-auto">
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col md:flex-row flex-1 overflow-y-auto">
           {/* Kolom Kiri: Visual & Peta */}
           <div className="w-full md:w-5/12 bg-gray-50 p-6 border-r border-gray-100 space-y-6 flex flex-col shrink-0 transition-colors duration-300 dark:bg-slate-800/80 dark:border-slate-800/50">
             
@@ -307,8 +318,8 @@ function BuildingFormModal({ building, onClose }: { building: any; onClose: () =
           <div className="w-full md:w-7/12 p-6 bg-white backdrop-blur-md space-y-6 flex flex-col justify-between transition-colors duration-300 dark:bg-slate-900/90">
             <div className="space-y-5">
               {error && (
-                <div className="p-4 bg-red-50/50 border border-red-100 text-red-600 text-sm rounded-2xl flex items-start gap-3 transition-colors duration-300 dark:text-red-400 dark:border-red-800/30">
-                  <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-colors duration-300 dark:bg-red-900/40"><X size={12}/></div>
+                <div className="p-4 bg-red-50/50 border border-red-100 text-red-600 text-sm rounded-2xl flex items-start gap-3 transition-colors duration-300 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/30">
+                  <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-colors duration-300 dark:bg-red-500/20 dark:text-red-300"><X size={12}/></div>
                   {error}
                 </div>
               )}
@@ -316,7 +327,7 @@ function BuildingFormModal({ building, onClose }: { building: any; onClose: () =
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 transition-colors duration-300 dark:text-slate-200">Nama Gedung <span className="text-red-500">*</span></label>
-                  <input required type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full p-3 border border-gray-200 rounded-2xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all bg-gray-50/50 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:focus:border-blue-500 dark:focus:ring-blue-500/20" placeholder="Contoh: Gedung Kemenko 1" />
+                  <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full p-3 border border-gray-200 rounded-2xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all bg-gray-50/50 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:focus:border-blue-500 dark:focus:ring-blue-500/20" placeholder="Contoh: Gedung Kemenko 1" />
                 </div>
                 
                 <div className="sm:col-span-2">
@@ -328,7 +339,7 @@ function BuildingFormModal({ building, onClose }: { building: any; onClose: () =
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 transition-colors duration-300 dark:text-slate-200">Total Lantai <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <Layers size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors duration-300 dark:text-slate-500" />
-                    <input required type="number" min={1} value={form.total_floors} onChange={e => setForm({...form, total_floors: parseInt(e.target.value) || 1})} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-2xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all bg-gray-50/50 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:focus:border-blue-500 dark:focus:ring-blue-500/20" placeholder="1" />
+                    <input type="number" min={1} value={form.total_floors} onChange={e => setForm({...form, total_floors: parseInt(e.target.value) || 1})} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-2xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all bg-gray-50/50 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:focus:border-blue-500 dark:focus:ring-blue-500/20" placeholder="1" />
                   </div>
                 </div>
               </div>
