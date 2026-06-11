@@ -15,10 +15,10 @@ Sistem menggunakan struktur hirarki dengan 3 tingkatan akses:
    - Hak akses absolut (Global).
    - Mengelola pengguna dan menugaskan Admin untuk Departemen/Divisi tertentu.
    - Dapat melakukan intervensi tingkat sistem (contoh: menonaktifkan pengguna yang melanggar kebijakan).
-2. **Admin:**
-   - Hak akses teritorial (terbatas pada ruang lingkup Departemen/Divisi masing-masing).
-   - Mengelola properti ruangan, fasilitas, dan persetujuan (Approve/Reject) reservasi.
-   - Diberikan kemampuan *override* untuk membatalkan jadwal pengguna jika ada rapat dadakan dengan prioritas tinggi.
+2. **Admin:** Terbagi menjadi 3 spesialisasi peran:
+   - **Admin Ruangan (ADMIN_RAPAT):** Hak akses spesifik untuk menyetujui pemesanan ruang rapat dan mengedit data ruangan (fasilitas/layout).
+   - **Admin Workspace (ADMIN_KERJA):** Hak akses spesifik untuk menyetujui/memindahkan meja kerja pengguna pada mode *Hot Desking*. Admin tipe ini secara tegas **diblokir** (403 Forbidden) dari mengakses menu/API pengubahan ruangan.
+   - **Admin Gabungan (ADMIN):** Peran super-admin parsial yang memiliki kedua fungsi `ADMIN_RAPAT` dan `ADMIN_KERJA` sekaligus secara native. Memiliki wewenang lintas modul (rapat maupun meja kerja).
 3. **User:**
    - Pengguna akhir. Hanya dapat melakukan reservasi, melihat ketersediaan ruang, mengundang kolega, serta melakukan *check-in/check-out*.
 
@@ -158,8 +158,10 @@ Sebagai bukti dokumentasi resmi atas pelaksanaan rapat:
 Menyajikan laporan (*reporting*) esensial dan data eksekutif secara real-time.
 
 ### 8.1. Eksekutif & Manajemen Fasilitas
-- Laporan jumlah *No-Show* dan tingkat pembatalan digunakan untuk menilai disiplin pengguna.
-- Pemetaan visual tentang "Ruangan yang Sedang Digunakan Sekarang" (*Live Occupancy*).
+- **Role-Based Metrics**: Antarmuka dashboard (AdminDashboard) terpersonalisasi secara otomatis berdasarkan peran (`ADMIN_RAPAT`, `ADMIN_KERJA`, `ADMIN` gabungan).
+- **Admin Rapat**: Melihat Laporan jumlah *No-Show*, tren jadwal, pemesanan yang menunggu persetujuan (rapat), dan distribusi jam sibuk.
+- **Admin Kerja**: Memantau kapasitas operasional ruang kerja (Total Meja, Meja Terisi, Meja Kosong), tingkat okupansi per gedung/lantai (*utilization bar*), dan antrean pengajuan meja kerja dari pegawai.
+- **Admin Gabungan/Superadmin**: Mengonsolidasi kedua panel (Rapat & Ruang Kerja) secara visual dalam satu dasbor terpadu. Khusus untuk Superadmin, tampilan UI dan blok statistik akan secara dinamis berubah (menghilangkan/memunculkan panel tertentu) menyesuaikan *role* dasar dari admin spesifik yang sedang disorot melalui _dropdown filter_.
 - Identifikasi rasio kapasitas ruang fisik berbanding dengan ukuran undangan rapat yang lazim diadakan.
 
 ### 8.2. Pengguna Akhir
@@ -173,3 +175,13 @@ Guna mencegah anomali data penjadwalan dan *flaky tests* lintas batas tanggal te
 ### 9.1. Waktu Referensi Tunggal (IKN / UTC+08:00)
 - Sistem kalender dan *check-in* secara paksa menggunakan kalkulasi kalender **IKN (WITA / UTC+08:00)** secara mandiri (`Date.now() + 8 hours`), dan tidak bergantung pada konfigurasi *timezone* mesin peladen (*server*) yang berpotensi memiliki waktu dasar `UTC`.
 - Melalui standarisasi absolut ini, ketika rapat di-*booking* hari Jumat pada jam IKN, validasi absensi (*public attendance* maupun internal *check-in*) akan tetap menganggap hari tersebut adalah hari Jumat, meskipun jam sistem lokal *server* masih berada di hari Kamis malam.
+
+---
+
+## 10. Epic: Sistem Notifikasi Real-Time (Polling)
+Memastikan pergerakan informasi yang penting tersampaikan seketika ke pengguna tanpa memuat ulang (*refresh*) halaman secara manual.
+
+### 10.1. Notifikasi Asinkron (Background Polling)
+- Sistem klien (`MainLayout`) mengimplementasikan *smart interval polling* setiap 10 detik ke titik *endpoint* `/api/notifications`.
+- Mekanisme ini memantau segala aksi dari belakang layar, seperti **Persetujuan Pemesanan Meja**, **Pemindahan Paksa (Force Assign)**, hingga **Penolakan Permintaan** oleh Admin.
+- Sistem notifikasi menormalisasi rute *fetch* dengan tepat untuk menghindari komplikasi duplikasi *prefix* API (`/api/api/notifications`), sehingga indikator lonceng merah dapat muncul dengan mulus kapan pun ada pesan baru di dalam pangkalan data.

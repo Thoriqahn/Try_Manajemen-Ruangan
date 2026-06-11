@@ -70,6 +70,7 @@ const verifyOtp = async (req, res, next) => {
     await dbRun(`UPDATE users SET status='active', otp=NULL, otp_expires=NULL, otp_type=NULL WHERE id=$1`, [userId]);
     const updatedUser = await dbGet('SELECT id, name, email, role, position, work_unit, organization_unit, nip FROM users WHERE id=$1', [userId]);
     
+    updatedUser.rawRole = updatedUser.role;
     updatedUser.role = normalizeRole(updatedUser.role);
     
     const { accessToken, refreshToken } = generateTokens(updatedUser);
@@ -127,7 +128,9 @@ const login = async (req, res, next) => {
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ success: false, message: 'Email atau password salah' });
 
+    const rawRole = user.role;
     user.role = normalizeRole(user.role);
+    user.rawRole = rawRole;
 
     const { accessToken, refreshToken } = generateTokens(user);
     await dbRun('UPDATE users SET refresh_token=$1 WHERE id=$2', [refreshToken, user.id]);
@@ -137,7 +140,7 @@ const login = async (req, res, next) => {
       message: 'Login berhasil',
       accessToken,
       refreshToken,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, position: user.position, work_unit: user.work_unit, organization_unit: user.organization_unit, nip: user.nip }
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, rawRole: user.rawRole, position: user.position, work_unit: user.work_unit, organization_unit: user.organization_unit, nip: user.nip }
     });
   } catch (err) { next(err); }
 };
@@ -198,6 +201,7 @@ const me = async (req, res, next) => {
   try {
     const user = await dbGet('SELECT id, name, email, role, status, created_at, position, work_unit, organization_unit, nip FROM users WHERE id=$1 AND deleted_at IS NULL', [req.user.id]);
     if (user) {
+      user.rawRole = user.role;
       user.role = normalizeRole(user.role);
     }
     res.json({ success: true, user });

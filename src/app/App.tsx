@@ -9,6 +9,7 @@ import { RoomDetail } from "./components/user/RoomDetail";
 import { MyBookings } from "./components/user/MyBookings";
 import { WorkspaceDeskMap } from "./components/workspace/WorkspaceDeskMap";
 import { WorkspaceApproval } from "./components/admin/WorkspaceApproval";
+import { WorkspaceManagement } from "./components/admin/WorkspaceManagement";
 import { AdminDashboard } from "./components/admin/AdminDashboard";
 import { ApprovalQueue } from "./components/admin/ApprovalQueue";
 import { ScheduleControl } from "./components/admin/ScheduleControl";
@@ -28,7 +29,7 @@ import { ErrorState } from "./components/shared/ErrorState";
 type Page =
   | "login" | "register" | "forgot-password"
   | "calendar" | "rooms" | "room-detail" | "my-bookings" | "workspaces"
-  | "admin-dashboard" | "admin-approval" | "admin-schedule" | "admin-rooms" | "admin-workspace-approval"
+  | "admin-dashboard" | "admin-approval" | "admin-schedule" | "admin-rooms" | "admin-workspace-approval" | "admin-workspaces"
   | "sa-buildings" | "sa-users" | "sa-policy" | "sa-api" | "sa-audit" | "sa-zoom";
 
 type Role = "user" | "admin" | "superadmin";
@@ -56,6 +57,7 @@ const pageTitles: Record<string, { title: string; subtitle?: string }> = {
   "admin-schedule": { title: "Jadwal Aktif", subtitle: "Pantau dan kelola jadwal yang sedang berjalan" },
   "admin-rooms": { title: "Kelola Ruangan", subtitle: "Manajemen ruangan yang menjadi tanggung jawab Anda" },
   "admin-workspace-approval": { title: "Persetujuan Meja", subtitle: "Kelola antrean permohonan meja pegawai" },
+  "admin-workspaces": { title: "Kelola Workspace", subtitle: "Manajemen dan alokasi tempat duduk pegawai" },
   "sa-buildings": { title: "Manajemen Gedung", subtitle: "Kelola daftar gedung, kantor, dan lokasi peta" },
 
   "sa-users": { title: "Manajemen Pengguna", subtitle: "Kelola akun dan delegasi wilayah tugas" },
@@ -174,6 +176,9 @@ export default function App() {
   const renderPage = () => {
     const isSuper = role === "superadmin";
     const isAdmin = role === "admin" || isSuper;
+    const rawRole = currentUser?.rawRole || (isSuper ? "SUPERADMIN" : role === "admin" ? "ADMIN_RAPAT" : "USER");
+    const isRapat = rawRole === "ADMIN_RAPAT" || rawRole === "ADMIN" || rawRole === "SUPERADMIN";
+    const isKerja = rawRole === "ADMIN_KERJA" || rawRole === "ADMIN" || rawRole === "SUPERADMIN";
 
     switch (nav.page) {
       // User
@@ -193,17 +198,20 @@ export default function App() {
         if (!isAdmin) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
         return <AdminDashboard onNavigate={handleNavigate} isSuperAdmin={isSuper} />;
       case "admin-approval":
-        if (!isAdmin) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
+        if (!isRapat) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
         return <ApprovalQueue onNavigate={handleNavigate} isSuperAdmin={isSuper} />;
       case "admin-schedule":
-        if (!isAdmin) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
+        if (!isRapat) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
         return <ScheduleControl isSuperAdmin={isSuper} />;
       case "admin-rooms":
-        if (!isAdmin) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
+        if (!isRapat) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
         return <RoomManagement isSuperAdmin={isSuper} onNavigate={handleNavigate} />;
       case "admin-workspace-approval":
-        if (!isAdmin) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
+        if (!isKerja) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
         return <WorkspaceApproval onNavigate={handleNavigate} isSuperAdmin={isSuper} />;
+      case "admin-workspaces":
+        if (!isKerja) return <ErrorState type="403" onAction={() => handleNavigate("calendar")} />;
+        return <WorkspaceManagement isSuperAdmin={isSuper} />;
 
       // Super Admin
       case "sa-buildings":

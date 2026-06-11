@@ -9,6 +9,11 @@ const checkRawRole = (...allowedRoles) => (req, res, next) => {
     return res.status(401).json({ success: false, message: 'Tidak terautentikasi' });
   }
   const role = req.user.rawRole || req.user.role;
+  
+  if (role === 'ADMIN' && (allowedRoles.includes('ADMIN_KERJA') || allowedRoles.includes('ADMIN_RAPAT'))) {
+    return next();
+  }
+
   if (!allowedRoles.includes(role)) {
     return res.status(403).json({ success: false, message: 'Akses ditolak: izin tidak mencukupi untuk peran ini' });
   }
@@ -133,6 +138,27 @@ router.post('/assignments/requests/:id/reject', authGuard, checkRawRole('ADMIN_K
  *         description: Success response
  */
 router.get('/assignments/my-desk', authGuard, checkRawRole('USER', 'ADMIN_KERJA', 'SUPERADMIN'), ctrl.getMyDeskAssignment);
+
+/**
+ * Endpoint 8: List All Occupied Assignments for Admin / Superadmin
+ * GET /api/v1/workspaces/assignments/all
+ * Accessible by: ADMIN_KERJA, SUPERADMIN
+ */
+router.get('/assignments/all', authGuard, checkRawRole('ADMIN_KERJA', 'SUPERADMIN'), ctrl.listAllAssignments);
+
+/**
+ * Endpoint 9: Remove (Unassign) a user from a desk
+ * DELETE /api/v1/workspaces/assignments/:room_id/:desk_id
+ * Accessible by: ADMIN_KERJA, SUPERADMIN
+ */
+router.delete('/assignments/:room_id/:desk_id', authGuard, checkRawRole('ADMIN_KERJA', 'SUPERADMIN'), ctrl.removeAssignment);
+
+/**
+ * Endpoint 10: Force Assign a user to a desk
+ * POST /api/v1/workspaces/assignments/force
+ * Accessible by: ADMIN_KERJA, SUPERADMIN
+ */
+router.post('/assignments/force', authGuard, checkRawRole('ADMIN_KERJA', 'SUPERADMIN'), ctrl.forceAssignDesk);
 
 module.exports = router;
 

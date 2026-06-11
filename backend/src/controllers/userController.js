@@ -25,7 +25,7 @@ const listUsers = async (req, res, next) => {
     let paramIdx = 1;
     if (role) {
       if (role === 'admin') {
-        sql += ` AND role IN ('ADMIN_RAPAT', 'ADMIN_KERJA')`;
+        sql += ` AND role IN ('ADMIN_RAPAT', 'ADMIN_KERJA', 'ADMIN')`;
       } else if (role === 'ADMIN_RAPAT' || role === 'ADMIN_KERJA') {
         sql += ` AND role = $${paramIdx++}`;
         params.push(role);
@@ -96,7 +96,7 @@ const getUser = async (req, res, next) => {
 const updateRole = async (req, res, next) => {
   try {
     const { role } = req.body;
-    const allowedRoles = ['user', 'admin', 'superadmin', 'USER', 'ADMIN_RAPAT', 'ADMIN_KERJA', 'SUPERADMIN'];
+    const allowedRoles = ['user', 'admin', 'superadmin', 'USER', 'ADMIN_RAPAT', 'ADMIN_KERJA', 'ADMIN', 'SUPERADMIN'];
     if (!allowedRoles.includes(role))
       return res.status(400).json({ success: false, message: 'Role tidak valid' });
     const user = await dbGet('SELECT * FROM users WHERE id=$1 AND deleted_at IS NULL', [req.params.id]);
@@ -121,12 +121,14 @@ const updateRole = async (req, res, next) => {
       dbRole = 'ADMIN_RAPAT';
     } else if (role === 'ADMIN_KERJA') {
       dbRole = 'ADMIN_KERJA';
+    } else if (role === 'ADMIN') {
+      dbRole = 'ADMIN';
     }
 
     await dbRun('UPDATE users SET role=$1 WHERE id=$2', [dbRole, req.params.id]);
 
     // Hapus semua room_assignments jika bukan admin lagi
-    if (dbRole !== 'ADMIN_RAPAT' && dbRole !== 'ADMIN_KERJA') {
+    if (dbRole !== 'ADMIN_RAPAT' && dbRole !== 'ADMIN_KERJA' && dbRole !== 'ADMIN') {
       await dbRun('DELETE FROM room_assignments WHERE user_id=$1', [req.params.id]);
     }
 

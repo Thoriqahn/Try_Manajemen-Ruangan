@@ -22,7 +22,7 @@ const normalizeRole = (dbRole) => {
   if (!dbRole) return 'user';
   const r = dbRole.toUpperCase();
   if (r === 'SUPERADMIN') return 'superadmin';
-  if (r === 'ADMIN_RAPAT' || r === 'ADMIN_KERJA') return 'admin';
+  if (r === 'ADMIN_RAPAT' || r === 'ADMIN_KERJA' || r === 'ADMIN') return 'admin';
   return 'user';
 };
 

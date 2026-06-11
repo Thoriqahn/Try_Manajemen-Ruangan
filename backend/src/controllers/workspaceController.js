@@ -180,8 +180,8 @@ const relocateWorkspaceDesk = async (req, res, next) => {
   const adminName = req.user.name;
   const rawRole = req.user.rawRole || req.user.role;
 
-  // Verify only ADMIN_KERJA or SUPERADMIN
-  if (rawRole !== 'ADMIN_KERJA' && rawRole !== 'SUPERADMIN') {
+  // Verify only ADMIN_KERJA, ADMIN (Gabungan), or SUPERADMIN
+  if (rawRole !== 'ADMIN_KERJA' && rawRole !== 'ADMIN' && rawRole !== 'SUPERADMIN') {
     return res.status(403).json({
       success: false,
       message: 'Akses ditolak: izin tidak mencukupi untuk melakukan override relocation'
@@ -302,7 +302,7 @@ const relocateWorkspaceDesk = async (req, res, next) => {
     // 5. Create notification for the affected employee
     const notifId = uuidv4();
     const title = 'Pemindahan Meja Kerja Administratif';
-    const message = `Meja kerja Anda telah dipindahkan secara administratif dari meja ${current_desk_id} ke ${target_desk_id}. Alasan: ${rationale}`;
+    const message = `Akses Anda ke Desk Nomor ${current_desk_id} telah dipindah ke Desk ${target_desk_id}`;
     const payloadNotif = JSON.stringify({
       current_desk_id,
       target_desk_id,
@@ -367,7 +367,7 @@ const listSeatingRequests = async (req, res, next) => {
         LEFT JOIN floors f ON r.floor_id = f.id
         ORDER BY sr.created_at DESC`
       );
-    } else if (rawRole === 'ADMIN_KERJA') {
+    } else if (rawRole === 'ADMIN_KERJA' || rawRole === 'ADMIN') {
       requests = await dbAll(
         `SELECT 
           sr.id, sr.room_id, sr.desk_id, sr.user_id, sr.status, sr.created_at,
@@ -737,6 +737,285 @@ const getMyDeskAssignment = async (req, res, next) => {
   }
 };
 
+/**
+ * Endpoint 8: List All Occupied Assignments for Admin / Superadmin
+ * GET /api/v1/workspaces/assignments/all
+ */
+const listAllAssignments = async (req, res, next) => {
+  const adminId = req.user.id;
+  const rawRole = req.user.rawRole || req.user.role;
+
+  try {
+    let assignments;
+    if (rawRole === 'SUPERADMIN') {
+      assignments = await dbAll(
+        `SELECT 
+          wd.desk_id, wd.room_id, wd.assigned_user_id,
+          u.name AS user_name, u.email AS user_email,
+          r.name AS room_name,
+          f.name AS floor_name,
+          b.name AS building_name
+        FROM workspace_desks wd
+        JOIN users u ON wd.assigned_user_id = u.id
+        JOIN rooms r ON wd.room_id = r.id
+        LEFT JOIN buildings b ON r.building_id = b.id
+        LEFT JOIN floors f ON r.floor_id = f.id
+        WHERE wd.status = 'OCCUPIED'`
+      );
+    } else if (rawRole === 'ADMIN_KERJA' || rawRole === 'ADMIN') {
+      assignments = await dbAll(
+        `SELECT 
+          wd.desk_id, wd.room_id, wd.assigned_user_id,
+          u.name AS user_name, u.email AS user_email,
+          r.name AS room_name,
+          f.name AS floor_name,
+          b.name AS building_name
+        FROM workspace_desks wd
+        JOIN users u ON wd.assigned_user_id = u.id
+        JOIN rooms r ON wd.room_id = r.id
+        JOIN room_assignments ra ON r.id = ra.room_id
+        LEFT JOIN buildings b ON r.building_id = b.id
+        LEFT JOIN floors f ON r.floor_id = f.id
+        WHERE wd.status = 'OCCUPIED' AND ra.user_id = $1`,
+        [adminId]
+      );
+    } else {
+      return res.status(403).json({ success: false, message: 'Akses ditolak: wewenang tidak mencukupi' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: assignments
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Endpoint 9: Remove (Unassign) a user from a desk
+ * DELETE /api/v1/workspaces/assignments/:room_id/:desk_id
+ */
+const removeAssignment = async (req, res, next) => {
+  const { room_id, desk_id } = req.params;
+  const adminId = req.user.id;
+  const adminName = req.user.name;
+  const rawRole = req.user.rawRole || req.user.role;
+
+  const client = await getClient();
+
+  try {
+    await client.query('BEGIN');
+
+    // 1. Get the desk
+    const deskRes = await client.query(
+      `SELECT wd.assigned_user_id, wd.status, r.name AS room_name
+       FROM workspace_desks wd
+       JOIN rooms r ON wd.room_id = r.id
+       WHERE wd.room_id = $1 AND wd.desk_id = $2`,
+      [room_id, desk_id]
+    );
+
+    if (deskRes.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Meja tidak ditemukan' });
+    }
+
+    const desk = deskRes.rows[0];
+
+    if (desk.status !== 'OCCUPIED' || !desk.assigned_user_id) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: 'Meja ini sudah kosong atau tidak memiliki pengguna' });
+    }
+
+    // 2. Authorization check
+    if (rawRole !== 'SUPERADMIN') {
+      const assignment = await client.query(
+        'SELECT 1 FROM room_assignments WHERE user_id = $1 AND room_id = $2',
+        [adminId, room_id]
+      );
+      if (assignment.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return res.status(403).json({ success: false, message: 'Akses ditolak: Anda bukan admin penanggung jawab' });
+      }
+    }
+
+    // 3. Unassign
+    await client.query(
+      `UPDATE workspace_desks
+       SET status = 'VACANT', assigned_user_id = NULL
+       WHERE room_id = $1 AND desk_id = $2`,
+      [room_id, desk_id]
+    );
+
+    // 4. Log to audit trail
+    const auditId = uuidv4();
+    await client.query(
+      `INSERT INTO audit_logs (id, actor_id, actor_name, action, resource, payload_before, payload_after)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        auditId,
+        adminId,
+        adminName,
+        'UNASSIGN_SEATING',
+        `Desk ${desk_id} in ${room_id}`,
+        JSON.stringify({ status: 'OCCUPIED', assigned_user_id: desk.assigned_user_id }),
+        JSON.stringify({ status: 'VACANT', assigned_user_id: null })
+      ]
+    );
+
+    // 5. Send notification to user
+    const notifId = uuidv4();
+    await client.query(
+      `INSERT INTO notifications (id, user_id, title, message, payload)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        notifId,
+        desk.assigned_user_id,
+        'Penugasan Meja Kerja Dicabut',
+        `Akses Anda Ke Desk Nomor ${desk_id} telah dihapus`,
+        JSON.stringify({ room_id, desk_id })
+      ]
+    );
+
+    await client.query('COMMIT');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Penugasan meja berhasil dihapus'
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * Endpoint 10: Force Assign a user to a desk
+ * POST /api/v1/workspaces/assignments/force
+ */
+const forceAssignDesk = async (req, res, next) => {
+  const { room_id, desk_id, user_id } = req.body;
+  const adminId = req.user.id;
+  const adminName = req.user.name;
+  const rawRole = req.user.rawRole || req.user.role;
+
+  const client = await getClient();
+
+  try {
+    await client.query('BEGIN');
+
+    // 1. Authorization check
+    if (rawRole !== 'SUPERADMIN') {
+      const assignment = await client.query(
+        'SELECT 1 FROM room_assignments WHERE user_id = $1 AND room_id = $2',
+        [adminId, room_id]
+      );
+      if (assignment.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return res.status(403).json({ success: false, message: 'Akses ditolak: Anda bukan admin penanggung jawab' });
+      }
+    }
+
+    // 2. Check desk availability
+    const deskRes = await client.query(
+      `SELECT wd.status, r.name AS room_name
+       FROM workspace_desks wd
+       JOIN rooms r ON wd.room_id = r.id
+       WHERE wd.room_id = $1 AND wd.desk_id = $2`,
+      [room_id, desk_id]
+    );
+
+    if (deskRes.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Meja tidak ditemukan' });
+    }
+
+    if (deskRes.rows[0].status !== 'VACANT') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: 'Meja yang dipilih sudah terisi atau tidak tersedia' });
+    }
+
+    const roomName = deskRes.rows[0].room_name;
+
+    // 3. Check if user exists
+    const userRes = await client.query('SELECT name FROM users WHERE id = $1', [user_id]);
+    if (userRes.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Pengguna tidak ditemukan' });
+    }
+
+    // 4. Free user's previous seat in ANY room
+    await client.query(
+      `UPDATE workspace_desks
+       SET status = 'VACANT', assigned_user_id = NULL
+       WHERE assigned_user_id = $1`,
+      [user_id]
+    );
+
+    // 5. Assign user to new desk
+    await client.query(
+      `UPDATE workspace_desks
+       SET status = 'OCCUPIED', assigned_user_id = $1
+       WHERE room_id = $2 AND desk_id = $3`,
+      [user_id, room_id, desk_id]
+    );
+
+    // 6. Cancel any pending seating requests for this user
+    await client.query(
+      `UPDATE seating_requests
+       SET status = 'CANCELLED'
+       WHERE user_id = $1 AND status = 'PENDING'`,
+      [user_id]
+    );
+
+    // 7. Audit log
+    const auditId = uuidv4();
+    await client.query(
+      `INSERT INTO audit_logs (id, actor_id, actor_name, action, resource, payload_before, payload_after)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        auditId,
+        adminId,
+        adminName,
+        'FORCE_ASSIGN_SEATING',
+        `User ${user_id} -> Desk ${desk_id} in ${room_id}`,
+        JSON.stringify({ status: 'VACANT' }),
+        JSON.stringify({ status: 'OCCUPIED', assigned_user_id: user_id })
+      ]
+    );
+
+    // 8. Notification
+    const notifId = uuidv4();
+    await client.query(
+      `INSERT INTO notifications (id, user_id, title, message, payload)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        notifId,
+        user_id,
+        'Penugasan Meja Kerja Baru',
+        `Anda telah ditugaskan secara administratif ke meja ${desk_id} di ruangan ${roomName}.`,
+        JSON.stringify({ room_id, desk_id })
+      ]
+    );
+
+    await client.query('COMMIT');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Pengguna berhasil ditugaskan ke meja',
+      data: { room_id, desk_id, user_id }
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getWorkspaceLayout,
   submitSeatingRequest,
@@ -744,7 +1023,10 @@ module.exports = {
   listSeatingRequests,
   approveSeatingRequest,
   rejectSeatingRequest,
-  getMyDeskAssignment
+  getMyDeskAssignment,
+  listAllAssignments,
+  removeAssignment,
+  forceAssignDesk
 };
 
 

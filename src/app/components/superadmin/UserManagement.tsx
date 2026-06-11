@@ -4,7 +4,7 @@ import { userService, buildingService } from "../../services/index";
 import { roomService } from "../../services/roomService";
 import { UserStore } from "../../services/apiClient";
 
-type Role = "user" | "admin" | "superadmin" | "api" | "ADMIN_RAPAT" | "ADMIN_KERJA" | "SUPERADMIN" | "USER";
+type Role = "user" | "admin" | "superadmin" | "api" | "ADMIN_RAPAT" | "ADMIN_KERJA" | "ADMIN" | "SUPERADMIN" | "USER";
 type Status = "active" | "inactive";
 
 const roleConfig: Record<string, { icon: any; label: string; color: string; desc: string }> = {
@@ -13,6 +13,7 @@ const roleConfig: Record<string, { icon: any; label: string; color: string; desc
   admin:      { icon: <Shield size={14} />,  label: "Admin Ruangan",   color: "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300", desc: "Mengelola ruangan & menyetujui booking" },
   ADMIN_RAPAT:{ icon: <Shield size={14} />,  label: "Admin Ruangan Rapat", color: "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300", desc: "Hanya mengelola ruangan rapat (Meeting Room)" },
   ADMIN_KERJA:{ icon: <Shield size={14} />,  label: "Admin Ruangan Kerja", color: "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300", desc: "Hanya mengelola ruangan kerja (Workspace)" },
+  ADMIN:      { icon: <Shield size={14} />,  label: "Admin Gabungan", color: "bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-700 dark:text-fuchsia-300", desc: "Mengelola seluruh ruangan rapat & kerja" },
   superadmin: { icon: <UserCog size={14} />, label: "Super Admin",     color: "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300",    desc: "Akses penuh ke seluruh sistem" },
   SUPERADMIN: { icon: <UserCog size={14} />, label: "Super Admin",     color: "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300",    desc: "Akses penuh ke seluruh sistem" },
   api:        { icon: <Cpu size={14} />,     label: "Akun API",        color: "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300", desc: "Integrasi layanan eksternal" },
@@ -21,7 +22,7 @@ const roleConfig: Record<string, { icon: any; label: string; color: string; desc
 const filterBuildingsForRole = (buildingsList: any[], role: string) => {
   if (!role) return buildingsList;
   const rUpper = role.toUpperCase();
-  if (rUpper === "SUPERADMIN" || rUpper === "USER" || rUpper === "admin") {
+  if (rUpper === "SUPERADMIN" || rUpper === "USER" || rUpper === "ADMIN" || rUpper === "admin") {
     return buildingsList;
   }
   return buildingsList.map(b => {
@@ -98,7 +99,7 @@ export function UserManagement() {
 
   const handleSaveRole = async (userId: string, role: Role, status: Status, selectedRooms?: string[]) => {
     try {
-      const isAdminRole = role === "admin" || role === "ADMIN_RAPAT" || role === "ADMIN_KERJA";
+      const isAdminRole = role === "admin" || role === "ADMIN_RAPAT" || role === "ADMIN_KERJA" || role === "ADMIN";
       if (isAdminRole && (!selectedRooms || selectedRooms.length === 0)) {
         alert("Wilayah tugas wajib diisi untuk Admin Ruangan!");
         return;
@@ -123,8 +124,8 @@ export function UserManagement() {
 
   const filteredUsers = users.filter(u => {
     if (search && !u.name?.toLowerCase().includes(search.toLowerCase()) && !u.email?.toLowerCase().includes(search.toLowerCase())) return false;
-    const isUserAdmin = u.role === "admin" || u.rawRole === "ADMIN_RAPAT" || u.rawRole === "ADMIN_KERJA";
-    const isActiveAdminFilter = filterRole === "admin" || filterRole === "ADMIN_RAPAT" || filterRole === "ADMIN_KERJA";
+    const isUserAdmin = u.role === "admin" || u.rawRole === "ADMIN_RAPAT" || u.rawRole === "ADMIN_KERJA" || u.rawRole === "ADMIN";
+    const isActiveAdminFilter = filterRole === "admin" || filterRole === "ADMIN_RAPAT" || filterRole === "ADMIN_KERJA" || filterRole === "ADMIN";
     if (isActiveAdminFilter && filterRoom !== "all") {
       const hasRoom = u.assignedRooms?.some((r: any) => r.room_id === filterRoom);
       if (!hasRoom) return false;
@@ -179,9 +180,10 @@ export function UserManagement() {
               <option value="admin">Semua Admin Ruangan</option>
               <option value="ADMIN_RAPAT">Admin Ruangan Rapat</option>
               <option value="ADMIN_KERJA">Admin Ruangan Kerja</option>
+              <option value="ADMIN">Admin Gabungan</option>
               <option value="superadmin">Super Admin</option>
             </select>
-            {(filterRole === "admin" || filterRole === "ADMIN_RAPAT" || filterRole === "ADMIN_KERJA") && (
+            {(filterRole === "admin" || filterRole === "ADMIN_RAPAT" || filterRole === "ADMIN_KERJA" || filterRole === "ADMIN") && (
               <select value={filterRoom} onChange={e => setFilterRoom(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 bg-white backdrop-blur-md transition-all duration-300 dark:bg-slate-900/90 dark:border-slate-700/50">
                 <option value="all">Semua Wilayah Tugas</option>
                 {buildings.flatMap((b: any) =>
@@ -408,17 +410,17 @@ export function UserManagement() {
                     {users.filter(u => {
                       const r = u.rawRole || u.role;
                       if (selectedMatrixRoom.jenis_manajemen_ruang === "WORKSPACE") {
-                        return r === "ADMIN_KERJA";
+                        return r === "ADMIN_KERJA" || r === "ADMIN";
                       } else {
-                        return r === "ADMIN_RAPAT";
+                        return r === "ADMIN_RAPAT" || r === "ADMIN";
                       }
                     }).length === 0 ? (
                       <div className="p-8 text-center text-xs text-gray-400 transition-colors duration-300 dark:text-slate-500">
                         Tidak ada akun admin bertipe{" "}
                         <strong>
                           {selectedMatrixRoom.jenis_manajemen_ruang === "WORKSPACE"
-                            ? "ADMIN_KERJA"
-                            : "ADMIN_RAPAT"}
+                            ? "ADMIN_KERJA atau ADMIN"
+                            : "ADMIN_RAPAT atau ADMIN"}
                         </strong>{" "}
                         tersedia. Ubah peran akun pegawai terlebih dahulu menjadi admin di tab Daftar Pengguna.
                       </div>
@@ -427,9 +429,9 @@ export function UserManagement() {
                         .filter(u => {
                           const r = u.rawRole || u.role;
                           if (selectedMatrixRoom.jenis_manajemen_ruang === "WORKSPACE") {
-                            return r === "ADMIN_KERJA";
+                            return r === "ADMIN_KERJA" || r === "ADMIN";
                           } else {
-                            return r === "ADMIN_RAPAT";
+                            return r === "ADMIN_RAPAT" || r === "ADMIN";
                           }
                         })
                         .map(adminUser => {
@@ -608,12 +610,13 @@ function RoleEditModal({ user, currentRole, currentStatus, buildings, onSave, on
     { value: "USER" as Role, label: "Pengguna Biasa", desc: "Dapat melihat kalender dan melakukan booking ruangan/meja", color: "bg-blue-50 dark:bg-blue-900/20", borderColor: "border-blue-400", icon: <User size={18} className="text-blue-600 transition-colors duration-300 dark:text-blue-400" /> },
     { value: "ADMIN_RAPAT" as Role, label: "Admin Ruangan Rapat", desc: "Hanya mengelola ruangan rapat (Meeting Room) & menyetujui booking", color: "bg-purple-50 dark:bg-purple-900/20", borderColor: "border-purple-400", icon: <Shield size={18} className="text-purple-600 transition-colors duration-300 dark:text-purple-400" /> },
     { value: "ADMIN_KERJA" as Role, label: "Admin Ruangan Kerja", desc: "Hanya mengelola ruangan kerja (Workspace) & penugasan meja", color: "bg-indigo-50 dark:bg-indigo-900/20", borderColor: "border-indigo-400", icon: <Shield size={18} className="text-indigo-600 transition-colors duration-300 dark:text-indigo-400" /> },
+    { value: "ADMIN" as Role, label: "Admin Gabungan", desc: "Mengelola seluruh ruangan rapat dan ruang kerja", color: "bg-fuchsia-50 dark:bg-fuchsia-900/20", borderColor: "border-fuchsia-400", icon: <Shield size={18} className="text-fuchsia-600 transition-colors duration-300 dark:text-fuchsia-400" /> },
     ...(isHyperAdmin ? [
       { value: "SUPERADMIN" as Role, label: "Super Admin", desc: "Akses penuh: kelola pengguna, kebijakan global, audit trail", color: "bg-red-50 dark:bg-red-900/20", borderColor: "border-red-400", icon: <UserCog size={18} className="text-red-600 transition-colors duration-300 dark:text-red-400" />, warn: true }
     ] : [])
   ];
 
-  const isAdminRole = role === "admin" || role === "ADMIN_RAPAT" || role === "ADMIN_KERJA";
+  const isAdminRole = role === "admin" || role === "ADMIN_RAPAT" || role === "ADMIN_KERJA" || role === "ADMIN";
 
   const handleSave = () => {
     if (isAdminRole && selectedRooms.length === 0) {

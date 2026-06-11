@@ -72,6 +72,17 @@ export interface MySeatingResponse {
   };
 }
 
+export interface WorkspaceAssignment {
+  desk_id: string;
+  room_id: string;
+  assigned_user_id: string;
+  user_name: string;
+  user_email: string;
+  room_name: string;
+  floor_name: string | null;
+  building_name: string | null;
+}
+
 export const workspaceService = {
   /** Ambil layout ruang kerja beserta status setiap meja. */
   async getLayout(roomId: string) {
@@ -115,5 +126,20 @@ export const workspaceService = {
   /** Ambil status penempatan meja pengguna yang sedang login (assigned/pending/resolved). */
   async getMySeating() {
     return api.get<MySeatingResponse>('/v1/workspaces/assignments/my-desk');
+  },
+
+  /** Ambil semua daftar meja yang occupied (Admin / Superadmin) */
+  async listAllAssignments() {
+    return api.get<WorkspaceAssignment[]>('/v1/workspaces/assignments/all');
+  },
+
+  /** Cabut / Unassign penempatan meja (Admin / Superadmin) */
+  async removeAssignment(roomId: string, deskId: string) {
+    return api.delete(`/v1/workspaces/assignments/${roomId}/${deskId}`);
+  },
+
+  /** Tetapkan secara paksa pengguna ke sebuah meja (Admin / Superadmin) */
+  async forceAssign(roomId: string, deskId: string, userId: string) {
+    return api.post('/v1/workspaces/assignments/force', { room_id: roomId, desk_id: deskId, user_id: userId });
   }
 };

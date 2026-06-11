@@ -39,7 +39,8 @@ const adminStats = async (req, res, next) => {
     }
 
     // Total ruangan aktif dalam scope
-    const totalRooms = await dbGet(`SELECT COUNT(*)::int as count FROM rooms r WHERE r.status='active' AND r.deleted_at IS NULL ${roomCondition}`, params);
+    const totalMeetingRooms = await dbGet(`SELECT COUNT(*)::int as count FROM rooms r WHERE r.status='active' AND r.jenis_manajemen_ruang = 'MEETING' AND r.deleted_at IS NULL ${roomCondition}`, params);
+    const totalWorkspaces = await dbGet(`SELECT COUNT(*)::int as count FROM rooms r WHERE r.status='active' AND r.jenis_manajemen_ruang = 'WORKSPACE' AND r.deleted_at IS NULL ${roomCondition}`, params);
 
     // Hitung rentang minggu ini (Senin–Minggu)
     const today = new Date();
@@ -89,15 +90,42 @@ const adminStats = async (req, res, next) => {
       params
     );
 
+    // Statistik Workspace
+    let wdCond = roomCondition.replace(/r\.id/g, 'wd.room_id').replace(/\$1/g, '$1');
+    const deskStats = await dbGet(`
+      SELECT 
+        COUNT(*)::int as total_desks,
+        COUNT(CASE WHEN wd.status = 'OCCUPIED' THEN 1 END)::int as occupied_desks,
+        COUNT(CASE WHEN wd.status = 'VACANT' THEN 1 END)::int as vacant_desks
+      FROM workspace_desks wd
+      WHERE 1=1 ${wdCond}
+    `, params);
+
+    let srCond = roomCondition.replace(/r\.id/g, 'sr.room_id').replace(/\$1/g, '$1');
+    const pendingWorkspaceReqs = await dbGet(`
+      SELECT COUNT(*)::int as count 
+      FROM seating_requests sr 
+      WHERE sr.status = 'PENDING' ${srCond}
+    `, params);
+
     res.json({
       success: true,
       data: {
-        totalRooms: totalRooms?.count || 0,
+        role: req.user.role,
+        rawRole: req.user.rawRole,
+        // Meeting Room Stats
+        totalRooms: totalMeetingRooms?.count || 0,
         weeklyBookings: weeklyBookings?.count || 0,
         pendingApprovals: pendingApprovals?.count || 0,
         ghostBookings: ghostBookings?.count || 0,
         trend,
         peakHours,
+        // Workspace Stats
+        totalWorkspaces: totalWorkspaces?.count || 0,
+        totalDesks: deskStats?.total_desks || 0,
+        occupiedDesks: deskStats?.occupied_desks || 0,
+        vacantDesks: deskStats?.vacant_desks || 0,
+        pendingWorkspaceRequests: pendingWorkspaceReqs?.count || 0,
       }
     });
   } catch (err) { next(err); }

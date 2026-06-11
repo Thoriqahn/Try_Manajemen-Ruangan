@@ -4,6 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { ThemeToggle } from "./ThemeToggle";
 import { bookingService } from "../../services/bookingService";
 import { workspaceService } from "../../services/workspaceService";
+import { api } from "../../services/apiClient";
 
 interface MainLayoutProps {
   role: "user" | "admin" | "superadmin";
@@ -133,6 +134,31 @@ export function MainLayout({ role, currentUser, currentPage, onNavigate, onLogou
           }
         } catch (e) {
           console.warn("Gagal memuat notifikasi workspace:", e);
+        }
+
+        try {
+          const dbNotifsRes = await api.get('/notifications');
+          const dbNotifs = dbNotifsRes.data || [];
+          const parsedDbNotifs = dbNotifs.map((n: any) => {
+            let nType = "info";
+            const lowerTitle = n.title?.toLowerCase() || '';
+            if (lowerTitle.includes('disetujui') || lowerTitle.includes('baru')) nType = "success";
+            else if (lowerTitle.includes('dicabut') || lowerTitle.includes('batal')) nType = "error";
+            else if (lowerTitle.includes('dipindah')) nType = "warning";
+            
+            return {
+              id: n.id,
+              text: n.message,
+              type: nType,
+              date: new Date(n.created_at).toLocaleDateString('id-ID'),
+              time: new Date(n.created_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}),
+              status: n.is_read ? "read" : "pending",
+              createdAt: new Date(n.created_at).getTime()
+            };
+          });
+          workspaceItems = [...workspaceItems, ...parsedDbNotifs];
+        } catch(e) {
+          console.warn("Gagal memuat DB notifications:", e);
         }
 
         const combinedItems = [...items, ...workspaceItems]

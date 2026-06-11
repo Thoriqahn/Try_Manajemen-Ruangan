@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const ctrl = require('../controllers/userController');
-const { authGuard, roleGuard } = require('../middleware/auth');
+const { authGuard, roleGuard, rawRoleGuard } = require('../middleware/auth');
 
 /**
  * @openapi
@@ -12,7 +12,7 @@ const { authGuard, roleGuard } = require('../middleware/auth');
  *       200:
  *         description: Success response
  */
-router.get('/', authGuard, roleGuard('superadmin'), ctrl.listUsers);
+router.get('/', authGuard, rawRoleGuard('SUPERADMIN', 'ADMIN_KERJA', 'ADMIN'), ctrl.listUsers);
 /**
  * @openapi
  * /api/users/{id}:

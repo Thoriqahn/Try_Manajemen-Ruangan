@@ -58,6 +58,25 @@ const roleGuard = (...roles) => (req, res, next) => {
 };
 
 /**
+ * Middleware otorisasi berbasis role khusus (rawRole / jabatan spesifik).
+ * 
+ * @param {...string} roles - Satu atau lebih rawRole yang diizinkan, misal: rawRoleGuard('ADMIN_RAPAT', 'SUPERADMIN')
+ */
+const rawRoleGuard = (...roles) => (req, res, next) => {
+  if (!req.user) return res.status(401).json({ success: false, message: 'Tidak terautentikasi' });
+  const role = req.user.rawRole || req.user.role;
+  
+  if (role === 'ADMIN' && (roles.includes('ADMIN_KERJA') || roles.includes('ADMIN_RAPAT'))) {
+    return next();
+  }
+
+  if (!roles.includes(role)) {
+    return res.status(403).json({ success: false, message: 'Akses ditolak: izin spesifik tidak mencukupi' });
+  }
+  next();
+};
+
+/**
  * Middleware autentikasi opsional.
  * Jika token valid ada, set req.user — tapi tidak menolak request jika tidak ada token.
  * Dipakai pada route publik yang perilakunya berbeda tergantung pengguna login/tidak.
@@ -81,4 +100,4 @@ const optionalAuth = async (req, res, next) => {
   next();
 };
 
-module.exports = { authGuard, roleGuard, optionalAuth };
+module.exports = { authGuard, roleGuard, rawRoleGuard, optionalAuth };

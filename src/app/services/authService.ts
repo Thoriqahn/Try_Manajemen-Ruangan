@@ -7,6 +7,7 @@ export interface User {
   name: string; 
   email: string; 
   role: string; 
+  rawRole?: string;
   status: string; 
   position?: string;
   work_unit?: string;

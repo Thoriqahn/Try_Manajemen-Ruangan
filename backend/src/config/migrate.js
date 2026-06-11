@@ -45,7 +45,7 @@ async function initSchema() {
   // Apply new check constraint to users role
   try {
     await dbRun(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
-    await dbRun(`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('SUPERADMIN','ADMIN_RAPAT','ADMIN_KERJA','USER'))`);
+    await dbRun(`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('SUPERADMIN','ADMIN_RAPAT','ADMIN_KERJA','ADMIN','USER'))`);
     await dbRun(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`);
     await dbRun(`ALTER TABLE users ADD COLUMN IF NOT EXISTS position TEXT`);
     await dbRun(`ALTER TABLE users ADD COLUMN IF NOT EXISTS work_unit TEXT`);

@@ -64,16 +64,16 @@ export function Sidebar({ role, rawRole, currentPage, onNavigate, onLogout, coll
 
   const effectiveRawRole = rawRole || (role === "superadmin" ? "SUPERADMIN" : role === "admin" ? "ADMIN_RAPAT" : "USER");
 
-  if (effectiveRawRole === "ADMIN_RAPAT" || effectiveRawRole === "SUPERADMIN") {
+  if (effectiveRawRole === "ADMIN_RAPAT" || effectiveRawRole === "ADMIN" || effectiveRawRole === "SUPERADMIN") {
     adminItems.push({ icon: <CheckSquare size={18} />, label: "Persetujuan Rapat", page: "admin-approval" });
     adminItems.push({ icon: <Clock size={18} />, label: "Jadwal Rapat Aktif", page: "admin-schedule" });
+    adminItems.push({ icon: <Settings size={18} />, label: "Kelola Ruangan", page: "admin-rooms" });
   }
 
-  if (effectiveRawRole === "ADMIN_KERJA" || effectiveRawRole === "SUPERADMIN") {
+  if (effectiveRawRole === "ADMIN_KERJA" || effectiveRawRole === "ADMIN" || effectiveRawRole === "SUPERADMIN") {
     adminItems.push({ icon: <CheckSquare size={18} />, label: "Persetujuan Meja", page: "admin-workspace-approval" });
+    adminItems.push({ icon: <Users size={18} />, label: "Kelola Workspace", page: "admin-workspaces" });
   }
-
-  adminItems.push({ icon: <Settings size={18} />, label: "Kelola Ruangan", page: "admin-rooms" });
 
   const adminNav: NavGroup = {
     title: "Admin Ruangan",

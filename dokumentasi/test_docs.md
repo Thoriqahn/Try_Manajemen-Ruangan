@@ -49,9 +49,9 @@ Dokumen ini merangkum seluruh skenario uji coba (Unit Test) dalam aplikasi backe
 - **Then** sistem mengembalikan daftar ruangan yang tersedia.
 
 ### Skenario 2.3: Restriksi Pembuatan Ruangan (Role Guard)
-- **Given** seorang pengguna dengan peran (role) *USER* reguler.
-- **When** pengguna mencoba membuat ruangan baru melalui `/api/rooms`.
-- **Then** sistem menolak aksi tersebut (status `403 Forbidden`) karena hak akses tidak mencukupi.
+- **Given** seorang pengguna dengan peran (role) *USER* reguler atau *ADMIN_KERJA* (Admin Workspace).
+- **When** pengguna mencoba membuat ruangan baru melalui `/api/rooms` atau mengubah data ruang via `PUT`.
+- **Then** sistem menolak aksi tersebut (status `403 Forbidden`) karena hak akses tidak mencukupi, memisahkan secara ketat batas kewenangan antara Ruang Rapat dan Workspace.
 
 ### Skenario 2.4: Pembuatan Ruangan Berhasil oleh Superadmin
 - **Given** seorang pengguna dengan peran *SUPERADMIN*.
@@ -217,6 +217,24 @@ Dokumen ini merangkum seluruh skenario uji coba (Unit Test) dalam aplikasi backe
 - **Given** sebuah permohonan meja dengan status PENDING.
 - **When** seorang Admin Ruangan menolak permohonan tersebut beserta alasan penolakan.
 - **Then** sistem mengembalikan permohonan ke status REJECTED, status meja tetap VACANT, dan mengirimkan notifikasi ke pemohon.
+### Skenario 4.6: Pewarisan Hak Akses Admin Gabungan (ADMIN)
+- **Given** seorang pengguna yang memiliki jabatan "Admin Gabungan" (rawRole: `ADMIN`).
+- **When** pengguna tersebut melakukan mutasi atau mengakses riwayat permohonan meja via `/api/v1/workspaces/*`.
+- **Then** sistem middleware (`rawRoleGuard` dan `checkRawRole`) secara native mengizinkan *request* tersebut karena peran `ADMIN` secara implisit mewarisi seluruh kapabilitas `ADMIN_KERJA` dan `ADMIN_RAPAT`.
+
+### Skenario 4.7: Rendering Role-Based Admin Dashboard
+- **Given** pengguna memiliki hak akses sebagai admin (`ADMIN_RAPAT`, `ADMIN_KERJA`, atau `ADMIN`).
+- **When** pengguna melakukan *request GET* ke `/api/stats/admin` dan membuka halaman `AdminDashboard`.
+- **Then** UI sistem secara dinamis hanya menampilkan blok "Statistik Ruang Rapat" (untuk admin rapat), blok "Statistik Ruang Kerja" (untuk admin kerja), atau **keduanya** secara bersamaan (jika admin gabungan).
+### Skenario 4.8: Dynamic Filtering Admin Dashboard (Superadmin)
+- **Given** pengguna memiliki hak akses sebagai Superadmin.
+- **When** pengguna memfilter data dashboard berdasarkan spesifik admin (`selectedAdminFilter`) pada halaman `AdminDashboard`.
+- **Then** sistem tidak hanya menyesuaikan parameter kueri statistik (`admin_id`), namun juga secara dinamis mengubah blok komponen UI untuk **hanya menampilkan** panel metrik yang relevan dengan peran dasar dari admin yang sedang difilter (misal: jika difilter ke Admin Rapat, panel Workspace disembunyikan).
+
+### Skenario 4.9: Pengiriman dan Polling Notifikasi Otomatis
+- **Given** sebuah *event* krusial sistem (seperti Admin Kerja yang melakukan *Force Assign* meja ke seorang user).
+- **When** klien *frontend* menjalankan interval *polling* periodik (setiap 10 detik) ke API `/api/notifications`.
+- **Then** aplikasi klien dapat secara andal memuat dan menampilkan indikator (titik merah lonceng) beserta pesan *pop-over* tanpa interaksi *refresh* halaman secara manual dari user, dan tanpa mengalami error routing (*API prefix duplication*).
 
 ---
 

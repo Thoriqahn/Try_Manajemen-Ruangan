@@ -94,6 +94,7 @@ app.use('/api/stats', require('./routes/stats'));
 app.use('/api/zoom', require('./routes/zoom'));
 app.use('/api/v1/workspaces', require('./routes/workspaces'));
 app.use('/api/public', require('./routes/public'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // ─── Health Check ────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

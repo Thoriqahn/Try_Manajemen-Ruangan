@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const ctrl = require('../controllers/roomController');
-const { authGuard, roleGuard, optionalAuth } = require('../middleware/auth');
+const { authGuard, roleGuard, rawRoleGuard, optionalAuth } = require('../middleware/auth');
 const { validateRoom } = require('../middleware/validation');
 const multer = require('multer');
 const path = require('path');
@@ -67,7 +67,7 @@ router.get('/:id/availability', authGuard, ctrl.getAvailability);
  *       200:
  *         description: Success response
  */
-router.post('/', authGuard, roleGuard('admin', 'superadmin'), validateRoom, ctrl.createRoom);
+router.post('/', authGuard, rawRoleGuard('ADMIN_RAPAT', 'ADMIN', 'SUPERADMIN'), validateRoom, ctrl.createRoom);
 /**
  * @openapi
  * /api/rooms/{id}:
@@ -78,7 +78,7 @@ router.post('/', authGuard, roleGuard('admin', 'superadmin'), validateRoom, ctrl
  *       200:
  *         description: Success response
  */
-router.put('/:id', authGuard, roleGuard('admin', 'superadmin'), validateRoom, ctrl.updateRoom);
+router.put('/:id', authGuard, rawRoleGuard('ADMIN_RAPAT', 'ADMIN', 'SUPERADMIN'), validateRoom, ctrl.updateRoom);
 /**
  * @openapi
  * /api/rooms/{id}:
@@ -89,7 +89,7 @@ router.put('/:id', authGuard, roleGuard('admin', 'superadmin'), validateRoom, ct
  *       200:
  *         description: Success response
  */
-router.delete('/:id', authGuard, roleGuard('admin', 'superadmin'), ctrl.deleteRoom);
+router.delete('/:id', authGuard, rawRoleGuard('ADMIN_RAPAT', 'ADMIN', 'SUPERADMIN'), ctrl.deleteRoom);
 /**
  * @openapi
  * /api/rooms/{id}/upload:
@@ -100,7 +100,7 @@ router.delete('/:id', authGuard, roleGuard('admin', 'superadmin'), ctrl.deleteRo
  *       200:
  *         description: Success response
  */
-router.post('/:id/upload', authGuard, roleGuard('admin', 'superadmin'), upload.single('photo'), ctrl.uploadPhoto);
+router.post('/:id/upload', authGuard, rawRoleGuard('ADMIN_RAPAT', 'ADMIN', 'SUPERADMIN'), upload.single('photo'), ctrl.uploadPhoto);
 
 /**
  * @openapi
@@ -112,6 +112,6 @@ router.post('/:id/upload', authGuard, roleGuard('admin', 'superadmin'), upload.s
  *       200:
  *         description: Success response
  */
-router.delete('/:id/photos/:photoId', authGuard, roleGuard('admin', 'superadmin'), ctrl.deletePhoto);
+router.delete('/:id/photos/:photoId', authGuard, rawRoleGuard('ADMIN_RAPAT', 'ADMIN', 'SUPERADMIN'), ctrl.deletePhoto);
 
 module.exports = router;
